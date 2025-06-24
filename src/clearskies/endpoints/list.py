@@ -35,7 +35,6 @@ class List(Endpoint):
     ```python
     import clearskies
 
-
     class User(clearskies.Model):
         id_column_name = "id"
         backend = clearskies.backends.MemoryBackend()

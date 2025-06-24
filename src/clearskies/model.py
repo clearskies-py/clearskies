@@ -262,12 +262,21 @@ class Model(Schema, InjectableProperties):
 
     def columns_pre_save(self: Self, data: dict[str, Any], columns) -> dict[str, Any]:
         """Use the column information present in the model to make any necessary changes before saving."""
-        for column in columns.values():
-            data = column.pre_save(data, self)
-            if data is None:
-                raise ValueError(
-                    f"Column {column.name} of type {column.__class__.__name__} did not return any data for pre_save"
-                )
+        iterate = True
+        changed = {}
+        while iterate:
+            iterate = False
+            for column in columns.values():
+                data = column.pre_save(data, self)
+                if data is None:
+                    raise ValueError(
+                        f"Column {column.name} of type {column.__class__.__name__} did not return any data for pre_save"
+                    )
+
+                # if we have newly chnaged data then we want to loop through the pre-saves again
+                if data and column.name not in changed:
+                    changed[column.name] = True
+                    iterate = True
         return data
 
     def columns_to_backend(self: Self, data: dict[str, Any], columns) -> Any:
@@ -583,6 +592,12 @@ class Model(Schema, InjectableProperties):
         model = self._di.build(self.__class__, cache=False)
         model.set_raw_data(data)
         return model
+
+    def empty(self: Self) -> Self:
+        """
+        An alias for self.model({})
+        """
+        return self.model({})
 
     def create(self: Self, data: dict[str, Any] = {}, columns: dict[str, Column] = {}, no_data=False) -> Self:
         """

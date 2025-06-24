@@ -330,7 +330,11 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
     Pre-save happens before the data is persisted to the backend.  Actions/callables in
     this step must return a dictionary.  The data in the dictionary will be included in the save operation.
     Since the save hasn't completed, any data in the model itself reflects the model before the save
-    operation started.
+    operation started.  Actions in the pre-save step must **NOT** make any changes directly, but should **ONLY**
+    return modified data for the save operation.  In addition, they must be idempotent - they should always return
+    the same value when called with the same data.  This is because clearskies can call them more than once.  If
+    a pre-save hook changes the save data, then clearskies will call all the pre-save hooks again in case this
+    new data needs to trigger further changes.  Stateful changes should be reserved for the post_save or save_finished stages.
 
     Callables and actions can request any dependencies provided by the DI system.  In addition, they can request
     two named parameters:
@@ -340,7 +344,7 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
 
     The key here is that the defined actions will be invoked regardless of how the save happens.  Whether the
     model.save() function is called directly or the model is creatd/modified via an endpoint, your business logic
-    will always be executed.  This makes for easy reusability and consistency throughout your applicatoin.
+    will always be executed.  This makes for easy reusability and consistency throughout your application.
 
     Here's an example where we want to record a timestamp anytime an order status becomes a particular value:
 
@@ -987,10 +991,14 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
         for index, action in enumerate(actions):
             new_data = self.di.call_function(
                 action,
-                model=model,
-                data=data,
-                id=id,
-                **input_output.get_context_for_callables(),
+                **{
+                    **input_output.get_context_for_callables(),
+                    **{
+                        "model": model,
+                        "data": data,
+                        "id": id,
+                    },
+                },
             )
             if not isinstance(new_data, dict):
                 if require_dict_return_value:
