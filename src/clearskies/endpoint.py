@@ -32,15 +32,16 @@ class Endpoint(
     clearskies.di.InjectableProperties,
 ):
     """
-    Endpoints - the clearskies workhorse.
+    Automating drudgery!
 
     With clearskies, endpoints exist to offload some drudgery and make your life easier, but they can also
     get out of your way when you don't need them.  Think of them as pre-built endpoints that can execute
     common functionality needed for web applications/APIs.  Instead of defining a function that fetches
     records from your backend and returns them to the end user, you can let the list endpoint do this for you
     with a minimal amount of configuration.  Instead of making an endpoint that creates records, just deploy
-    a create endpoint.  Each endpoint has their own configuration settings, but there are some configuration
-    settings that are common to all endpoints, which are listed below:
+    a create endpoint.  While this gives clearskies some helpful capabiltiies for automation, it also has
+    the Callable endpoint which simply calls a developer-defined function, and therefore allows clearskies to
+    act like a much more typical framework.
     """
 
     """
@@ -342,7 +343,7 @@ class Endpoint(
     """
     The model class used by this endpoint.
 
-    The majority of endpoints require a model class that tells the endpoint where to get/save its data.
+    The endpoint will use this to fetch/save/validate incoming data as needed.
     """
     model_class = clearskies.configs.ModelClass(default=None)
 

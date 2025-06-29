@@ -19,12 +19,14 @@ class Model(Schema, InjectableProperties):
     """
     A clearskies model.
 
-    To be useable, a model class needs three things:
+    To be useable, a model class needs four things:
 
-     1. Column definitions
-     2. The name of the id column
-     3. A backend
-     4. A destination name (equivalent to a table name for SQL backends)
+     1. The name of the id column
+     2. A backend
+     3. A destination name (equivalent to a table name for SQL backends)
+     4. Columns
+
+
 
     """
 
@@ -240,10 +242,12 @@ class Model(Schema, InjectableProperties):
         return not columns[key].values_match(old_value, new_value)
 
     def previous_value(self: Self, key: str):
+        """Return the value of a column from before the most recent save."""
         self.no_queries()
         return getattr(self.__class__, key).transform(self._previous_data.get(key))
 
     def delete(self: Self, except_if_not_exists=True) -> bool:
+        """Delete a record."""
         self.no_queries()
         if not self:
             if except_if_not_exists:
@@ -498,6 +502,7 @@ class Model(Schema, InjectableProperties):
         return False
 
     def group_by(self: Self, group_by_column_name: str) -> Self:
+        """Add a group by clause to the query."""
         self.no_single_model()
         return self.with_query(self.get_query().set_group_by(group_by_column_name))
 
@@ -510,6 +515,7 @@ class Model(Schema, InjectableProperties):
         secondary_direction: str = "",
         secondary_table_name: str = "",
     ) -> Self:
+        """Add a sort by clause to the query."""
         self.no_single_model()
         sort = Sort(primary_table_name, primary_column_name, primary_direction)
         secondary_sort = None
@@ -518,6 +524,7 @@ class Model(Schema, InjectableProperties):
         return self.with_query(self.get_query().set_sort(sort, secondary_sort))
 
     def limit(self: Self, limit: int) -> Self:
+        """Set the number of records to return."""
         self.no_single_model()
         return self.with_query(self.get_query().set_limit(limit))
 

@@ -1,0 +1,63 @@
+{
+    "tree": [
+        {
+            "title": "Models",
+            "source": "clearskies.Model",
+            "builder": "app.builders.SingleClass",
+            "docs": [
+                {
+                    "title": "Querying Records",
+                    "attributes": [
+                        "where",
+                        "find",
+                        "first",
+                        "sort_by",
+                        "limit",
+                        "pagination",
+                        "paginate_all",
+                        "join",
+                        "group_by",
+                        "select",
+                        "select_all",
+                        "has_query",
+                        "as_query"
+                    ]
+                },
+                {
+                    "title": "Modifying Records",
+                    "attributes": [
+                        "delete",
+                        "create",
+                        "empty",
+                        "model",
+                        "is_changing",
+                        "was_changed",
+                        "latest",
+                        "previous_value",
+                        "post_save",
+                        "pre_save",
+                        "save_finished",
+                        "where_for_request"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Endpoints",
+            "source": "clearskies.endpoint.Endpoint",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.endpoints.Callable",
+                "clearskies.endpoints.Create",
+                "clearskies.endpoints.Get",
+                "clearskies.endpoints.Update",
+                "clearskies.endpoints.Delete",
+                "clearskies.endpoints.List",
+                "clearskies.endpoints.SimpleSearch",
+                "clearskies.endpoints.AdvancedSearch",
+                "clearskies.endpoints.RestfulApi",
+                "clearskies.endpoints.HealthCheck"
+            ]
+        }
+    ]
+}
