@@ -26,8 +26,8 @@
                 {
                     "title": "Modifying Records",
                     "attributes": [
-                        "delete",
                         "create",
+                        "delete",
                         "empty",
                         "model",
                         "is_changing",
@@ -40,6 +40,79 @@
                         "where_for_request"
                     ]
                 }
+            ]
+        },
+        {
+            "title": "Backends",
+            "source": "clearskies.backends.Backend",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.backends.CursorBackend",
+                "clearskies.backends.MemoryBackend",
+                "clearskies.backends.ApiBackend"
+            ]
+        },
+        {
+            "title": "Columns",
+            "source": "clearskies.Column",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.columns.Audit",
+                "clearskies.columns.BelongsToId",
+                "clearskies.columns.BelongsToModel",
+                "clearskies.columns.BelongsToSelf",
+                "clearskies.columns.Boolean",
+                "clearskies.columns.CategoryTreeAncestors",
+                "clearskies.columns.CategoryTreeChildren",
+                "clearskies.columns.CategoryTreeDescendants",
+                "clearskies.columns.CategoryTree",
+                "clearskies.columns.CreatedByAuthorizationData",
+                "clearskies.columns.CreatedByHeader",
+                "clearskies.columns.CreatedByIp",
+                "clearskies.columns.CreatedByRoutingData",
+                "clearskies.columns.CreatedByUserAgent",
+                "clearskies.columns.Created",
+                "clearskies.columns.Date",
+                "clearskies.columns.Datetime",
+                "clearskies.columns.Email",
+                "clearskies.columns.Float",
+                "clearskies.columns.HasMany",
+                "clearskies.columns.HasManySelf",
+                "clearskies.columns.HasOne",
+                "clearskies.columns.Integer",
+                "clearskies.columns.Json",
+                "clearskies.columns.ManyToManyIds",
+                "clearskies.columns.ManyToManyIdsWithData",
+                "clearskies.columns.ManyToManyModels",
+                "clearskies.columns.ManyToManyPivots",
+                "clearskies.columns.Phone",
+                "clearskies.columns.Select",
+                "clearskies.columns.String",
+                "clearskies.columns.Timestamp",
+                "clearskies.columns.Updated",
+                "clearskies.columns.Uuid"
+            ]
+        },
+        {
+            "title": "Input Validators",
+            "source": "clearskies.Validator",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.validators.AfterColumn",
+                "clearskies.validators.BeforeColumn",
+                "clearskies.validators.InTheFutureAtLeast",
+                "clearskies.validators.InTheFutureAtMost",
+                "clearskies.validators.InTheFuture",
+                "clearskies.validators.InThePastAtLeast",
+                "clearskies.validators.InThePastAtMost",
+                "clearskies.validators.InThePast",
+                "clearskies.validators.MinimumLength",
+                "clearskies.validators.MaximumLength",
+                "clearskies.validators.MinimumValue",
+                "clearskies.validators.MaximumValue",
+                "clearskies.validators.Required",
+                "clearskies.validators.Timedelta",
+                "clearskies.validators.Unique"
             ]
         },
         {
@@ -57,6 +130,23 @@
                 "clearskies.endpoints.AdvancedSearch",
                 "clearskies.endpoints.RestfulApi",
                 "clearskies.endpoints.HealthCheck"
+            ]
+        },
+        {
+            "title": "Endpoint Groups",
+            "source": "clearskies.EndpointGroup",
+            "builder": "app.builders.SingleClass",
+            "docs": []
+        },
+        {
+            "title": "Security Headers",
+            "source": "clearskies.endpoint.Endpoint",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.security_headers.CacheControl",
+                "clearskies.security_headers.Cors",
+                "clearskies.security_headers.Csp",
+                "clearskies.security_headers.Hsts"
             ]
         }
     ]
