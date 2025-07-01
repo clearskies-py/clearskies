@@ -1,3 +1,4 @@
+from typing import Any
 import os.path
 
 
@@ -14,8 +15,9 @@ class Environment:
     is assumed to be a string.
     """
 
-    _env_file_config = None
-    _resolved_values = None
+    _env_file_config: dict[str, Any] = None # type: ignore
+    _resolved_values: dict[str, Any] = {}
+    os_environ: dict[str, Any] = {}
 
     def __init__(self, env_file_path, os_environ, secrets):
         self._env_file_path = env_file_path
@@ -23,7 +25,7 @@ class Environment:
         self.secrets = secrets
         self._resolved_values = {}
 
-    def get(self, name, silent=False):
+    def get(self, name, silent=False) -> Any:
         self._load_env_file()
         if name in self.os_environ:
             return self.resolve_value(self.os_environ[name])

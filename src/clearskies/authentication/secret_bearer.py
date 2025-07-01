@@ -485,7 +485,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
 
     def clear_credential_cache(self):
         if self.secret_key:
-            self._secret = None
+            self._secret = None # type: ignore
 
     @property
     def alternate_secret(self):

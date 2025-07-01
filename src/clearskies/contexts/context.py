@@ -24,7 +24,7 @@ class Context:
         modules: ModuleType | list[ModuleType] = [],
         bindings: dict[str, Any] = {},
         additional_configs: AdditionalConfig | list[AdditionalConfig] = [],
-        class_overrides: dict[type, type] = {},
+        class_overrides: dict[type, Any] = {},
         overrides: dict[str, type] = {},
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,

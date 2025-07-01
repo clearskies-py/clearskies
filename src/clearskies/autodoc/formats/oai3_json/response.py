@@ -1,8 +1,10 @@
+from typing import Any
+
 class Response:
-    response = None
-    formatted_schema = None
-    oai3_schema_resolver = None
-    status_code = None
+    response: Any = None
+    formatted_schema: Any = None
+    oai3_schema_resolver: Any = None
+    status_code: Any = None
 
     def __init__(self, oai3_schema_resolver):
         self.oai3_schema_resolver = oai3_schema_resolver

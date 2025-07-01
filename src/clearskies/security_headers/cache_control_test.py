@@ -17,6 +17,6 @@ class CacheControlTest(unittest.TestCase):
             },
         )
         cache_control.set_headers_for_input_output(input_output)
-        input_output.response_headers.add.assert_called_with(
+        input_output.response_headers.add.assert_called_with( # type: ignore
             "cache-control", "immutable, public, max-age=86400, stale-if-error=3600"
         )

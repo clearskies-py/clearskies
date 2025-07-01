@@ -1,6 +1,10 @@
+from __future__ import annotations
+from typing import Any
+
 import clearskies.typing
 from clearskies import configs, parameters_to_properties
 from clearskies.columns.has_many import HasMany
+from clearskies.column import Column
 
 
 class Audit(HasMany):
@@ -58,6 +62,7 @@ class Audit(HasMany):
     is_writeable = configs.Boolean(default=False)
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
+    _parent_columns: dict[str, Column] | None
 
     @parameters_to_properties.parameters_to_properties
     def __init__(
@@ -79,14 +84,14 @@ class Audit(HasMany):
 
     def save_finished(self, model):
         super().save_finished(model)
-        old_data = model._previous_data
-        new_data = model.get_raw_data()
+        old_data: dict[str, Any] = model._previous_data
+        new_data: dict[str, Any] = model.get_raw_data()
         exclude_columns = self.exclude_columns
         mask_columns = self.mask_columns
         model_columns = self.get_model_columns()
 
         if not old_data:
-            create_data = {}
+            create_data: dict[str, Any] = {}
             for key in new_data.keys():
                 if key in exclude_columns:
                     continue
@@ -109,8 +114,8 @@ class Audit(HasMany):
         # won't be picked up by this.
         old_model = model.empty_model()
         old_model.data = old_data
-        from_data = {}
-        to_data = {}
+        from_data: dict[str, Any] = {}
+        to_data: dict[str, Any] = {}
         for column, new_value in new_data.items():
             if column in exclude_columns or column not in old_data:
                 continue
@@ -153,7 +158,7 @@ class Audit(HasMany):
         model_columns = self.get_model_columns()
         mask_columns = self.mask_columns
 
-        final_data = {}
+        final_data: dict[str, Any] = {}
         for key in model._data.keys():
             if key in exclude_columns:
                 continue
@@ -167,7 +172,7 @@ class Audit(HasMany):
                 continue
             final_data[key] = "****"
 
-        self.child_models.create(
+        self.child_model.create(
             {
                 "class": self.model_class.__name__,
                 "resource_id": model.get(self.model_class.id_column_name),
@@ -177,7 +182,7 @@ class Audit(HasMany):
         )
 
     @property
-    def parent_columns(self):
+    def parent_columns(self) -> dict[str, Column]:
         if self._parent_columns == None:
             self._parent_columns = self.di.build(self.model_class, cache=True).columns()
         return self._parent_columns
@@ -196,4 +201,4 @@ class Audit(HasMany):
                 **record_data,
             }
 
-        self.child_models.create(audit_data)
+        self.child_model.create(audit_data)

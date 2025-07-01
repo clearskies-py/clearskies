@@ -230,12 +230,12 @@ class ManyToManyIdsWithData(ManyToManyIds):
                     if pivot_column not in unique_related_columns:
                         continue
                     related = related_model.find(f"{pivot_column}={pivot_value}")
-                    related_column_id = related.id
+                    related_column_id = getattr(related, related.id_column_name)
                     if related_column_id:
                         # remove this column from the data - it was used to lookup the right
                         # record, but mostly won't exist in the model, unless we've been instructed
                         # to keep it
-                        if not self.config("persist_unique_lookup_column_to_pivot_table"):
+                        if not self._config.get("persist_unique_lookup_column_to_pivot_table"): # type: ignore
                             del pivot_record[pivot_column]
                         break
             if not related_column_id:

@@ -87,7 +87,7 @@ def cheating_equals(column, values, null):
 class MemoryTable:
     _table_name: str = ""
     _column_names: list[str] = []
-    _rows: list[dict[str, Any]] = []
+    _rows: list[dict[str, Any] | None] = []
     null: Null = Null()
     _id_index: dict[int | str, int] = {}
     id_column_name: str = ""
@@ -151,10 +151,10 @@ class MemoryTable:
                     f"Cannot update record: column '{column_name}' does not exist in table '{self._table_name}'"
                 )
         self._rows[index] = {
-            **self._rows[index],
+            **self._rows[index], # type: ignore
             **data,
         }
-        return self._rows[index]
+        return self._rows[index] # type: ignore
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         for column_name in data.keys():
@@ -636,7 +636,7 @@ class MemoryBackend(Backend, InjectableProperties):
                 return []
 
             raise ValueError(f"Cannot return rows for unknown table '{table_name}'")
-        return self.__class__._tables[table_name]._rows
+        return list(filter(None, self.__class__._tables[table_name]._rows))
 
     def check_query(self, query: clearskies.query.Query) -> None:
         if query.group_by:

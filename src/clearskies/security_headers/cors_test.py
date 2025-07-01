@@ -17,7 +17,7 @@ class CorsTest(unittest.TestCase):
             },
         )
         cors.set_headers_for_input_output(input_output)
-        input_output.response_headers.add.assert_has_calls(
+        input_output.response_headers.add.assert_has_calls( # type: ignore
             [
                 call("access-control-allow-methods", "POST, GET"),
                 call("access-control-allow-credentials", "true"),

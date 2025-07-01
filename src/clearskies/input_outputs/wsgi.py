@@ -1,3 +1,4 @@
+from typing import Callable
 import json
 import urllib
 import urllib.parse
@@ -6,10 +7,10 @@ from .input_output import InputOutput
 
 
 class Wsgi(InputOutput):
-    _environment = None
-    _start_response = None
-    _request_headers = None
-    _cached_body = None
+    _environment: dict[str, str] = {}
+    _start_response: Callable = None # type: ignore
+    _request_headers: dict[str, str] = {}
+    _cached_body: str | None = None
 
     def __init__(self, environment, start_response):
         self._environment = environment
@@ -27,7 +28,7 @@ class Wsgi(InputOutput):
         if "content-type" not in self.response_headers:
             self.response_headers.content_type = "application/json; charset=UTF-8"
 
-        self._start_response(f"{status_code} Ok", [header for header in self.response_headers.items()])
+        self._start_response(f"{status_code} Ok", [header for header in self.response_headers.items()]) # type: ignore
         if type(body) == bytes:
             final_body = body
         elif type(body) == str:

@@ -1,13 +1,14 @@
+from typing import Any
 import json
 
 from .request import Request
 
 
 class OAI3JSON:
-    requests = None
-    formatted = None
-    models = None
-    security_schemes = None
+    requests: Any = None
+    formatted: Any = None
+    models: Any = None
+    security_schemes: Any = None
 
     def __init__(self, oai3_schema_resolver):
         self.oai3_schema_resolver = oai3_schema_resolver
@@ -57,7 +58,7 @@ class OAI3JSON:
         return json.dumps(data)
 
     def convert(self):
-        paths = {}
+        paths: dict[str, Any] = {}
         for request in self.formatted:
             absolute_path = "/" + request.relative_path.lstrip("/")
             if absolute_path not in paths:
@@ -69,7 +70,7 @@ class OAI3JSON:
                     raise ValueError(f"Two routes had the same path and method: {absolute_path} - {request_method}")
                 paths[absolute_path][request_method] = path_doc
 
-        data = {
+        data: dict[str, Any] = {
             "openapi": "3.0.0",
             "paths": paths,
             "components": {},

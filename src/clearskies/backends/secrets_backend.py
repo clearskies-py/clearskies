@@ -1,4 +1,4 @@
-from typing import Any, override
+from typing import Any
 
 import clearskies
 from clearskies import parameters_to_properties
@@ -36,8 +36,7 @@ class SecretsBackend(Backend):
         if not query.conditions:
             raise KeyError(f"You must search by an id when using the secrets backend.")
 
-    @override
-    def update(self, id: str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:
+    def update(self, id: str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]: # type: ignore
         """Update the record with the given id with the information from the data dictionary."""
         folder_path = self._make_folder_path(model, id)
         for key, value in data.items():
@@ -59,8 +58,7 @@ class SecretsBackend(Backend):
             )
         return self.update(data[model.id_column_name], data, model)
 
-    @override
-    def delete(self, id: str) -> bool:
+    def delete(self, id: str) -> bool: # type: ignore
         """
         Delete the record with the given id.
 

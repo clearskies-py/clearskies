@@ -52,12 +52,12 @@ class ManyToManyPivots(Column):
             )
 
     @property
-    def pivot_model(self):
-        return self.di.build(self.pivot_model_class, cache=True)
+    def pivot_model(self) -> Model:
+        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True) # type: ignore
 
     @property
-    def related_models(self):
-        return self.di.build(self.related_model_class, cache=True)
+    def related_models(self) -> Model:
+        return self.di.build(self.many_to_many_column.related_model_class, cache=True) # type: ignore
 
     @property
     def related_columns(self):
@@ -81,13 +81,13 @@ class ManyToManyPivots(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config: # type: ignore
             instance.get_columns()
 
         many_to_many_column = self.many_to_many_column  # type: ignore
-        own_column_name_in_pivot = self.config("own_column_name_in_pivot")
-        my_id = data[self.config("own_id_column_name")]
-        return [model for model in self.pivot_models.where(f"{own_column_name_in_pivot}={my_id}")]
+        own_column_name_in_pivot = many_to_many_column._config("own_column_name_in_pivot")
+        my_id = getattr(instance, instance.id_column_name)
+        return [model for model in self.pivot_model.where(f"{own_column_name_in_pivot}={my_id}")]
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
         raise NotImplementedError("Saving not supported for ManyToManyPivots")

@@ -53,11 +53,11 @@ class ManyToManyModels(Column):
 
     @property
     def pivot_model(self):
-        return self.di.build(self.pivot_model_class, cache=True)
+        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True) # type: ignore
 
     @property
     def related_models(self):
-        return self.di.build(self.related_model_class, cache=True)
+        return self.di.build(self.many_to_many_column.related_model_class, cache=True) # type: ignore
 
     @property
     def related_columns(self):
@@ -81,10 +81,10 @@ class ManyToManyModels(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config: # type: ignore
             instance.get_columns()
 
-        return self.many_to_many_column.get_related_models(instance)
+        return self.many_to_many_column.get_related_models(instance) # type: ignore
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
         # we allow a list of models or a model, but if it's a model it may represent a single record or a query.
@@ -113,7 +113,7 @@ class ManyToManyModels(Column):
         setattr(instance, self.many_to_many_column_name, record_ids)
 
     def add_search(self, model: Model, value: str, operator: str = "", relationship_reference: str = "") -> Model:
-        return self.many_to_many_column.add_search(
+        return self.many_to_many_column.add_search( # type: ignore
             model, value, operator, relationship_reference=relationship_reference
         )  # type: ignore
 

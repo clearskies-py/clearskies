@@ -12,7 +12,7 @@ from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class WsgiRef(Context):
-    port = None
+    port: int = 8080
 
     def __init__(
         self,
@@ -40,7 +40,7 @@ class WsgiRef(Context):
         )
         self.port = port
 
-    def __call__(self):
+    def __call__(self): # type: ignore
         with make_server("", self.port, self.handler) as httpd:
             print(f"Starting WSGI server on port {self.port}.  This is NOT intended for production usage.")
             httpd.serve_forever()
