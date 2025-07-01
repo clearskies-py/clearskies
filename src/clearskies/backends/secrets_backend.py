@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 
 import clearskies
 from clearskies import parameters_to_properties
@@ -27,7 +27,7 @@ class SecretsBackend(Backend):
     """The secrets instance."""
     secrets = inject.Secrets()
 
-    can_count = False
+    can_count: bool = False
 
     def __init__(self):
         pass
@@ -36,7 +36,7 @@ class SecretsBackend(Backend):
         if not query.conditions:
             raise KeyError(f"You must search by an id when using the secrets backend.")
 
-    def update(self, id: str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]: # type: ignore
+    def update(self, id: str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:  # type: ignore[override]
         """Update the record with the given id with the information from the data dictionary."""
         folder_path = self._make_folder_path(model, id)
         for key, value in data.items():
@@ -51,14 +51,14 @@ class SecretsBackend(Backend):
             )
         )[0]
 
-    def create(self, data, model):
+    def create(self, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:
         if not model.id_column_name in data:
             raise ValueError(
                 f"You must provide '{model.id_column_name}' when creating a record with the secrets backend"
             )
         return self.update(data[model.id_column_name], data, model)
 
-    def delete(self, id: str) -> bool: # type: ignore
+    def delete(self, id: str, model: clearskies.model.Model) -> bool:  # type: ignore[override]
         """
         Delete the record with the given id.
 
@@ -91,17 +91,17 @@ class SecretsBackend(Backend):
     def _make_folder_path(self, model, id):
         return model.table_name().rstrip("/") + "/" + id.strip("/") + "/"
 
-    def validate_pagination_kwargs(self, kwargs):
-        pass
+    def validate_pagination_data(self, data: dict[str, Any], case_mapping: Callable[[str], str]) -> str:
+        return ""
 
-    def allowed_pagination_keys(self):
+    def allowed_pagination_keys(self) -> list[str]:
         return []
 
-    def documentation_pagination_next_page_response(self, case_mapping):
-        return {}
+    def documentation_pagination_next_page_response(self, case_mapping: Callable) -> list[Any]:
+        return []
 
-    def documentation_pagination_parameters(self, case_mapping):
-        return {}
+    def documentation_pagination_parameters(self, case_mapping: Callable) -> list[tuple[AutoDocSchema, str]]:
+        return []
 
-    def documentation_pagination_next_page_example(self, case_mapping):
+    def documentation_pagination_next_page_example(self, case_mapping: Callable) -> dict[str, Any]:
         return {}
