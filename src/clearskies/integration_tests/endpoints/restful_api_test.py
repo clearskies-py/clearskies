@@ -5,9 +5,10 @@ import clearskies
 from clearskies import columns
 from clearskies.contexts import Context
 from clearskies.validators import Required, Unique
+from clearskies.test_base import TestBase
 
 
-class RestfulApiTest(unittest.TestCase):
+class RestfulApiTest(TestBase):
     def test_overview(self):
         class User(clearskies.Model):
             id_column_name = "id"

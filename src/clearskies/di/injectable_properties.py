@@ -91,7 +91,7 @@ class InjectableProperties:
     ```
     """
 
-    _injectables_loaded: dict[str, bool] = {}
+    _injectables_loaded: str = ""
 
     @classmethod
     def injectable_properties(cls, di: Di):
@@ -102,7 +102,7 @@ class InjectableProperties:
         # Also, keep track of the id of DI.  We use class level caching but tests often use multiple DI containers
         # in one run, which means that we need to re-inject dependencies if we get a new DI container
         cache_name = str(cls) + str(id(di))
-        if cache_name in cls._injectables_loaded:
+        if cache_name == cls._injectables_loaded:
             return
 
         injectable_descriptors: list[Any] = []
@@ -128,4 +128,4 @@ class InjectableProperties:
             if hasattr(attribute, "injectable_properties"):
                 attribute.injectable_properties(di)
 
-        cls._injectables_loaded[cache_name] = True
+        cls._injectables_loaded = cache_name

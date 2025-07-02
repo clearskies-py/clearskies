@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 from typing import Any
 
 import clearskies.typing
 from clearskies import configs, parameters_to_properties
-from clearskies.columns.has_many import HasMany
 from clearskies.column import Column
+from clearskies.columns.has_many import HasMany
 
 
 class Audit(HasMany):

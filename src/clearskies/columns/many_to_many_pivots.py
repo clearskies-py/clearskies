@@ -53,11 +53,11 @@ class ManyToManyPivots(Column):
 
     @property
     def pivot_model(self) -> Model:
-        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True) # type: ignore
+        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True)  # type: ignore
 
     @property
     def related_models(self) -> Model:
-        return self.di.build(self.many_to_many_column.related_model_class, cache=True) # type: ignore
+        return self.di.build(self.many_to_many_column.related_model_class, cache=True)  # type: ignore
 
     @property
     def related_columns(self):
@@ -81,7 +81,7 @@ class ManyToManyPivots(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config: # type: ignore
+        if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
         many_to_many_column = self.many_to_many_column  # type: ignore

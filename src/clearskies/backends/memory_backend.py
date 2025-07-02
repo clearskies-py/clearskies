@@ -151,10 +151,10 @@ class MemoryTable:
                     f"Cannot update record: column '{column_name}' does not exist in table '{self._table_name}'"
                 )
         self._rows[index] = {
-            **self._rows[index], # type: ignore
+            **self._rows[index],  # type: ignore
             **data,
         }
-        return self._rows[index] # type: ignore
+        return self._rows[index]  # type: ignore
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         for column_name in data.keys():
@@ -430,6 +430,10 @@ class MemoryBackend(Backend, InjectableProperties):
     def __init__(self, silent_on_missing_tables=True):
         self.__class__._tables = {}
         self._silent_on_missing_tables = silent_on_missing_tables
+
+    @classmethod
+    def clear_table_cache(cls):
+        cls._tables = {}
 
     def load_default_data(self):
         if self.default_data_loaded:

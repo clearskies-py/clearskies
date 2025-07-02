@@ -1,5 +1,6 @@
 from typing import Any
 
+
 class Response:
     response: Any = None
     formatted_schema: Any = None

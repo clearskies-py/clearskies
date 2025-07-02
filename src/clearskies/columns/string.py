@@ -80,7 +80,7 @@ class String(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config: # type: ignore
+        if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
         if self.name not in instance._data:

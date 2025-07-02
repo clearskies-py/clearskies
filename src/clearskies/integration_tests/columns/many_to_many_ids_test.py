@@ -3,9 +3,10 @@ from unittest.mock import MagicMock, call
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class ManyToManyIdsTest(unittest.TestCase):
+class ManyToManyIdsTest(TestBase):
     def test_default(self):
         class ThingyToWidget(clearskies.Model):
             id_column_name = "id"

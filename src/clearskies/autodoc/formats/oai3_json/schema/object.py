@@ -1,5 +1,6 @@
 from typing import Any
 
+
 class Object:
     def __init__(self, schema, oai3_schema_resolver):
         self.schema = schema

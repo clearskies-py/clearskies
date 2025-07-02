@@ -1,5 +1,6 @@
 from typing import Any
 
+
 class Parameter:
     name: str = ""
     parameter: Any = None

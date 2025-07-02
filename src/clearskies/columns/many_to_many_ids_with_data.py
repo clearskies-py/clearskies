@@ -235,7 +235,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
                         # remove this column from the data - it was used to lookup the right
                         # record, but mostly won't exist in the model, unless we've been instructed
                         # to keep it
-                        if not self._config.get("persist_unique_lookup_column_to_pivot_table"): # type: ignore
+                        if not self._config.get("persist_unique_lookup_column_to_pivot_table"):  # type: ignore
                             del pivot_record[pivot_column]
                         break
             if not related_column_id:

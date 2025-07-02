@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, call
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class TimestampTest(unittest.TestCase):
+class TimestampTest(TestBase):
     def test_default(self):
         class Pet(clearskies.Model):
             id_column_name = "id"

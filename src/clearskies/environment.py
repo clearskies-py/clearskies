@@ -1,5 +1,5 @@
-from typing import Any
 import os.path
+from typing import Any
 
 
 class Environment:
@@ -15,7 +15,7 @@ class Environment:
     is assumed to be a string.
     """
 
-    _env_file_config: dict[str, Any] = None # type: ignore
+    _env_file_config: dict[str, Any] = None  # type: ignore
     _resolved_values: dict[str, Any] = {}
     os_environ: dict[str, Any] = {}
 

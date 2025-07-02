@@ -3,5 +3,5 @@ from clearskies.input_outputs import Cli as CliInputOutput
 
 
 class Cli(Context):
-    def __call__(self): # type: ignore
+    def __call__(self):  # type: ignore
         return self.execute_application(CliInputOutput())

@@ -4,9 +4,10 @@ import unittest
 import clearskies
 from clearskies import columns, validators
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class CreateTest(unittest.TestCase):
+class CreateTest(TestBase):
     def test_overview(self):
         class MyAwesomeModel(clearskies.Model):
             id_column_name = "id"

@@ -1,5 +1,5 @@
-from typing import Any
 import json
+from typing import Any
 
 import clearskies.configs
 import clearskies.di
@@ -99,8 +99,8 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
 
     def validate_jwt(self, raw_jwt):
         try:
-            from jwcrypto import jwk, jws, jwt # type: ignore
-            from jwcrypto.common import JWException # type: ignore
+            from jwcrypto import jwk, jws, jwt  # type: ignore
+            from jwcrypto.common import JWException  # type: ignore
         except:
             raise ValueError(
                 "The JWKS authentication method requires the jwcrypto libraries to be installed.  These are optional dependencies of clearskies, so to include them do a `pip install 'clear-skies[jwcrypto]'`"

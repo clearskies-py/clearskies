@@ -7,7 +7,7 @@ from .. import validator
 
 
 class FakeValidator(validator.Validator):
-    def check(self, data): # type: ignore
+    def check(self, data):  # type: ignore
         pass
 
 

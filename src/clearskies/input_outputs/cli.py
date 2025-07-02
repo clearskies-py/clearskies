@@ -128,7 +128,7 @@ class Cli(InputOutput):
         # so that it can optionally be interpreted as JSON.  If we received a bunch of kwargs though, we'll allow those to
         # only be "read" as JSON.
         if data_source == "kwargs":
-            self._body_as_json = final_data # type: ignore
+            self._body_as_json = final_data  # type: ignore
             self._body_loaded_as_json = True
             self._has_body = True
             self._body = json.dumps(final_data)

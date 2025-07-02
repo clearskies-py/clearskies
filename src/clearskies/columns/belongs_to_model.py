@@ -58,7 +58,7 @@ class BelongsToModel(Column):
             return self  # type:  ignore
 
         # this makes sure we're initialized
-        if "name" not in self._config: # type: ignore
+        if "name" not in self._config:  # type: ignore
             model.get_columns()
 
         belongs_to_column = getattr(model.__class__, self.belongs_to_column_name)

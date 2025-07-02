@@ -3,9 +3,10 @@ import unittest
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class SimpleSearchTest(unittest.TestCase):
+class SimpleSearchTest(TestBase):
     def test_overview(self):
         class Student(clearskies.Model):
             backend = clearskies.backends.MemoryBackend()

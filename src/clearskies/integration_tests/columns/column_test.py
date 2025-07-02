@@ -6,9 +6,10 @@ import dateparser
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class ColumnTest(unittest.TestCase):
+class ColumnTest(TestBase):
     def test_default(self):
         class Widget(clearskies.Model):
             id_column_name = "id"

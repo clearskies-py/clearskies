@@ -40,7 +40,7 @@ class WsgiRef(Context):
         )
         self.port = port
 
-    def __call__(self): # type: ignore
+    def __call__(self):  # type: ignore
         with make_server("", self.port, self.handler) as httpd:
             print(f"Starting WSGI server on port {self.port}.  This is NOT intended for production usage.")
             httpd.serve_forever()
