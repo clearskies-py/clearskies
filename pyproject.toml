@@ -2,7 +2,6 @@
 name = "clear-skies"
 description = "A framework for building backends in the cloud"
 license = "MIT"
-version = "1.22.10"
 dynamic = ["classifiers"]
 readme = "./README.md"
 authors = [{name = "Conor Mancone", email = "cmancone@gmail.com"}]
