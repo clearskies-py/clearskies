@@ -14,14 +14,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch pypi token from Akeyless
-        uses: akeyless-community/akeyless-github-action@v1.0.1
+        uses: LanceMcCarthy/akeyless-action@v4
         id: fetch-secrets
         with:
           access-id: ${{ secrets.AKEYLESS_ACCESS_ID }}
-          access-type: jwt
-          static-secrets: |
-            - name: "/akeyless-github-action/pypi"
-              output-name: "pypi"
+          static-secrets: '{"/pypi":"pypi"}'
       - uses: ./.github/actions/bootstrap-poetry
       - name: Publish
         run: |
