@@ -3,9 +3,10 @@ import unittest
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class ListTest(unittest.TestCase):
+class ListTest(TestBase):
     def test_overview(self):
         class User(clearskies.Model):
             id_column_name = "id"

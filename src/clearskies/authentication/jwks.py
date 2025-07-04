@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import clearskies.configs
@@ -98,8 +99,8 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
 
     def validate_jwt(self, raw_jwt):
         try:
-            from jwcrypto import jwk, jws, jwt
-            from jwcrypto.common import JWException
+            from jwcrypto import jwk, jws, jwt  # type: ignore
+            from jwcrypto.common import JWException  # type: ignore
         except:
             raise ValueError(
                 "The JWKS authentication method requires the jwcrypto libraries to be installed.  These are optional dependencies of clearskies, so to include them do a `pip install 'clear-skies[jwcrypto]'`"
@@ -129,7 +130,7 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
                 raise ClientError("Audience required, but missing in JWT")
             has_match = False
             for audience in jwt_audience:
-                if audience == self._audience:
+                if audience == self.audience:
                     has_match = True
             if not has_match:
                 raise ClientError("Audience does not match")

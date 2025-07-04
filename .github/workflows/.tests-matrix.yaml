@@ -74,7 +74,7 @@ jobs:
         with:
           args: --with dev
 
-      - run: poetry run pytest -v || true
+      - run: poetry run pytest -v
       - run: git diff --exit-code --stat HEAD
         
   black:

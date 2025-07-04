@@ -1,8 +1,11 @@
+from typing import Any
+
+
 class Request:
-    description = None
-    relative_path = None
-    request_methods = None
-    parameters = None
+    description: str = ""
+    relative_path: str = ""
+    request_methods: list[str] = []
+    parameters: list[Any] = []
     responses = None
     root_properties = None
 

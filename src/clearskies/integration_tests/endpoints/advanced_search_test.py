@@ -3,9 +3,10 @@ import unittest
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class AdvancedSearchTest(unittest.TestCase):
+class AdvancedSearchTest(TestBase):
     def test_overview(self):
         class Company(clearskies.Model):
             id_column_name = "id"

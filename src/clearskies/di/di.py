@@ -231,7 +231,7 @@ class Di:
         modules: ModuleType | list[ModuleType] = [],
         bindings: dict[str, Any] = {},
         additional_configs: AdditionalConfig | list[AdditionalConfig] = [],
-        class_overrides: dict[type, type] = {},
+        class_overrides: dict[type, Any] = {},
         overrides: dict[str, type] = {},
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
@@ -601,7 +601,7 @@ class Di:
 
         if name in self._classes or name in self._class_overrides_by_name:
             class_to_build = (
-                self._class_overrides_by_name[name]["class"]
+                self._class_overrides_by_name[name]
                 if name in self._class_overrides_by_name
                 else self._classes[name]["class"]
             )  # type: ignore

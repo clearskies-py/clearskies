@@ -3,9 +3,10 @@ import unittest
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class SimpleSearchTest(unittest.TestCase):
+class SimpleSearchTest(TestBase):
     def test_overview(self):
         class Student(clearskies.Model):
             backend = clearskies.backends.MemoryBackend()
@@ -52,13 +53,13 @@ class SimpleSearchTest(unittest.TestCase):
             {"id": "1-2-3-7", "name": "Bob", "grade": 2},
         ]
 
-        (status_code, response_data, response_headers) = context(query_parameters={"name": "Bob", "grade": 2})
+        (status_code, response_data, response_headers) = context(query_parameters={"name": "Bob", "grade": "2"})
         assert response_data["data"] == [
             {"id": "1-2-3-7", "name": "Bob", "grade": 2},
         ]
 
         (status_code, response_data, response_headers) = context(
-            query_parameters={"sort": "grade", "direction": "desc", "limit": 2}
+            query_parameters={"sort": "grade", "direction": "desc", "limit": "2"}
         )
         assert response_data["data"] == [
             {"id": "1-2-3-4", "name": "Bob", "grade": 5},
@@ -67,7 +68,7 @@ class SimpleSearchTest(unittest.TestCase):
         assert response_data["pagination"] == {"number_results": 4, "limit": 2, "next_page": {"start": 2}}
 
         (status_code, response_data, response_headers) = context(
-            query_parameters={"sort": "grade", "direction": "desc", "limit": 2, "start": 2}
+            query_parameters={"sort": "grade", "direction": "desc", "limit": "2", "start": "2"}
         )
         assert response_data["data"] == [
             {"id": "1-2-3-6", "name": "Greg", "grade": 3},

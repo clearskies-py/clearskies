@@ -5,9 +5,10 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class EndpointTest(unittest.TestCase):
+class EndpointTest(TestBase):
     def test_response_headers(self):
         def custom_headers(query_parameters):
             some_value = "yes" if query_parameters.get("stuff") else "no"
