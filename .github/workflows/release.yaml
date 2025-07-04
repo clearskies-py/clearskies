@@ -1,7 +1,9 @@
 name: Publish
 
-on: push
-
+on:
+  push:
+    tags:
+      - '*'
 jobs:
   publish:
     name: Publish New Version to Pypi
@@ -23,3 +25,6 @@ jobs:
       - name: Publish
         run: |
           echo ${{ github.ref_name }}
+          poetry version ${{ github.ref_name }}
+          poetry build
+          poetry publish --username __token__ --password ${{ steps.fetch-secrets.outputs.pypi }}
