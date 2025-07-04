@@ -1,0 +1,29 @@
+name: Publish
+
+on: push
+
+jobs:
+  publish:
+    name: Publish New Version to Pypi
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Fetch pypi token from Akeyless
+        uses: akeyless-community/akeyless-github-action@v1.0.1
+        id: fetch-secrets
+        with:
+          access-id: ${{ vars.AKEYLESS_ACCESS_ID }}
+          access-type: jwt
+          static-secrets: |
+            - name: "/akeyless-github-action/pypi"
+              output-name: "pypi"
+      - uses: ./.github/actions/bootstrap-poetry
+      - name: Publish
+        run: |
+          poetry build
+          poetry publish --username __token__ --password $(akeyless get-secret-value -n /pypi)
