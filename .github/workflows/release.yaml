@@ -17,7 +17,7 @@ jobs:
         uses: akeyless-community/akeyless-github-action@v1.0.1
         id: fetch-secrets
         with:
-          access-id: ${{ vars.AKEYLESS_ACCESS_ID }}
+          access-id: ${{ secrets.AKEYLESS_ACCESS_ID }}
           access-type: jwt
           static-secrets: |
             - name: "/akeyless-github-action/pypi"
@@ -26,4 +26,4 @@ jobs:
       - name: Publish
         run: |
           poetry build
-          poetry publish --username __token__ --password $(akeyless get-secret-value -n /pypi)
+          poetry publish --username __token__ --password ${{ steps.fetch-secrets.outputs.pypi }}
