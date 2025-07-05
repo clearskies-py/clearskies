@@ -67,7 +67,7 @@ jobs:
     # Use this matrix with multiple jobs defined in a reusable workflow:
     uses: ./.github/workflows/.tests-matrix.yaml
     name: "Python ${{ matrix.python-version }}"
-    f: "!failure()"
+    if: "!failure()"
     needs:
       - changes
       - lockfile

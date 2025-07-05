@@ -16,7 +16,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Fetch pypi token from Akeyless
-        uses: LanceMcCarthy/akeyless-action@v4
+        uses: LanceMcCarthy/akeyless-action@d42e07875b1cc7162afd290722babbaf879a86e6
         id: fetch-secrets
         with:
           access-id: ${{ secrets.AKEYLESS_ACCESS_ID }}
