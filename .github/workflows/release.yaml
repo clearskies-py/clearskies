@@ -24,7 +24,7 @@ jobs:
       - uses: ./.github/actions/bootstrap-poetry
       - name: Publish
         run: |
-          echo ${{ github.ref_name }}
-          poetry version ${{ github.ref_name }}
+          echo 'Building version ${{ github.ref_name }}'
+          sed -i 's/VERSION/${{ github.ref_name }}/' pyproject.toml
           poetry build
           poetry publish --username __token__ --password ${{ steps.fetch-secrets.outputs.pypi }}
