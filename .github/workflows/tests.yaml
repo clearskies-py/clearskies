@@ -19,7 +19,6 @@ jobs:
   changes:
     name: Detect changed files
     runs-on: ubuntu-latest
-    if: false
     outputs:
       project: ${{ steps.changes.outputs.project }}
       fixtures-pypi: ${{ steps.changes.outputs.fixtures-pypi }}
@@ -68,7 +67,7 @@ jobs:
     # Use this matrix with multiple jobs defined in a reusable workflow:
     uses: ./.github/workflows/.tests-matrix.yaml
     name: "Python ${{ matrix.python-version }}"
-    if: false
+    f: "!failure()"
     needs:
       - changes
       - lockfile
