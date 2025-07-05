@@ -1,7 +1,7 @@
 [project]
 name = "clear-skies"
 description = "A framework for building backends in the cloud"
-version = "dev"
+version = "v0.0.0-dev"
 license = "MIT"
 dynamic = ["classifiers"]
 readme = "./README.md"
