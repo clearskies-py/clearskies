@@ -1,8 +1,8 @@
 [project]
 name = "clear-skies"
 description = "A framework for building backends in the cloud"
+version = "v0.0.0-dev"
 license = "MIT"
-version = "1.22.10"
 dynamic = ["classifiers"]
 readme = "./README.md"
 authors = [{name = "Conor Mancone", email = "cmancone@gmail.com"}]
@@ -71,3 +71,5 @@ exclude = [
  ".*_test\\.py$"
 ]
 
+[tool.poetry-git-version-plugin]
+release_type = "tag"
