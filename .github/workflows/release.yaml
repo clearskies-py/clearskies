@@ -25,6 +25,7 @@ jobs:
       - name: Publish
         run: |
           echo 'Building version ${{ github.ref_name }}'
-          sed -i 's/VERSION/${{ github.ref_name }}/' pyproject.toml
+          poetry self add poetry-git-version-plugin
+          poetry git-version
           poetry build
           poetry publish --username __token__ --password ${{ steps.fetch-secrets.outputs.pypi }}
