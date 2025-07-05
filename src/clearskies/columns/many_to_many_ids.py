@@ -251,7 +251,7 @@ class ManyToManyIds(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
         related_id_column_name = self.related_model_class.id_column_name

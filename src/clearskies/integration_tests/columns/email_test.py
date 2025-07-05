@@ -3,9 +3,10 @@ from unittest.mock import MagicMock, call
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class EmailTest(unittest.TestCase):
+class EmailTest(TestBase):
     def test_default(self):
         class MyModel(clearskies.Model):
             backend = clearskies.backends.MemoryBackend()

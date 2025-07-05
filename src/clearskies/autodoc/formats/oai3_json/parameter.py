@@ -1,7 +1,10 @@
+from typing import Any
+
+
 class Parameter:
-    name = None
-    parameter = None
-    required = None
+    name: str = ""
+    parameter: Any = None
+    required: bool = False
     location_map = {
         "url_parameter": "query",
         "header": "header",

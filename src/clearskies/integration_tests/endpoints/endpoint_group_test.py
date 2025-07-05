@@ -5,9 +5,10 @@ import clearskies
 from clearskies import columns
 from clearskies.contexts import Context
 from clearskies.validators import Required, Unique
+from clearskies.test_base import TestBase
 
 
-class EndpointGroupTest(unittest.TestCase):
+class EndpointGroupTest(TestBase):
     def test_overview(self):
         class Company(clearskies.Model):
             id_column_name = "id"

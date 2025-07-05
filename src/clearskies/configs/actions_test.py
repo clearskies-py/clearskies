@@ -7,7 +7,7 @@ from .. import action
 
 
 class FakeAction(action.Action):
-    def __call__(self):
+    def __call__(self):  # type: ignore
         pass
 
 

@@ -45,7 +45,7 @@ class CategoryTreeAncestors(CategoryTreeChildren):
             return self  # type:  ignore
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config:  # type: ignore
             model.get_columns()
 
         return self.relatives(model, find_parents=True, include_all=True)

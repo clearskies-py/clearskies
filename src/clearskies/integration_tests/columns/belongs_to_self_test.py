@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, call
 
 import clearskies
 from clearskies.contexts import Context
+from clearskies.test_base import TestBase
 
 
-class BelongsToSelfTest(unittest.TestCase):
+class BelongsToSelfTest(TestBase):
     def test_basics(self):
         class Category(clearskies.Model):
             id_column_name = "id"

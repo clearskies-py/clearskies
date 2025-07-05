@@ -10,13 +10,13 @@ class MaximumLengthTest(unittest.TestCase):
         self.maximum_length = MaximumLength(10)
 
     def test_check_length(self):
-        error = self.maximum_length.check("model", "name", {"name": "1234567890"})
+        error = self.maximum_length.check("model", "name", {"name": "1234567890"})  # type: ignore
         self.assertEqual("", error)
-        error = self.maximum_length.check("model", "name", {"name": ""})
+        error = self.maximum_length.check("model", "name", {"name": ""})  # type: ignore
         self.assertEqual("", error)
-        error = self.maximum_length.check("model", "name", {})
+        error = self.maximum_length.check("model", "name", {})  # type: ignore
         self.assertEqual("", error)
-        error = self.maximum_length.check("model", "name", {"name": "123456789"})
+        error = self.maximum_length.check("model", "name", {"name": "123456789"})  # type: ignore
         self.assertEqual("", error)
-        error = self.maximum_length.check("model", "name", {"name": "12345678901"})
+        error = self.maximum_length.check("model", "name", {"name": "12345678901"})  # type: ignore
         self.assertEqual("'name' must be at most 10 characters long.", error)

@@ -1,12 +1,14 @@
+from typing import Any
+
 from ...schema import Array, Object
 from .parameter import Parameter
 from .response import Response
 
 
 class Request:
-    formatted_responses = None
-    request = None
-    relative_path = None
+    formatted_responses: Any = None
+    request: Any = None
+    relative_path: str = ""
 
     def __init__(self, oai3_schema_resolver):
         self.oai3_schema_resolver = oai3_schema_resolver

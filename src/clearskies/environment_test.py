@@ -23,7 +23,7 @@ class EnvironmentTest(unittest.TestCase):
 
     def test_get_from_env_resolve_secret(self):
         self.assertEqual("my_secret", self.environment.get("also"))
-        self.secrets.get.assert_called_with("/another/secret/path")
+        self.secrets.get.assert_called_with("/another/secret/path")  # type: ignore
 
     def test_no_crash_for_ints(self):
         self.assertEqual(5, self.environment.get("an_integer"))

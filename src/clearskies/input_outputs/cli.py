@@ -28,7 +28,7 @@ class Cli(InputOutput):
             print(response)
 
     def get_arguments(self):
-        return self._sys.argv
+        return sys.argv
 
     def _parse_args(self, argv):
         tty_data = None
@@ -36,7 +36,7 @@ class Cli(InputOutput):
             tty_data = sys.stdin.read().strip()
 
         request_headers = {}
-        args = []
+        self._args = []
         kwargs = {}
         index = 0
         # In general we will use positional arguments for routing, and kwargs for request data.
@@ -49,7 +49,7 @@ class Cli(InputOutput):
             # if we don't start with a dash then we are a positional argument
             arg = argv[index]
             if arg[0] != "-":
-                self.args.append(arg)
+                self._args.append(arg)
                 continue
 
             # otherwise a kwarg
@@ -128,7 +128,7 @@ class Cli(InputOutput):
         # so that it can optionally be interpreted as JSON.  If we received a bunch of kwargs though, we'll allow those to
         # only be "read" as JSON.
         if data_source == "kwargs":
-            self._body_as_json = final_data
+            self._body_as_json = final_data  # type: ignore
             self._body_loaded_as_json = True
             self._has_body = True
             self._body = json.dumps(final_data)

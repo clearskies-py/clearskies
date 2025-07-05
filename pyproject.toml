@@ -1,8 +1,8 @@
 [project]
 name = "clear-skies"
 description = "A framework for building backends in the cloud"
+version = "v0.0.0-dev"
 license = "MIT"
-version = "1.22.10"
 dynamic = ["classifiers"]
 readme = "./README.md"
 authors = [{name = "Conor Mancone", email = "cmancone@gmail.com"}]
@@ -41,11 +41,11 @@ priority = "primary"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
-mypy = "^1.13.0"
-pre-commit = "^3.2.2"
-pytest = "^8.3.1"
-ruff = "^0.12.0"
-types-dateparser = "^1.2.0.20250601"
+mypy = "^1.16.1"
+pre-commit = "^3.8.0"
+pytest = "^8.4.1"
+ruff = "^0.12.1"
+types-dateparser = "^1.2.2.20250627"
 types-jwcrypto = "^1.5.0.20250516"
 types-pymysql = "^1.1.0.20250516"
 types-requests = "^2.32.4.20250611"
@@ -71,3 +71,5 @@ exclude = [
  ".*_test\\.py$"
 ]
 
+[tool.poetry-git-version-plugin]
+release_type = "tag"

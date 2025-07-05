@@ -444,7 +444,7 @@ class HasMany(Column):
             return self  # type:  ignore
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config:  # type: ignore
             model.get_columns()
 
         foreign_column_name = self.foreign_column_name

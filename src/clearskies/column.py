@@ -745,7 +745,7 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:
+        if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
         if self.name not in instance._data:
