@@ -33,7 +33,7 @@ class Builder:
             return (parts[0], "")
         return (parts[0], parts[1].lstrip(" "))
 
-    def extract_attribute_docs(self, source_class, argument_names):
+    def extract_attribute_docs(self, source_class, argument_names, additional_attribute_sources=[]):
         """
         Fetch the docblocks for class arguments.
 
@@ -88,6 +88,12 @@ class Builder:
         for base_class in source_class.base_classes:
             doc_strings = {
                 **self.extract_attribute_docs(base_class, argument_names),
+                **doc_strings,
+            }
+
+        for additional_source_class in additional_attribute_sources:
+            doc_strings = {
+                **self.extract_attribute_docs(additional_source_class, argument_names),
                 **doc_strings,
             }
 

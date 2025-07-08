@@ -217,11 +217,24 @@ class EndpointGroup(
     The dependency injection container
     """
     di = clearskies.di.inject.Di()
+
+    """
+    The base URL for the endpoint group.
+
+    This URL is added as a prefix to all endpoints attached to the group.  This includes any named URL parameters:
+    """
     url = clearskies.configs.String(default="")
+
+    """
+    The list of endpoints connected to this endpoint group
+    """
+    endpoints = clearskies.configs.EndpointList()
+
     response_headers = clearskies.configs.StringListOrCallable(default=[])
     authentication = clearskies.configs.Authentication(default=Public())
     authorization = clearskies.configs.Authorization(default=Authorization())
     security_headers = clearskies.configs.SecurityHeaders(default=[])
+
     cors_header: SecurityHeader = None  # type: ignore
     has_cors: bool = False
     endpoints_initialized = False

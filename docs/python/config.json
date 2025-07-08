@@ -3,7 +3,7 @@
         {
             "title": "Models",
             "source": "clearskies.Model",
-            "builder": "app.builders.SingleClass",
+            "builder": "app.builders.SingleClassToSection",
             "docs": [
                 {
                     "title": "Querying Records",
@@ -94,6 +94,31 @@
             ]
         },
         {
+            "title": "Endpoints",
+            "source": "clearskies.endpoint.Endpoint",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.endpoints.Callable",
+                "clearskies.endpoints.Create",
+                "clearskies.endpoints.Get",
+                "clearskies.endpoints.Update",
+                "clearskies.endpoints.Delete",
+                "clearskies.endpoints.List",
+                "clearskies.endpoints.SimpleSearch",
+                "clearskies.endpoints.AdvancedSearch",
+                "clearskies.endpoints.RestfulApi",
+                "clearskies.endpoints.HealthCheck"
+            ]
+        },
+        {
+            "title": "Endpoint Groups",
+            "source": "clearskies.EndpointGroup",
+            "builder": "app.builders.SingleClass",
+            "additional_attribute_sources": [
+                "clearskies.endpoint.Endpoint"
+            ]
+        },
+        {
             "title": "Input Validators",
             "source": "clearskies.Validator",
             "builder": "app.builders.Module",
@@ -116,29 +141,6 @@
             ]
         },
         {
-            "title": "Endpoints",
-            "source": "clearskies.endpoint.Endpoint",
-            "builder": "app.builders.Module",
-            "classes": [
-                "clearskies.endpoints.Callable",
-                "clearskies.endpoints.Create",
-                "clearskies.endpoints.Get",
-                "clearskies.endpoints.Update",
-                "clearskies.endpoints.Delete",
-                "clearskies.endpoints.List",
-                "clearskies.endpoints.SimpleSearch",
-                "clearskies.endpoints.AdvancedSearch",
-                "clearskies.endpoints.RestfulApi",
-                "clearskies.endpoints.HealthCheck"
-            ]
-        },
-        {
-            "title": "Endpoint Groups",
-            "source": "clearskies.EndpointGroup",
-            "builder": "app.builders.SingleClass",
-            "docs": []
-        },
-        {
             "title": "Security Headers",
             "source": "clearskies.endpoint.Endpoint",
             "builder": "app.builders.Module",
@@ -147,6 +149,17 @@
                 "clearskies.security_headers.Cors",
                 "clearskies.security_headers.Csp",
                 "clearskies.security_headers.Hsts"
+            ]
+        },
+        {
+            "title": "Authentication",
+            "source": "clearskies.authentication.Authentication",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.authentication.Authorization",
+                "clearskies.authentication.Public",
+                "clearskies.authentication.Jwks",
+                "clearskies.authentication.SecretBearer"
             ]
         }
     ]

@@ -30,7 +30,7 @@ class Module(Builder):
 
             # Find the documentation for all of our init args.
             arguments: dict[str, Any] = OrderedDict()
-            for arg in source_class.init.args:
+            for arg in source_class.init.all_args:
                 if arg == "self":
                     continue
                 arguments[arg] = {

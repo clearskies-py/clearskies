@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 
 
 class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBase):
+    """
+    Authentication!
+    """
     is_public = True
     can_authorize = False
     has_dynamic_credentials = False

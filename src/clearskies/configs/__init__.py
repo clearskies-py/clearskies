@@ -80,6 +80,7 @@ from .config import Config
 from .datetime import Datetime
 from .datetime_or_callable import DatetimeOrCallable
 from .endpoint import Endpoint
+from .endpoint_list import EndpointList
 from .float import Float
 from .float_or_callable import FloatOrCallable
 from .integer import Integer
@@ -126,6 +127,8 @@ __all__ = [
     "Config",
     "Datetime",
     "DatetimeOrCallable",
+    "Endpoint",
+    "EndpointList",
     "Float",
     "FloatOrCallable",
     "Joins",
