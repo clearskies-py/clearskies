@@ -7,7 +7,8 @@ def prepare_doc_space(project_root):
     doc_path = build_path / "docs"
     jekyll_path = project_path / "jekyll"
 
-    shutil.rmtree(doc_path)
+    if doc_path.is_dir():
+        shutil.rmtree(doc_path)
     build_path.mkdir(parents=True, exist_ok=True)
 
     for file in jekyll_path.glob("*"):

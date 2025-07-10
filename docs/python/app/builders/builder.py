@@ -117,3 +117,15 @@ nav_order: {nav_order}
 
     def raw_docblock_to_md(self, docblock):
         return re.sub(r"\n    ", "\n", docblock)
+
+    def default_args(self):
+        default_args = {}
+        for (key, value) in self.args_to_additional_attributes_map.items():
+            parts = value.split(".")
+            import_path = ".".join(parts[:-1])
+            attribute_name = parts[-1]
+            source_class = self.classes.find(f"import_path={import_path}")
+            doc = source_class.attributes.where(f"name={attribute_name}").first().doc
+            if doc:
+                default_args[key] = self.raw_docblock_to_md(doc)
+        return default_args

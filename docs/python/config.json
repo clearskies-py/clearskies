@@ -161,6 +161,45 @@
                 "clearskies.authentication.Jwks",
                 "clearskies.authentication.SecretBearer"
             ]
+        },
+        {
+            "title": "Context",
+            "source": "clearskies.contexts.Context",
+            "builder": "app.builders.Module",
+            "args_to_additional_attributes_map": {
+                "classes": "clearskies.di.Di.add_classes",
+                "modules": "clearskies.di.Di.add_modules",
+                "bindings": "clearskies.di.Di.add_binding",
+                "additional_configs": "clearskies.di.Di.add_additional_configs",
+                "class_overrides": "clearskies.di.Di.add_class_override",
+                "now": "clearskies.di.Di.set_now",
+                "utcnow": "clearskies.di.Di.set_utc_now"
+            },
+            "classes": [
+                "clearskies.contexts.Cli",
+                "clearskies.contexts.Wsgi",
+                "clearskies.contexts.WsgiRef"
+            ]
+        },
+        {
+            "title": "Dependency Injection",
+            "source": "clearskies.di.Di",
+            "builder": "app.builders.SingleClass",
+            "args_to_additional_attributes_map": {
+                "classes": "clearskies.di.Di.add_classes",
+                "modules": "clearskies.di.Di.add_modules",
+                "bindings": "clearskies.di.Di.add_binding",
+                "additional_configs": "clearskies.di.Di.add_additional_configs",
+                "class_overrides": "clearskies.di.Di.add_class_override",
+                "now": "clearskies.di.Di.set_now",
+                "utcnow": "clearskies.di.Di.set_utc_now"
+            }
+        },
+        {
+            "title": "Injectable Properties",
+            "source": "clearskies.di.injectable_properties.InjectableProperties",
+            "builder": "app.builders.SingleClass",
+            "parent": "Dependency Injection"
         }
     ]
 }

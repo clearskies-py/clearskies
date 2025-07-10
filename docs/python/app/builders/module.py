@@ -9,12 +9,15 @@ class Module(Builder):
     def __init__(self, branch, modules, classes, doc_root, nav_order):
         super().__init__(branch, modules, classes, doc_root, nav_order)
         self.class_list = branch["classes"]
+        self.args_to_additional_attributes_map = branch.get("args_to_additional_attributes_map", {})
 
     def build(self):
-        title_snake_case = clearskies.functional.string.title_case_to_snake_case(self.title).replace("_", "-")
+        title_snake_case = clearskies.functional.string.title_case_to_snake_case(self.title.replace(" ", "")).replace("_", "-")
         section_folder_path = self.doc_root / title_snake_case
         source_class = self.classes.find(f"import_path={self.source}")
         self.make_index_from_class_overview(title_snake_case, source_class, section_folder_path)
+
+        default_args = self.default_args()
 
         nav_order = 0
         for class_name in self.class_list:
@@ -35,7 +38,7 @@ class Module(Builder):
                     continue
                 arguments[arg] = {
                     "required": arg not in source_class.init.kwargs,
-                    "doc": "",
+                    "doc": default_args.get(arg, ""),
                 }
 
             # for various reasons, it's easier to extract docs for all the arguments at once:
