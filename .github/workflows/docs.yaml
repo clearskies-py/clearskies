@@ -22,8 +22,8 @@ jobs:
           cd docs/python
           poetry install --no-root
           poetry run python build.py
-          apt update
-          apt-get install -Y ruby ruby-dev
+          sudo apt update
+          sudo apt-get install -Y ruby ruby-dev
           gem install bundler
           cd ../build
           bundle install
