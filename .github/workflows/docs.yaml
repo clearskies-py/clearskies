@@ -20,5 +20,5 @@ jobs:
       - name: Publish
         run: |
           cd docs/python
-          poetry install
+          poetry install --no-root
           poetry run python build.py
