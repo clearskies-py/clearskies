@@ -24,9 +24,9 @@ jobs:
           poetry run python build.py
           sudo apt update
           sudo apt-get install -y ruby ruby-dev
-          gem install bundler
+          sudo gem install bundler
           cd ../build
-          bundle install
-          bundle exec jekyll build
+          sudo bundle install
+          sudo bundle exec jekyll build
           cd _site
           ls
