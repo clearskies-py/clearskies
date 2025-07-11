@@ -23,7 +23,7 @@ jobs:
           poetry install --no-root
           poetry run python build.py
           sudo apt update
-          sudo apt-get install -Y ruby ruby-dev
+          sudo apt-get install -y ruby ruby-dev
           gem install bundler
           cd ../build
           bundle install
