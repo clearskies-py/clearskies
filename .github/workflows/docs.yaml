@@ -1,12 +1,10 @@
 name: Doc Publish
 
-on:
-  push:
-  pull_request:
-  merge_group:
+on: push
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     name: Publish Doc Site to S3
     runs-on: ubuntu-latest
     permissions:
