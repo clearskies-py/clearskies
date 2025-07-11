@@ -1,5 +1,10 @@
 name: Doc Publish
 
+on:
+  push:
+  pull_request:
+  merge_group:
+
 jobs:
   publish:
     name: Publish Doc Site to S3
