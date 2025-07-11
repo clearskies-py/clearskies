@@ -9,6 +9,7 @@ import clearskies.column
 import clearskies.query
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 
+
 class ModuleBackend(clearskies.backends.Backend):
     _search_functions = {
         "id": lambda module, value: id(module) == int(value),
@@ -126,7 +127,9 @@ class ModuleBackend(clearskies.backends.Backend):
     def documentation_pagination_next_page_example(self, case_mapping: Callable[[str], str]) -> dict[str, Any]:
         return {case_mapping("start"): 0}
 
-    def documentation_pagination_parameters(self, case_mapping: Callable[[str], str]) -> list[tuple[AutoDocSchema, str]]:
+    def documentation_pagination_parameters(
+        self, case_mapping: Callable[[str], str]
+    ) -> list[tuple[AutoDocSchema, str]]:
         return [
             (
                 AutoDocInteger(case_mapping("start"), example=0),

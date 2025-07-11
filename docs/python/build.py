@@ -4,7 +4,7 @@ import sys
 
 # this ensures that we will use the version of clearskies currently checked out.
 my_path = pathlib.Path(__file__)
-sys.path.append(str(my_path.parents[2] / 'src'))
+sys.path.append(str(my_path.parents[2] / "src"))
 
 import clearskies
 import app

@@ -6,6 +6,7 @@ import clearskies
 if TYPE_CHECKING:
     from clearskies import Model
 
+
 class Class(clearskies.Column):
     is_writeable = clearskies.configs.boolean.Boolean(default=False)
     _descriptor_config_map = None

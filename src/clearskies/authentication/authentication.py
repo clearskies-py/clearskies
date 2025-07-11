@@ -15,6 +15,7 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
     """
     Authentication!
     """
+
     is_public = True
     can_authorize = False
     has_dynamic_credentials = False

@@ -11,6 +11,7 @@ import clearskies.query
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from app.backends.module_backend import ModuleBackend
 
+
 class AttributeBackend(ModuleBackend):
     _search_functions = {
         "id": lambda attribute, name, value: id(attribute) == int(value),
@@ -73,11 +74,11 @@ class AttributeBackend(ModuleBackend):
             nkwargs = len(argdata.defaults) if argdata.defaults else 0
             npargs = nargs - nkwargs
             all_args = argdata.args
-            kwargs = all_args[nargs-nkwargs:]
+            kwargs = all_args[nargs - nkwargs :]
             args = all_args[:nkwargs]
             defaults = {}
             if argdata.defaults:
-                defaults = {argdata.args[index+npargs]: default for (index, default) in enumerate(argdata.defaults)}
+                defaults = {argdata.args[index + npargs]: default for (index, default) in enumerate(argdata.defaults)}
 
         return {
             "id": id(attribute),

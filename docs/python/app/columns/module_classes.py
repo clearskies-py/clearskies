@@ -7,6 +7,7 @@ import clearskies
 if TYPE_CHECKING:
     from clearskies import Model
 
+
 class ModuleClasses(clearskies.columns.HasMany):
     def __init__(
         self,
@@ -22,7 +23,7 @@ class ModuleClasses(clearskies.columns.HasMany):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self # type:  ignore
+            return self  # type:  ignore
 
         # this makes sure we're initialized
         if "name" not in self._config:

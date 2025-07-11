@@ -6,6 +6,7 @@ from app import models, backends, columns
 from .attribute_reference import AttributeReference
 from .method_reference import MethodReference
 
+
 class Class(clearskies.Model):
     id_column_name = "id"
     backend = backends.ClassBackend()
@@ -19,10 +20,7 @@ class Class(clearskies.Model):
     module = columns.Module()
     base_classes = columns.BaseClasses()
     attributes = columns.Attributes(AttributeReference)
-    methods = columns.Attributes(
-        AttributeReference,
-        filter=lambda attribute: callable(attribute.attribute)
-    )
+    methods = columns.Attributes(AttributeReference, filter=lambda attribute: callable(attribute.attribute))
     init = columns.Attribute(
         MethodReference,
         filter=lambda attribute: attribute.name == "__init__",

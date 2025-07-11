@@ -11,6 +11,7 @@ import clearskies.query
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from app.backends.module_backend import ModuleBackend
 
+
 class ClassBackend(ModuleBackend):
     _search_functions = {
         "id": lambda module, value: id(module) == int(value),
@@ -40,7 +41,9 @@ class ClassBackend(ModuleBackend):
             import_path = query.conditions_by_column["import_path"][0].values[0]
             path_parts = import_path.split(".")
             if len(path_parts) < 2:
-                raise ValueError("In order to search for classes by import path you must provide the module and class name, e.g. `classes.find(\"import_path=clearskies.Endpoint\")`")
+                raise ValueError(
+                    'In order to search for classes by import path you must provide the module and class name, e.g. `classes.find("import_path=clearskies.Endpoint")`'
+                )
             class_name = path_parts[-1]
             module_path = ".".join(path_parts[0:-1])
             module = importlib.import_module(module_path)
@@ -48,11 +51,15 @@ class ClassBackend(ModuleBackend):
                 raise ValueError(f"Module {import_path} has no class named {class_name}")
             Class = getattr(module, class_name)
             if not inspect.isclass(Class):
-                raise ValueError(f"I was asked to import the class named '{import_path}' but this doesn't actually reference a class")
+                raise ValueError(
+                    f"I was asked to import the class named '{import_path}' but this doesn't actually reference a class"
+                )
             return [self.unpack(Class, module)]
 
         if "module" not in query.conditions_by_column:
-            raise ValueError("When searching for classes you must include a condition on either 'module' or 'import_path'")
+            raise ValueError(
+                "When searching for classes you must include a condition on either 'module' or 'import_path'"
+            )
 
         parent_module = query.conditions_by_column["module"][0].values[0]
         matching_classes = []

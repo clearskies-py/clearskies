@@ -22,6 +22,7 @@ class Validator(ABC, configurable.Configurable):
     is only enforced by appropriate endpoints.  If you inject a model into a function of your own and execute
     a save operation with it, validators will **NOT** be checked.
     """
+
     is_unique = False
     is_required = False
 

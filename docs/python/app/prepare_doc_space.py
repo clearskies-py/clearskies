@@ -1,6 +1,7 @@
 import shutil
 import pathlib
 
+
 def prepare_doc_space(project_root):
     project_path = pathlib.Path(project_root)
     build_path = project_path / "build"

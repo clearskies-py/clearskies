@@ -14,11 +14,11 @@ class EndpointList(config.Config):
             raise TypeError(
                 f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to a parameter that requries a list of endpoints."
             )
-        for (index, item) in enumerate(value):
-            if not hasattr(item, "success"):
+        for index, item in enumerate(value):
+            if not hasattr(item, "top_level_authentication_and_authorization"):
                 error_prefix = self._error_prefix(instance)
                 raise TypeError(
-                    f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' for item #{index+1} when all items in the list should be endpoints."
+                    f"{error_prefix} attempt to set a value of type '{item.__class__.__name__}' for item #{index+1} when all items in the list should be instances of clearskies.End."
                 )
         instance._set_config(self, value)
 

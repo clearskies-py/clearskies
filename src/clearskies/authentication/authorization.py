@@ -2,6 +2,7 @@ class Authorization:
     """
     Authorization!
     """
+
     def gate(self, authorization_data, input_output):
         """
         Return True/False to denote if the given user, as represented by the authorization data, should be allowed access.

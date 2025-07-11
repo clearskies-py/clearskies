@@ -20,7 +20,9 @@ class Builder:
         section_folder_path.mkdir(exist_ok=True)
 
         doc = self.build_header(self.title, filename, title_snake_case, None, self.nav_order, True)
-        (elevator_pitch, overview) = self.parse_overview_doc(self.raw_docblock_to_md(source_class.doc).lstrip("\n").lstrip(" "))
+        (elevator_pitch, overview) = self.parse_overview_doc(
+            self.raw_docblock_to_md(source_class.doc).lstrip("\n").lstrip(" ")
+        )
         doc += f"\n\n# {self.title}\n\n{elevator_pitch}\n\n## Overview\n\n{overview}"
 
         output_file = section_folder_path / f"{filename}.md"
@@ -70,7 +72,9 @@ class Builder:
             # so this is both very simple and, hopefully, not prone to failure. The tokenization information that comes back from the
             # parser is surprisingly generic and vague.  However, we are looking for something
             last_string = ""
-            for token_type, token_string, (srow, scol), (erow, ecol), line_content in tokenize.generate_tokens(fp.readline):
+            for token_type, token_string, (srow, scol), (erow, ecol), line_content in tokenize.generate_tokens(
+                fp.readline
+            ):
                 if token_type == tokenize.STRING:
                     last_string = token_string
                     continue
@@ -120,7 +124,7 @@ nav_order: {nav_order}
 
     def default_args(self):
         default_args = {}
-        for (key, value) in self.args_to_additional_attributes_map.items():
+        for key, value in self.args_to_additional_attributes_map.items():
             parts = value.split(".")
             import_path = ".".join(parts[:-1])
             attribute_name = parts[-1]

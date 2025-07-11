@@ -4,6 +4,7 @@ from typing import Any, Self
 import clearskies
 from app import backends, columns
 
+
 class Method(clearskies.Model):
     id_column_name = "id"
     backend = backends.AttributeBackend()

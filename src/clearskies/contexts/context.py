@@ -18,6 +18,7 @@ class Context:
     """
     Context: a flexible way to connect applications to hosting strategies.
     """
+
     di: Di = None  # type: ignore
 
     """
@@ -27,7 +28,7 @@ class Context:
     standard or defined dependencies and should return the desired response.  It can also raise any exception from
     clearskies.exceptions.
     """
-    application: Callable | clearskies.endpoint.Endpoint | clearskies.endpoint_group.EndpointGroup = None # type: ignore
+    application: Callable | clearskies.endpoint.Endpoint | clearskies.endpoint_group.EndpointGroup = None  # type: ignore
 
     def __init__(
         self,

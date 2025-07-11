@@ -21,6 +21,7 @@ class Backend(ABC):
     Of course, not all data sources support all functionality present in the model.  Therefore, you do still need to have
     a fair understanding of how your data sources work.
     """
+
     supports_n_plus_one = False
     can_count = True
 

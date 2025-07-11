@@ -5,6 +5,7 @@ import clearskies
 from app import backends, columns
 from . import class_reference
 
+
 class Module(clearskies.Model):
     id_column_name = "id"
     backend = backends.ModuleBackend()
