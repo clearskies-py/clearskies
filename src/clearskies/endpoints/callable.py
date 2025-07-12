@@ -23,13 +23,13 @@ class Callable(Endpoint):
     """
     An endpoint that executes a user-defined function.
 
-    The Callable endpoint does exactly that - you provide a function that will be called when the endpoin is invoked.  Like
-    all callables invoked by clearskies, you can request any defined depenndency that can be provided by the clearskies
+    The Callable endpoint does exactly that - you provide a function that will be called when the endpoint is invoked.  Like
+    all callables invoked by clearskies, you can request any defined dependency that can be provided by the clearskies
     framework.
 
     Whatever you return will be returned to the client.  By default, the return value is sent along in the `data` parameter
     of the standard clearskies response.  To suppress this behavior, set `return_standard_response` to `False`.  You can also
-    return an model instance, a model query, or a list of model instances and the callable endpoint will automatically return
+    return a model instance, a model query, or a list of model instances and the callable endpoint will automatically return
     the columns specified in `readable_column_names` to the client.
 
     Here's a basic working example:

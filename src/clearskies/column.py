@@ -24,13 +24,10 @@ if TYPE_CHECKING:
 
 class Column(clearskies.configurable.Configurable, clearskies.di.InjectableProperties):
     """
-    The base column.
+    Columns are used to build schemes and enable a variety of levels of automation with clearskies.
 
-    This class (well, the children that extend it) are used to define the columns that exist in a given model class -
-    they help you build your schema.  The column definitions are then used by handlers and other aspects of the
-    clearskies framework to automate things like input validation, front-end/backend-transformations, and more.
-    Many column classes have their own configuration settings, but there are also some common configuration settings
-    defined here.
+    Columns are used to define your schemas in clearskies, especially via models.  The column definitions are then used by endpoints
+    and other aspects of the clearskies framework to automate things like input validation, front-end/backend-transformations, and more.
     """
 
     """

@@ -9,6 +9,19 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
 class Backend(ABC):
+    """
+    Conecting models to their data since 2020!
+
+    The backend system acts as a flexible layer between models and their data sources.  By changing the backend attached to a model,
+    you change where the model fetches and saves data.  This might be a database, an in-memory data store, a dynamodb table,
+    an API, and more.  This allows you to interact with a variety of data sources with the models acting as a standardized API.
+    Since endpoints also rely on the models for their functionality, this means that you can easily build API endpoints and
+    more for a variety of data sources with a minimal amount of code.
+
+    Of course, not all data sources support all functionality present in the model.  Therefore, you do still need to have
+    a fair understanding of how your data sources work.
+    """
+
     supports_n_plus_one = False
     can_count = True
 

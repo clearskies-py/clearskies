@@ -12,5 +12,9 @@ from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class Wsgi(Context):
+    """
+    Connect your application to a WSGI server.
+    """
+
     def __call__(self, env, start_response):  # type: ignore
         return self.execute_application(WsgiInputOutput(env, start_response))

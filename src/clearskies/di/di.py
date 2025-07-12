@@ -23,7 +23,7 @@ class Di:
     Build a dependency injection object.
 
     The dependency injection (DI) container is a key part of clearskies, so understanding how to both configure
-    them and get dependencies for your classes is important.  Note however that there you don't often have
+    them and get dependencies for your classes is important.  Note however that you don't often have
     to interact with the dependency injection container directly.  All of the configuration options for
     the DI container are also available to all the contexts, which is typically how you will build clearskies
     applications.  So, while you can create a DI container and use it directly, typically you'll just follow

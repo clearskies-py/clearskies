@@ -10,8 +10,13 @@ from clearskies.security_headers.cors import Cors
 
 
 class Jwks(Authentication, clearskies.di.InjectableProperties):
-    """The URL where the JWKS can be found."""
+    """
+    Validate a JWT against a JWKS (JSON Web Key Set)
+    """
 
+    """
+    The URL of the JWKS
+    """
     jwks_url = clearskies.configs.String(required=True)
 
     """

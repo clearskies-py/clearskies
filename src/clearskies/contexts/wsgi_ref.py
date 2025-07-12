@@ -12,6 +12,10 @@ from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class WsgiRef(Context):
+    """
+    Use a built in WSGI server (for development purposes only).
+    """
+
     port: int = 8080
 
     def __init__(

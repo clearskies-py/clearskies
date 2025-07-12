@@ -10,7 +10,7 @@ requires-python = '>=3.11,<4.0'
 dependencies = ['dateparser (>=1.1.8,<2.0.0)', 'requests (>=2.31.0,<3.0.0)', 'typing-extensions (>=4.12.0,<5.0.0) ; python_version >= "3.10" and python_version < "3.11"', 'wrapt (>=1.16.0,<2.0.0)']
 
 [project.urls]
-repository = "https://github.com/cmancone/clearskies"
+repository = "https://github.com/clearskies-py/clearskies"
 
 [project.optional-dependencies]
 secrets = ['akeyless (>=4.0.0,<5.0.0)', 'akeyless-cloud-id (>=0.2.3,<0.3.0)']

@@ -1,0 +1,205 @@
+{
+    "tree": [
+        {
+            "title": "Models",
+            "source": "clearskies.Model",
+            "builder": "app.builders.SingleClassToSection",
+            "docs": [
+                {
+                    "title": "Querying Records",
+                    "attributes": [
+                        "where",
+                        "find",
+                        "first",
+                        "sort_by",
+                        "limit",
+                        "pagination",
+                        "paginate_all",
+                        "join",
+                        "group_by",
+                        "select",
+                        "select_all",
+                        "has_query",
+                        "as_query"
+                    ]
+                },
+                {
+                    "title": "Modifying Records",
+                    "attributes": [
+                        "create",
+                        "delete",
+                        "empty",
+                        "model",
+                        "is_changing",
+                        "was_changed",
+                        "latest",
+                        "previous_value",
+                        "post_save",
+                        "pre_save",
+                        "save_finished",
+                        "where_for_request"
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Backends",
+            "source": "clearskies.backends.Backend",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.backends.CursorBackend",
+                "clearskies.backends.MemoryBackend",
+                "clearskies.backends.ApiBackend"
+            ]
+        },
+        {
+            "title": "Columns",
+            "source": "clearskies.Column",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.columns.Audit",
+                "clearskies.columns.BelongsToId",
+                "clearskies.columns.BelongsToModel",
+                "clearskies.columns.BelongsToSelf",
+                "clearskies.columns.Boolean",
+                "clearskies.columns.CategoryTreeAncestors",
+                "clearskies.columns.CategoryTreeChildren",
+                "clearskies.columns.CategoryTreeDescendants",
+                "clearskies.columns.CategoryTree",
+                "clearskies.columns.CreatedByAuthorizationData",
+                "clearskies.columns.CreatedByHeader",
+                "clearskies.columns.CreatedByIp",
+                "clearskies.columns.CreatedByRoutingData",
+                "clearskies.columns.CreatedByUserAgent",
+                "clearskies.columns.Created",
+                "clearskies.columns.Date",
+                "clearskies.columns.Datetime",
+                "clearskies.columns.Email",
+                "clearskies.columns.Float",
+                "clearskies.columns.HasMany",
+                "clearskies.columns.HasManySelf",
+                "clearskies.columns.HasOne",
+                "clearskies.columns.Integer",
+                "clearskies.columns.Json",
+                "clearskies.columns.ManyToManyIds",
+                "clearskies.columns.ManyToManyIdsWithData",
+                "clearskies.columns.ManyToManyModels",
+                "clearskies.columns.ManyToManyPivots",
+                "clearskies.columns.Phone",
+                "clearskies.columns.Select",
+                "clearskies.columns.String",
+                "clearskies.columns.Timestamp",
+                "clearskies.columns.Updated",
+                "clearskies.columns.Uuid"
+            ]
+        },
+        {
+            "title": "Endpoints",
+            "source": "clearskies.endpoint.Endpoint",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.endpoints.Callable",
+                "clearskies.endpoints.Create",
+                "clearskies.endpoints.Get",
+                "clearskies.endpoints.Update",
+                "clearskies.endpoints.Delete",
+                "clearskies.endpoints.List",
+                "clearskies.endpoints.SimpleSearch",
+                "clearskies.endpoints.AdvancedSearch",
+                "clearskies.endpoints.RestfulApi",
+                "clearskies.endpoints.HealthCheck"
+            ]
+        },
+        {
+            "title": "Endpoint Groups",
+            "source": "clearskies.EndpointGroup",
+            "builder": "app.builders.SingleClass",
+            "additional_attribute_sources": [
+                "clearskies.endpoint.Endpoint"
+            ]
+        },
+        {
+            "title": "Input Validators",
+            "source": "clearskies.Validator",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.validators.AfterColumn",
+                "clearskies.validators.BeforeColumn",
+                "clearskies.validators.InTheFutureAtLeast",
+                "clearskies.validators.InTheFutureAtMost",
+                "clearskies.validators.InTheFuture",
+                "clearskies.validators.InThePastAtLeast",
+                "clearskies.validators.InThePastAtMost",
+                "clearskies.validators.InThePast",
+                "clearskies.validators.MinimumLength",
+                "clearskies.validators.MaximumLength",
+                "clearskies.validators.MinimumValue",
+                "clearskies.validators.MaximumValue",
+                "clearskies.validators.Required",
+                "clearskies.validators.Timedelta",
+                "clearskies.validators.Unique"
+            ]
+        },
+        {
+            "title": "Security Headers",
+            "source": "clearskies.endpoint.Endpoint",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.security_headers.CacheControl",
+                "clearskies.security_headers.Cors",
+                "clearskies.security_headers.Csp",
+                "clearskies.security_headers.Hsts"
+            ]
+        },
+        {
+            "title": "Authentication",
+            "source": "clearskies.authentication.Authentication",
+            "builder": "app.builders.Module",
+            "classes": [
+                "clearskies.authentication.Authorization",
+                "clearskies.authentication.Public",
+                "clearskies.authentication.Jwks",
+                "clearskies.authentication.SecretBearer"
+            ]
+        },
+        {
+            "title": "Context",
+            "source": "clearskies.contexts.Context",
+            "builder": "app.builders.Module",
+            "args_to_additional_attributes_map": {
+                "classes": "clearskies.di.Di.add_classes",
+                "modules": "clearskies.di.Di.add_modules",
+                "bindings": "clearskies.di.Di.add_binding",
+                "additional_configs": "clearskies.di.Di.add_additional_configs",
+                "class_overrides": "clearskies.di.Di.add_class_override",
+                "now": "clearskies.di.Di.set_now",
+                "utcnow": "clearskies.di.Di.set_utc_now"
+            },
+            "classes": [
+                "clearskies.contexts.Cli",
+                "clearskies.contexts.Wsgi",
+                "clearskies.contexts.WsgiRef"
+            ]
+        },
+        {
+            "title": "Dependency Injection",
+            "source": "clearskies.di.Di",
+            "builder": "app.builders.SingleClass",
+            "args_to_additional_attributes_map": {
+                "classes": "clearskies.di.Di.add_classes",
+                "modules": "clearskies.di.Di.add_modules",
+                "bindings": "clearskies.di.Di.add_binding",
+                "additional_configs": "clearskies.di.Di.add_additional_configs",
+                "class_overrides": "clearskies.di.Di.add_class_override",
+                "now": "clearskies.di.Di.set_now",
+                "utcnow": "clearskies.di.Di.set_utc_now"
+            }
+        },
+        {
+            "title": "Injectable Properties",
+            "source": "clearskies.di.injectable_properties.InjectableProperties",
+            "builder": "app.builders.SingleClass",
+            "parent": "Dependency Injection"
+        }
+    ]
+}

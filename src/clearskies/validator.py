@@ -11,6 +11,18 @@ if TYPE_CHECKING:
 
 
 class Validator(ABC, configurable.Configurable):
+    """
+    Attach input validation rules to columns!
+
+    The validators provide a way to attach input validation logic to columns.  The columns themselves already
+    provide basic validation (making sure strings are strings, integers are integers, etc...) but these classes
+    allow for more detailed rules.
+
+    It's important to understand that validators only apply to client input, which means that input validation
+    is only enforced by appropriate endpoints.  If you inject a model into a function of your own and execute
+    a save operation with it, validators will **NOT** be checked.
+    """
+
     is_unique = False
     is_required = False
 

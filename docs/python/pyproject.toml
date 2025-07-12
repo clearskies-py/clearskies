@@ -1,0 +1,20 @@
+[project]
+name = "docs-builder"
+version = "0.1.0"
+description = "Doc site builder for clearskies.info"
+authors = [
+    {name = "Conor Mancone",email = "cmancone@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests (>=2.32.4,<3.0.0)",
+    "wrapt (>=1.17.2,<2.0.0)",
+    "dateparser (>=1.2.2,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
