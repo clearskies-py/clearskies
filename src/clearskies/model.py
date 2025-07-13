@@ -759,11 +759,96 @@ class Model(Schema, InjectableProperties):
         return self.with_query(self.get_query().set_sort(sort, secondary_sort))
 
     def limit(self: Self, limit: int) -> Self:
-        """Set the number of records to return."""
+        """
+        Set the number of records to return.
+
+        ```
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.limit(2)
+
+        cli = clearskies.contexts.Cli(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        cli()
+        ```
+        """
         self.no_single_model()
         return self.with_query(self.get_query().set_limit(limit))
 
     def pagination(self: Self, **pagination_data) -> Self:
+        """
+        Set the pagination parameter(s) for the query.
+
+        The exact details of how pagination work depend on the backend.  For instance, the cursor and memory backend
+        expect to be given a `start` parameter, while an API backend will vary with the API, and the dynamodb backend
+        expects a kwarg called `cursor`.  As a result, it's necessary to check the backend documentation to understand
+        how to properly set pagination.  The endpoints automatically account for this because backends are required
+        to declare pagination details via the `allowed_pagination_keys` method.  If you attempt to set invalid
+        pagination data via this method, clearskies will raise a ValueError.
+
+        Example:
+        ```
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.sort_by("total", "asc").pagination(start=2)
+
+        cli = clearskies.contexts.Cli(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        cli()
+        ```
+
+        However, if the return line in `my_application` is switched for either of these:
+
+        ```
+        return orders.sort_by("total", "asc").pagination(start="asdf")
+        return orders.sort_by("total", "asc").pagination(something_else=5)
+        ```
+
+        Will result in an exception that explains exactly what is wrong.
+
+        """
         self.no_single_model()
         error = self.backend.validate_pagination_data(pagination_data, str)
         if error:
@@ -834,13 +919,48 @@ class Model(Schema, InjectableProperties):
         """
         Loop through all available pages of results and returns a list of all models that match the query.
 
+        If you don't set a limit on a query, some backends will return all records but some backends have a
+        default maximum number of results that they will return.  In the latter case, you can use `paginate_all`
+        to fetch all records by instructing clearskies to iterate over all pages.  This is possible because backends
+        are required to define how pagination works in a way that clearskies can automatically understand and
+        use.  To demonstrate this, the following example sets a limit of 1 which stops the memory backend
+        from returning everything, and then uses `paginate_all` to fetch all records.  The memory backend
+        doesn't have a default limit, so in practice the `paginate_all` is unnecessary here, but this is done
+        for demonstration purposes.
+
+        ```
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.limit(1).paginate_all()
+
+        cli = clearskies.contexts.Cli(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        cli()
+        ```
+
         NOTE: this loads up all records in memory before returning (e.g. it isn't using generators yet), so
         expect delays for large record sets.
-
-        ```python
-        for model in models.where("column=value").paginate_all():
-            print(model.id)
-        ```
         """
         self.no_single_model()
         next_models = self.with_query(self.get_query())

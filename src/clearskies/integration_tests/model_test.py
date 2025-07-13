@@ -1,6 +1,7 @@
 import datetime
 import unittest
 from unittest.mock import MagicMock, call
+from pytest import raises
 
 import clearskies
 from clearskies.contexts import Context
@@ -177,3 +178,107 @@ class ModelTest(TestBase):
             {"user_id": "Bob", "total": 26},
             {"user_id": "Bob", "total": 25},
         ]
+
+    def test_limit(self):
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.limit(2)
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        (status_code, response, response_headers) = context()
+        assert len(response["data"]) == 2
+        assert response["pagination"]["limit"] == 2
+
+    def test_pagination(self):
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.sort_by("total", "asc").pagination(start=2)
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        (status_code, response, response_headers) = context()
+        assert response["data"] == [{"user_id": "Bob", "total": 26}, {"user_id": "Alice", "total": 30}]
+
+        with raises(ValueError) as exception:
+            context = clearskies.contexts.Context(
+                lambda orders: orders.pagination(start="asdfer"),
+                classes=[Order]
+            )
+            context()
+        assert "'start' must be a number" in str(exception.value)
+
+        with raises(ValueError) as exception:
+            context = clearskies.contexts.Context(
+                lambda orders: orders.pagination(thingy=10),
+                classes=[Order]
+            )
+            context()
+        assert "'thingy'.  Only 'start' is allowed" in str(exception.value)
+
+    def test_paginate_all(self):
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.limit(1).paginate_all()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        (status_code, response, response_headers) = context()
+        assert len(response["data"]) == 4
