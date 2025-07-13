@@ -26,8 +26,159 @@ class Model(Schema, InjectableProperties):
      3. A destination name (equivalent to a table name for SQL backends)
      4. Columns
 
+    In more detail:
 
+    ### Id Column Name
 
+    clearskies assumes that all models have a column that uniquely identifies each record.  This id column is
+    provided where appropriate in the lifecycle of the model save process to help connect and find related records.
+    It's defined as a simple class attribute called `id_column_name`.  There **MUST** be a column with the same name
+    in the column definitions.  A simple approach to take is to use the Uuid column as an id column.  This will
+    automatically provide a random UUID when the record is first created.  If you are using auto-incrementing integers,
+    you can simply use an `Int` column type and define the column as auto-incrementing in your database.
+
+    ### Backend
+
+    Every model needs a backend, which is an object that extends clearskies.Backend and is attached to the
+    `backend` attribute of the model class.  clearskies comes with a variety of backends in the `clearskies.backends`
+    module that you can use, and you can also define your own or import more from additional packages.
+
+    ### Destination Name
+
+    The destination name is the equivalent of a table name in other frameworks, but the name is more generic to
+    reflect the fact that clearskies is intended to work with a variety of backends - not just SQL databases.
+    The exact meaning of the destination name depends on the backend: for a cursor backend it is in fact used
+    as the table name when fetching/storing records.  For the API backend it is frequently appended to a base
+    URL to reach the corect endpoint.
+
+    This is provided by a class function call `destination_name`.  The base model class declares a generic method
+    for this which takes the class name, converts it from title case to snake case, and makes it plural.  Hence,
+    a model class called `User` will have a default destination name of `users` and a model class of `OrderProduct`
+    will have a default destination name of `order_products`.  Of course, this system isn't pefect: your backend
+    may have a different convention or you may have one of the many words in the english language that are
+    exceptions to the grammatical rules of making words plural.  In this case you can simply extend the method
+    and change it according to your needs, e.g.:
+
+    ```
+    from typing import Self
+    import clearskies
+
+    class Fish(clearskies.Model):
+        @classmethod
+        def destination_name(cls: type[Self]) -> str:
+            return "fish"
+    ```
+
+    ### Columns
+
+    Finally, columns are defined by attaching attributes to your model class that extend clearskies.Column.  A variety
+    are provided by default in the clearskies.columns module, and you can always create more or import them from
+    other packages.
+
+    ### Fetching From the Di Container
+
+    In order to use a model in your application you need to retrieve it from the dependency injection system.  Like
+    everything, you can do this by either the name or with type hinting.  Models do have a special rule for
+    injection-via-name: like all classes their dependency injection name is made by converting the class name from
+    title case to snake case, but they are also available via the pluralized name.  Here's a quick example of all
+    three approaches for dependency injection:
+
+    ```
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+
+    def my_application(user, users, by_type_hint: User):
+        return {
+            "all_are_user_models": isinstance(user, User) and isinstance(users, User) and isinstance(by_type_hint, User)
+        }
+
+    cli = clearskies.contexts.Cli(my_application, classes=[User])
+    cli()
+    ```
+
+    Note that the `User` model class was provided in the `classes` list sent to the context: that's important as it
+    informs the dependency injection system that this is a class we want to provide.  It's common (but not required)
+    to put all models for a clearskies application in their own separate python module and then provide those to
+    the depedency injection system via the `modules` argument to the context.  So you may have a directory structure
+    like this:
+
+    ```
+    ├── app/
+    │   └── models/
+    │       ├── __init__.py
+    │       ├── category.py
+    │       ├── order.py
+    │       ├── product.py
+    │       ├── status.py
+    │       └── user.py
+    └── api.py
+    ```
+
+    Where `__init__.py` imports all the models:
+
+    ```
+    from app.models.category import Category
+    from app.models.order import Order
+    from app.models.proudct import Product
+    from app.models.status import Status
+    from app.models.user import User
+
+    __all__ = ["Category", "Order", "Product", "Status", "User"]
+    ```
+
+    Then in your main application you can just import the whole `models` module into your context:
+
+    ```
+    import app.models
+
+    cli = clearskies.contexts.cli(SomeApplication, modules=[app.models])
+    ```
+
+    ### Adding Dependencies
+
+    The base model class extends `clearskies.di.InjectableProperties` which means that you can inject dependencies into your model
+    using the `di.inject` classes.  Here's an example that demonstrates dependency injection for models:
+
+    ```
+    import datetime
+    import clearskies
+
+    class SomeClass:
+        # Since this will be built by the DI system directly, we can declare dependencies in the __init__
+        def __init__(self, some_date):
+            self.some_date = some_date
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+
+        utcnow = clearskies.di.inject.Utcnow()
+        some_class = clearskies.di.inject.ByClass(SomeClass)
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+
+        def some_date_in_the_past(self):
+            return self.some_class.some_date < self.utcnow
+
+    def my_application(user):
+        return user.some_date_in_the_past()
+
+    cli = clearskies.contexts.Cli(
+        my_application,
+        classes=[User],
+        bindings={
+            "some_date": datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
+        }
+    )
+    cli()
+    ```
     """
 
     _previous_data: dict[str, Any] = {}
@@ -458,24 +609,74 @@ class Model(Schema, InjectableProperties):
 
     def where(self: Self, where: str | Condition) -> Self:
         """
-        Add the given condition to the query.
+        Add a condition to a query.
 
-        This method returns a new object with the updated query.  The original model object is unmodified.
+        The `where` method (in combination with the `find` method) is typically the starting point for query records in
+        a model.  You don't *have* to add a condition to a model in order to fetch records, but of course it's a very
+        common use case.  Conditions in clearskies can be built from the columns or can be constructed as SQL-like
+        string conditions, e.g. `model.where("name=Bob")` or `model.where(model.name.equals("Bob"))`.  The latter
+        provides strict type-checking, while the former does not.  Either way they have the same result.  The list of
+        supported operators for a given column can be seen by checking the `_allowed_search_operators` attribute of the
+        column class.  Most columns accept all allowed operators, which are:
 
-        Conditions should be an SQL-like string of the form [column][operator][value] with an optional table prefix.
-        You can safely inject user input into the value.  The column name will also be checked against the searchable
-        columns for the model class, and an exception will be thrown if the column doesn't exist or is not searchable.
+         - "<=>"
+         - "!="
+         - "<="
+         - ">="
+         - ">"
+         - "<"
+         - "="
+         - "in"
+         - "is not null"
+         - "is null"
+         - "like"
 
-        Multiple conditions are always joined with AND.  There is no explicit option for OR.  The closest is using an
-        IN condition.
+        When working with string conditions, it is safe to inject user input into the condition.  The allowed
+        format for conditions is very simple: `f"{column_name}\\s?{operator}\\s?{value}"`.  This makes it possible to
+        unambiguously separate all three pieces from eachother.  It's not possible to inject malicious payloads into either
+        the column names or operators because both are checked against a strict allow list (e.g. the columns declared in the
+        model or the list of allowed operators above).  The value is then extracted from the leftovers, and this is
+        provided to the backend separately so it can use it appropriately (e.g. using prepared statements for the cursor
+        backend).  Of course, you generally shouldn't have to inject user input into conditions very often because, most
+        often, the various list/search endpoints do this for you, but if you have to do it there are no security
+        concerns.
 
-        Examples:
+        When you call the `where` method it returns a new model object with it's query configured to include the additional
+        condition.  The original model object remains unchanged.  Multiple conditions are always joined with AND.  There is
+        no explicit option for OR.  The closest is using an IN condition.
+
+        To access over the results you have to iterate over the resulting model.  If you are only expecting one result
+        and want to work directly with it, then you can use `model.find(condition)` or `model.where(condition).first()`.
+
+        Example:
         ```python
-        for record in (
-            models.where("order_id=5").where("status IN ('ACTIVE','PENDING')").where("other_table.id=asdf")
-        ):
-            print(record.id)
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Jane", "status": "Pending", "total": 30})
+
+            return [order.user_id for order in orders.where("status=Pending").where(Order.total.greater_than(25))]
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[Order],
+        )
+        cli()
         ```
+
+        Which, if ran, returns: `["Jane"]`
+
         """
         self.no_single_model()
         return self.with_query(self.get_query().add_where(where if isinstance(where, Condition) else Condition(where)))
@@ -515,7 +716,41 @@ class Model(Schema, InjectableProperties):
         secondary_direction: str = "",
         secondary_table_name: str = "",
     ) -> Self:
-        """Add a sort by clause to the query."""
+        """
+        Add a sort by clause to the query.  You can sort by up to two columns at once.
+
+        Example:
+        ```
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
+
+            return orders.sort_by("user_id", "asc", secondary_column_name="total", secondary_direction="desc")
+
+        cli = clearskies.contexts.Cli(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user_id", "total"],
+            ),
+            classes=[Order],
+        )
+        cli()
+        ```
+        """
         self.no_single_model()
         sort = Sort(primary_table_name, primary_column_name, primary_direction)
         secondary_sort = None
@@ -545,8 +780,36 @@ class Model(Schema, InjectableProperties):
         This is just shorthand for `models.where("column=value").find()`.  Example:
 
         ```python
-        model = models.find("column=value")
-        print(model.id)
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Jane", "status": "Pending", "total": 30})
+
+            jane = orders.find("user_id=Jane")
+            jane.total = 35
+            jane.save()
+
+            return {
+                "user_id": jane.user_id,
+                "total": jane.total,
+            }
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[Order],
+        )
+        cli()
         ```
         """
         self.no_single_model()
@@ -618,11 +881,43 @@ class Model(Schema, InjectableProperties):
 
     def first(self: Self) -> Self:
         """
-        Return the first model matching the given query.
+        Return the first model for a given query.
 
-        ```python
-        model = models.where("column=value").sort_by("age", "DESC").first()
-        print(model.id)
+        The `where` method returns an object meant to be iterated over.  If you are expecting your query to return a single
+        record, then you can use first to turn that directly into the matching model so you don't have to iterate over it:
+
+        ```
+        import clearskies
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.String()
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(orders):
+            orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
+            orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
+            orders.create({"user_id": "Jane", "status": "Pending", "total": 30})
+
+            jane = orders.where("status=Pending").where(Order.total.greater_than(25)).first()
+            jane.total = 35
+            jane.save()
+
+            return {
+                "user_id": jane.user_id,
+                "total": jane.total,
+            }
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[Order],
+        )
+        cli()
+
         ```
         """
         self.no_single_model()

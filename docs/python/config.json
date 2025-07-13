@@ -9,8 +9,8 @@
                     "title": "Querying Records",
                     "attributes": [
                         "where",
-                        "find",
                         "first",
+                        "find",
                         "sort_by",
                         "limit",
                         "pagination",
@@ -26,6 +26,7 @@
                 {
                     "title": "Modifying Records",
                     "attributes": [
+                        "save",
                         "create",
                         "delete",
                         "empty",

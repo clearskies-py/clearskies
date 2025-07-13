@@ -648,7 +648,7 @@ class Di:
         its name and type-hint.
         """
         built_value = self.build_class_from_type_hint(argument_name, type_hint, context=context, cache=True)
-        if built_value:
+        if built_value is not None:
             return built_value
         return self.build_from_name(argument_name, context=context, cache=True)
 
