@@ -24,7 +24,8 @@ packages = [
 exclude = [
     "src/clearskies/*_test.py",
     "src/clearskies/**/*_test.py",
-    "src/clearskies/integration_tests/*"
+    "src/clearskies/integration_tests/*",
+    "docs/**"
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -68,7 +69,8 @@ preview = true
 python_version = "3.11"
 
 exclude = [
- ".*_test\\.py$"
+ ".*_test\\.py$",
+ "docs/.*"
 ]
 
 [tool.poetry-git-version-plugin]

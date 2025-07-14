@@ -300,6 +300,7 @@ class Callable(Endpoint):
                     converted_models,
                     number_results=len(response) if response.backend.can_count else None,
                     next_page=response.next_page_data(),
+                    limit=response.get_query().limit,
                 )
 
         # or did they return a list of models?

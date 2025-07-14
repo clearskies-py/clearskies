@@ -99,13 +99,13 @@ class Query:
         """Return the properties of this query as a dictionary so it can be used as kwargs when creating another one."""
         return {
             "model_class": self.model_class,
-            "conditions": self.conditions,
-            "joins": self.joins,
-            "sorts": self.sorts,
+            "conditions": [*self.conditions],
+            "joins": [*self.joins],
+            "sorts": [*self.sorts],
             "limit": self.limit,
             "group_by": self.group_by,
             "pagination": self.pagination,
-            "selects": self.selects,
+            "selects": [*self.selects],
             "select_all": self.select_all,
         }
 
