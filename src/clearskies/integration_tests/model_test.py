@@ -1,7 +1,7 @@
 import datetime
 import unittest
 from unittest.mock import MagicMock, call
-from pytest import raises
+from pytest import raises  # type: ignore
 
 import clearskies
 from clearskies.contexts import Context
@@ -19,7 +19,9 @@ class ModelTest(TestBase):
 
         def my_application(user, users, by_type_hint: User):
             return {
-                "all_are_user_models": isinstance(user, User) and isinstance(users, User) and isinstance(by_type_hint, User)
+                "all_are_user_models": (
+                    isinstance(user, User) and isinstance(users, User) and isinstance(by_type_hint, User)
+                )
             }
 
         context = clearskies.contexts.Context(my_application, classes=[User])
@@ -54,7 +56,7 @@ class ModelTest(TestBase):
             classes=[User],
             bindings={
                 "some_date": datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
-            }
+            },
         )
         (status_code, response, response_headers) = context()
         assert response == True
@@ -239,18 +241,12 @@ class ModelTest(TestBase):
         assert response["data"] == [{"user_id": "Bob", "total": 26}, {"user_id": "Alice", "total": 30}]
 
         with raises(ValueError) as exception:
-            context = clearskies.contexts.Context(
-                lambda orders: orders.pagination(start="asdfer"),
-                classes=[Order]
-            )
+            context = clearskies.contexts.Context(lambda orders: orders.pagination(start="asdfer"), classes=[Order])
             context()
         assert "'start' must be a number" in str(exception.value)
 
         with raises(ValueError) as exception:
-            context = clearskies.contexts.Context(
-                lambda orders: orders.pagination(thingy=10),
-                classes=[Order]
-            )
+            context = clearskies.contexts.Context(lambda orders: orders.pagination(thingy=10), classes=[Order])
             context()
         assert "'thingy'.  Only 'start' is allowed" in str(exception.value)
 
@@ -282,3 +278,57 @@ class ModelTest(TestBase):
         )
         (status_code, response, response_headers) = context()
         assert len(response["data"]) == 4
+
+    def test_join(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.BelongsToId(User, readable_parent_columns=["id", "name"])
+            user = clearskies.columns.BelongsToModel("user_id")
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(users, orders):
+            jane = users.create({"name": "Jane"})
+            another_jane = users.create({"name": "Jane"})
+            bob = users.create({"name": "Bob"})
+
+            # Jane's orders
+            orders.create({"user_id": jane.id, "status": "Pending", "total": 25})
+            orders.create({"user_id": jane.id, "status": "Pending", "total": 30})
+            orders.create({"user_id": jane.id, "status": "In Progress", "total": 35})
+
+            # Another Jane's orders
+            orders.create({"user_id": another_jane.id, "status": "Pending", "total": 15})
+
+            # Bob's orders
+            orders.create({"user_id": bob.id, "status": "Pending", "total": 28})
+            orders.create({"user_id": bob.id, "status": "In Progress", "total": 35})
+
+            # return all orders for anyone named Jane that have a status o Pending
+            return (
+                orders.join("join users on users.id=orders.user_id")
+                .where("users.name=Jane")
+                .sort_by("total", "asc")
+                .where("status=Pending")
+            )
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user", "total"],
+            ),
+            classes=[Order, User],
+        )
+        (status_code, response, response_headers) = context()
+        assert [order["total"] for order in response["data"]] == [15, 25, 30]

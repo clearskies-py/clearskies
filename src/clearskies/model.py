@@ -641,11 +641,14 @@ class Model(Schema, InjectableProperties):
         often, the various list/search endpoints do this for you, but if you have to do it there are no security
         concerns.
 
+        You can include a table name before the column name, with the two separated by a period.  As always, if you do this,
+        ensure that you include a supporting join statement (via the `join` method - see it for examples).
+
         When you call the `where` method it returns a new model object with it's query configured to include the additional
         condition.  The original model object remains unchanged.  Multiple conditions are always joined with AND.  There is
         no explicit option for OR.  The closest is using an IN condition.
 
-        To access over the results you have to iterate over the resulting model.  If you are only expecting one result
+        To access the results you have to iterate over the resulting model.  If you are only expecting one result
         and want to work directly with it, then you can use `model.find(condition)` or `model.where(condition).first()`.
 
         Example:
@@ -682,7 +685,78 @@ class Model(Schema, InjectableProperties):
         return self.with_query(self.get_query().add_where(where if isinstance(where, Condition) else Condition(where)))
 
     def join(self: Self, join: str) -> Self:
-        """Add a join clause to the query."""
+        """
+        Add a join clause to the query.
+
+        As with the `where` method, this expects a string which is parsed accordingly.  The syntax is not as flexible as
+        SQL and expects a format of:
+
+        ```
+        [left|right|inner]? join [right_table_name] ON [right_table_name].[right_column_name]=[left_table_name].[left_column_name].
+        ```
+
+        This is case insensitive.  Aliases are allowed.  If you don't specify a join type it defaults to inner.
+        Here are two examples of valid join statements:
+
+         - `join orders on orders.user_id=users.id`
+         - `left join user_orders as orders on orders.id=users.id`
+
+        Note that joins are not strictly limited to SQL-like backends, but of course no all backends will support joining.
+
+        A basic example:
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            user_id = clearskies.columns.BelongsToId(User, readable_parent_columns=["id", "name"])
+            user = clearskies.columns.BelongsToModel("user_id")
+            status = clearskies.columns.Select(["Pending", "In Progress"])
+            total = clearskies.columns.Float()
+
+        def my_application(users, orders):
+            jane = users.create({"name": "Jane"})
+            another_jane = users.create({"name": "Jane"})
+            bob = users.create({"name": "Bob"})
+
+            # Jane's orders
+            orders.create({"user_id": jane.id, "status": "Pending", "total": 25})
+            orders.create({"user_id": jane.id, "status": "Pending", "total": 30})
+            orders.create({"user_id": jane.id, "status": "In Progress", "total": 35})
+
+            # Another Jane's orders
+            orders.create({"user_id": another_jane.id, "status": "Pending", "total": 15})
+
+            # Bob's orders
+            orders.create({"user_id": bob.id, "status": "Pending", "total": 28})
+            orders.create({"user_id": bob.id, "status": "In Progress", "total": 35})
+
+            # return all orders for anyone named Jane that have a status of Pending
+            return orders.join("join users on users.id=orders.user_id").where("users.name=Jane").sort_by("total", "asc").where("status=Pending")
+
+        cli = clearskies.contexts.Cli(
+            clearskies.endpoints.Callable(
+                my_application,
+                model_class=Order,
+                readable_column_names=["user", "total"],
+            ),
+            classes=[Order, User],
+        )
+        cli()
+
+        ```
+        """
         self.no_single_model()
         return self.with_query(self.get_query().add_join(Join(join)))
 
