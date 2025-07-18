@@ -87,6 +87,10 @@ class ManyToManyModels(Column):
         return self.many_to_many_column.get_related_models(instance)  # type: ignore
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         # we allow a list of models or a model, but if it's a model it may represent a single record or a query.
         # if it's a single record then we want to wrap it in a list so we can iterate over it.
         if hasattr(value, "_data") and value._data:

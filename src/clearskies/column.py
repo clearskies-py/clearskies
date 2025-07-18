@@ -757,6 +757,10 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
         return instance._transformed_data[self.name]
 
     def __set__(self, instance: Model, value) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def finalize_and_validate_configuration(self):

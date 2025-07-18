@@ -263,29 +263,136 @@ class Model(Schema, InjectableProperties):
 
     def save(self: Self, data: dict[str, Any] | None = None, columns: dict[str, Column] = {}, no_data=False) -> bool:
         """
-        Save data to the database and update the model.
-
-        Executes an update if the model corresponds to a record already, or an insert if not.
+        Save data to the database and create/update the underlying record.
 
         There are two supported flows.  One is to pass in a dictionary of data to save:
 
         ```python
-        model.save({
-            "some_column": "New Value",
-            "another_column": 5,
-        })
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+            user.save({
+                "name": "Awesome Person",
+            })
+            return {"id": user.id, "name": user.name}
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
         ```
 
         And the other is to set new values on the columns attributes and then call save without data:
 
         ```python
-        model.some_column = "New Value"
-        model.another_column = 5
-        model.save()
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+            user.name = "Awesome Person"
+            user.save()
+            return {"id": user.id, "name": user.name}
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
         ```
 
-        You cannot combine these methods.  If you set a value on a column attribute and also pass
-        in a dictionary of data to the save, then an exception will be raised.
+        The primray difference is that setting attributes provides strict type checking capabilities, while passing a
+        dictionary can be done in one line.  Note that you cannot combine these methods: if you set a value on a
+        column attribute and also pass in a dictionary of data to the save, then an exception will be raised.
+        In either case the save operation acts in place  on the model object.  The return value is always True - in
+        the event of an error an exception will be raised.
+
+        If a record already exists in the model being saved, then an update operation will be executed.  Otherwise,
+        a new record will be inserted.  To understand the difference yourself, you can convert a model to a boolean
+        value - it will return True if a record has been loaded and false otherwise.  You can see that with this
+        example, where all the `if` statements will evaluate to `True`:
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+
+            if not user:
+                print("We will execute a create operation")
+
+            user.save({"name": "Test One"})
+            new_id = user.id
+
+            if user:
+                print("We will execute an update operation")
+
+            user.save({"name": "Test Two"})
+
+            final_id = user.id
+
+            if new_id == final_id:
+                print("The id did not chnage because the second save performed an update")
+
+            return {"id": user.id, "name": user.name}
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
+        ```
+
+        occassionaly, you may want to execute a save operation without actually providing any data.  This may happen,
+        for instance, if you want to create a record in the database that will be filled in later, and so just need
+        an auto-generated id.  By default if you call save without setting attributes on the model and without
+        providing data to the `save` call, this will raise an exception, but you can make this happen with the
+        `no_data` kwarg:
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+            # create a record with just an id
+            user.save(no_data=True)
+
+            # and now we can set the name
+            user.save({"name": "Test"})
+
+            return {"id": user.id, "name": user.name}
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
+        ```
         """
         self.no_queries()
         if not data and not self._next_data and not no_data:
@@ -398,7 +505,46 @@ class Model(Schema, InjectableProperties):
         return getattr(self.__class__, key).transform(self._previous_data.get(key))
 
     def delete(self: Self, except_if_not_exists=True) -> bool:
-        """Delete a record."""
+        """
+        Delete a record.
+
+        If you try to delete a record that doesn't exist, an exception will be thrown unless you set
+        `except_if_not_exists=False`.  After the record is deleted from the backend, the model instance
+        is left unchanged and can be used to fetch the data previously stored.  In the following example
+        both statements will be printed and the id and name in the "Alice" record will be returned,
+        even though the record no longer exists:
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            alice = users.create({"name": "Alice"})
+
+            if users.find("name=Alice"):
+                print("Alice exists")
+
+            alice.delete()
+
+            if not users.find("name=Alice"):
+                print("No more Alice")
+
+            return {"id": alice.id, "name": alice.name}
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
+
+        ```
+        """
         self.no_queries()
         if not self:
             if except_if_not_exists:
@@ -528,7 +674,63 @@ class Model(Schema, InjectableProperties):
     ### From here down is functionality related to list/search ###
     ##############################################################
     def has_query(self) -> bool:
-        """Whether or not this model instance represents a query."""
+        """
+        Whether or not this model instance represents a query.
+
+        The model class is used for both querying records and modifying individual records.  As a result, each model class instance
+        keeps track of whether it is being used to query things, or whether it represents an individual record.  This distinction
+        is not usually very important to the developer (because there's no good reason to use one model for both), but it may
+        occassionaly be useful to tell how a given model is being used.  Clearskies itself does use this to ensure that you
+        can't accidentally use a single model instance for both purposes, mostly because when this happens it's usually a sign
+        of a bug.
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+            jane_instance_has_query = jane.has_query()
+
+            some_search = users.where("name=Jane")
+            some_search_has_query = some_search.has_query()
+
+            invalid_request_error = ""
+            try:
+                some_search.save({"not": "valid"})
+            except ValueError as e:
+                invalid_request_error = str(e)
+
+            return {
+                "jane_instance_has_query": jane_instance_has_query,
+                "some_search_has_query": some_search_has_query,
+                "invalid_request_error": invalid_request_error,
+            }
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
+        ```
+
+        Which if you run will return:
+
+        ```
+        {
+            "jane_instance_has_query": false,
+            "some_search_has_query": true,
+            "invalid_request_error": "You attempted to save/read record data for a model being used to make a query.  This is not allowed, as it is typically a sign of a bug in your application code."
+        }
+        ```
+
+        """
         return bool(self._query)
 
     def get_query(self) -> Query:
@@ -777,7 +979,11 @@ class Model(Schema, InjectableProperties):
         return False
 
     def group_by(self: Self, group_by_column_name: str) -> Self:
-        """Add a group by clause to the query."""
+        """
+        Add a group by clause to the query.
+
+        You just provide the name of the column to group by.  Of course, not all backends support a group by clause.
+        """
         self.no_single_model()
         return self.with_query(self.get_query().set_group_by(group_by_column_name))
 
@@ -1067,7 +1273,42 @@ class Model(Schema, InjectableProperties):
         """
         Create a new record in the backend using the information in `data`.
 
-        new_model = models.create({"column": "value"})
+        The `save` method always operates changes the model directly rather than creating a new model instance.
+        Often, when creating a new record, you will need to both create a new (empty) model instance and save
+        data to it.  You can do this via `model.empty().save({"data": "here"})`, and this method provides a simple,
+        unambiguous shortcut to do exactly that.  So, you pass your save data to the `create` method and you will get
+        back a new model:
+
+        ```
+        import clearskies
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+            # let's create a new record
+            user.save({"name": "Alice"})
+
+            # and now use `create` to both create a new record and get a new model instance
+            bob = user.create({"name": "Bob"})
+
+            return {
+                "Alice": user.name,
+                "Bob": bob.name,
+            }
+
+        cli = clearskies.contexts.Cli(
+            my_application,
+            classes=[User],
+        )
+        cli()
+        ```
+
+        Like with `save`, you can set `no_data=True` to create a record without specifying any model data.
         """
         empty = self.model()
         empty.save(data, columns=columns, no_data=no_data)

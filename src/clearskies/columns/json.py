@@ -102,6 +102,10 @@ class Json(Column):
         return super().__get__(instance, cls)
 
     def __set__(self, instance, value: dict[str, Any]) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def from_backend(self, value) -> dict[str, Any] | list[Any] | None:

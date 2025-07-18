@@ -148,6 +148,10 @@ class Timestamp(Datetime):
         return super().__get__(instance, cls)
 
     def __set__(self, instance, value: datetime.datetime) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def input_error_for_value(self, value: str, operator: str | None = None) -> str:

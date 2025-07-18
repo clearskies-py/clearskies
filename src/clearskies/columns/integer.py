@@ -113,6 +113,10 @@ class Integer(Column):
         return None if value is None else int(value)
 
     def __set__(self, instance, value: int) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def from_backend(self, value) -> int | None:

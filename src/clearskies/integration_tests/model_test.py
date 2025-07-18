@@ -332,3 +332,95 @@ class ModelTest(TestBase):
         )
         (status_code, response, response_headers) = context()
         assert [order["total"] for order in response["data"]] == [15, 25, 30]
+
+    def test_has_query(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+            jane_instance_has_query = jane.has_query()
+
+            some_search = users.where("name=Jane")
+            some_search_has_query = some_search.has_query()
+
+            invalid_request_error = ""
+            try:
+                some_search.save({"not": "valid"})
+            except ValueError as e:
+                invalid_request_error = str(e)
+
+            return {
+                "jane_instance_has_query": jane_instance_has_query,
+                "some_search_has_query": some_search_has_query,
+                "invalid_request_error": invalid_request_error,
+            }
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+
+        assert not response["jane_instance_has_query"]
+        assert response["some_search_has_query"]
+        assert "This is not allowed" in response["invalid_request_error"]
+
+    def test_create(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(user):
+            # let's create a new record
+            user.save({"name": "Alice"})
+
+            # and now use `create` to both create a new record and get a new model instance
+            bob = user.create({"name": "Bob"})
+
+            return {
+                "Alice": user.name,
+                "Bob": bob.name,
+            }
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == {"Alice": "Alice", "Bob": "Bob"}
+
+    def test_delete(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            alice = users.create({"name": "Alice"})
+
+            pre_delete_exists = bool(users.find("name=Alice"))
+
+            alice.delete()
+
+            post_delete_exists = not users.find("name=Alice")
+
+            return {"id": alice.id, "name": alice.name, "pre": pre_delete_exists, "post": post_delete_exists}
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response["name"] == "Alice"
+        assert response["pre"] == True
+        assert response["post"] == True

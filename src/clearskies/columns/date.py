@@ -162,6 +162,10 @@ class Date(Datetime):
         return super().__get__(instance, cls)
 
     def __set__(self, instance, value: datetime.datetime | datetime.date) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def equals(self, value: str | datetime.datetime | datetime.date) -> Condition:
