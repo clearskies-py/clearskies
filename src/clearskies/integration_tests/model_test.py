@@ -2,6 +2,7 @@ import datetime
 import unittest
 from unittest.mock import MagicMock, call
 from pytest import raises  # type: ignore
+from typing import Any, Self
 
 import clearskies
 from clearskies.contexts import Context
@@ -424,3 +425,186 @@ class ModelTest(TestBase):
         assert response["name"] == "Alice"
         assert response["pre"] == True
         assert response["post"] == True
+
+    def test_blank(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            alice = users.create({"name": "Alice"})
+
+            if users.find("name=Alice"):
+                print("Alice exists")
+
+            blank = alice.empty()
+
+            if not blank:
+                print("Fresh instance, ready to go")
+
+            return {"alice_id": alice.id, "blank_id": blank.id}
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert len(response["alice_id"]) == 36
+        assert response["blank_id"] == None
+
+    def test_model(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+
+            # This effectively makes a new model instance that points to the jane record in the backend
+            another_jane_object = users.model({"id": jane.id, "name": jane.name})
+            # and we can perform an update operation like usual
+            another_jane_object.save({"name": "Jane Doe"})
+
+            return {"id": another_jane_object.id, "name": another_jane_object.name}
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response["name"] == "Jane Doe"
+
+    def test_was_changed(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            age = clearskies.columns.Integer()
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+            return {
+                "name_changed": jane.was_changed("name"),
+                "age_changed": jane.was_changed("age"),
+            }
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == {"name_changed": True, "age_changed": False}
+
+    def test_previous_data(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+            jane.save({"name": "Jane Doe"})
+            return {"name": jane.name, "previous_name": jane.previous_value("name")}
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == {"name": "Jane Doe", "previous_name": "Jane"}
+
+    def test_pre_save(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            is_anonymous = clearskies.columns.Boolean()
+
+            def pre_save(self: Self, data: dict[str, Any]) -> dict[str, Any]:
+                additional_data = {}
+
+                if self.is_changing("name", data):
+                    additional_data["is_anonymous"] = not bool(data["name"])
+
+                return additional_data
+
+        def my_application(users):
+            jane = users.create({"name": "Jane"})
+            is_anonymous_after_create = jane.is_anonymous
+
+            jane.save({"name":""})
+            is_anonymous_after_first_update = jane.is_anonymous
+
+            jane.save({"name": "Jane Doe"})
+            is_anonymous_after_last_update = jane.is_anonymous
+
+            return {
+                "is_anonymous_after_create": is_anonymous_after_create,
+                "is_anonymous_after_first_update": is_anonymous_after_first_update,
+                "is_anonymous_after_last_update": is_anonymous_after_last_update,
+            }
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == {
+            "is_anonymous_after_create": False,
+            "is_anonymous_after_first_update": True,
+            "is_anonymous_after_last_update": False,
+        }
+
+    def test_post_save(self):
+        class History(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            message = clearskies.columns.String()
+            created_at = clearskies.columns.Created(date_format="%Y-%m-%d %H:%M:%S.%f")
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            histories = clearskies.di.inject.ByClass(History)
+
+            id = clearskies.columns.Uuid()
+            age = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+            def post_save(self: Self, data: dict[str, Any], id: str | int) -> None:
+                if not self.is_changing("age", data):
+                    return
+
+                name = self.latest("name", data)
+                age = self.latest("age", data)
+                self.histories.create({"message": f"My name is {name} and I am {age} years old"})
+
+        def my_application(users, histories):
+            jane = users.create({"name": "Jane"})
+            jane.save({"age": 25})
+            jane.save({"age": 26})
+            jane.save({"age": 30})
+
+            return [history.message for history in histories.sort_by("created_at", "ASC")]
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User, History],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == [
+            "My name is Jane and I am 25 years old", "My name is Jane and I am 26 years old", "My name is Jane and I am 30 years old"
+        ]
