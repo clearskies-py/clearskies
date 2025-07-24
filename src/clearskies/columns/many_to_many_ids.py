@@ -258,6 +258,10 @@ class ManyToManyIds(Column):
         return [getattr(model, related_id_column_name) for model in self.get_related_models(instance)]
 
     def __set__(self, instance, value: list[str | int]) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            instance.get_columns()
+
         instance._next_data[self.name] = value
 
     def get_related_models(self, model: Model) -> Model:

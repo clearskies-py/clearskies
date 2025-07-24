@@ -84,6 +84,10 @@ class BelongsToModel(Column):
         return parent_model.find(f"{parent_id_column_name}={parent_id}")
 
     def __set__(self, model: Model, value: Model) -> None:
+        # this makes sure we're initialized
+        if "name" not in self._config:  # type: ignore
+            model.get_columns()
+
         setattr(model, self.belongs_to_column_name, getattr(value, value.id_column_name))
 
     def pre_save(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
