@@ -495,7 +495,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
         if not self._alternate_secret:
             self._alternate_secret = (
                 self.secrets.get(self.alternate_secret_key)
-                if self.secret_key
+                if self.alternate_secret_key
                 else self.environment.get(self.alternate_environment_key)
             )
         return self._alternate_secret
