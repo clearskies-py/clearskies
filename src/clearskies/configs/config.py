@@ -1,5 +1,8 @@
+from typing import Any
+
+
 class Config:
-    def __init__(self, required=False, default=None):
+    def __init__(self, required: bool = False, default: Any = None):
         self.required = required
         self.default = default
 
