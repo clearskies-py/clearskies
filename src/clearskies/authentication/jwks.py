@@ -2,8 +2,8 @@ import json
 from typing import Any
 
 import clearskies.configs
+import clearskies.decorators
 import clearskies.di
-import clearskies.parameters_to_properties
 from clearskies.authentication.authentication import Authentication
 from clearskies.exceptions import ClientError
 from clearskies.security_headers.cors import Cors
@@ -79,7 +79,7 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
     """
     _jwks_fetched = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         jwks_url: str,

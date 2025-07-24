@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, overload
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.autodoc.schema import Integer as AutoDocInteger
@@ -77,7 +77,7 @@ class Integer(Column):
 
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         default: int | None = None,

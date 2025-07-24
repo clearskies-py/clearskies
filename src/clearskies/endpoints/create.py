@@ -102,7 +102,7 @@ class Create(Endpoint):
      5. We provided an extra column (`not_a_column`) that wasn't in the list of allowed columns.
     """
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

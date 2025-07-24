@@ -1,7 +1,7 @@
 from typing import Callable
 
+import clearskies.decorators
 import clearskies.typing
-from clearskies import parameters_to_properties
 from clearskies.columns.belongs_to_id import BelongsToId
 
 
@@ -69,7 +69,7 @@ class BelongsToSelf(BelongsToId):
 
     _descriptor_config_map = None
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         readable_parent_columns: list[str] = [],

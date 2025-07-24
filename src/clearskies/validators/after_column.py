@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 import dateparser
 
 import clearskies.configs
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ class AfterColumn(Validator):
     """
     allow_equal = clearskies.configs.Boolean(default=False)
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, other_column_name: str, allow_equal: bool = False):
         self.other_column_name = other_column_name
         self.allow_equal = allow_equal

@@ -239,7 +239,7 @@ class EndpointGroup(
     has_cors: bool = False
     endpoints_initialized = False
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         endpoints: list[Endpoint | Self],

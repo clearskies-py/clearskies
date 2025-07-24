@@ -182,7 +182,7 @@ class List(Endpoint):
         "model_class", allow_relationship_references=True
     )
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

@@ -1,5 +1,6 @@
+import clearskies.decorators
 import clearskies.typing
-from clearskies import configs, parameters_to_properties
+from clearskies import configs
 from clearskies.columns.string import String
 
 
@@ -80,7 +81,7 @@ class CreatedByRoutingData(String):
 
     _allowed_search_operators = ["=", "in", "is not null", "is null", "like"]
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         routing_path_name: str,

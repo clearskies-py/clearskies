@@ -44,7 +44,7 @@ class InjectableProperties:
     ```python
     import clearskies
     import time
-    from clearskies import parameters_to_properties
+    import clearskies.decorators
 
 
     class MyOtherThing(clearskies.di.InjectableProperties):
@@ -56,7 +56,7 @@ class InjectableProperties:
         some_number = clearskies.di.inject.ByName("some_number")
         my_other_thing = clearskies.di.inject.ByClass(MyOtherThing)
 
-        @parameters_to_properties
+        @clearskies.decorators.parameters_to_properties
         def __init__(self, my_int: int):
             self.finalize_and_validate_configuration()
 

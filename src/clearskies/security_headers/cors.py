@@ -1,5 +1,5 @@
 import clearskies.configs
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies.security_header import SecurityHeader
 
 
@@ -12,7 +12,7 @@ class Cors(SecurityHeader):
     expose_headers = clearskies.configs.StringList(default=[])
     is_cors = True
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         credentials: bool = False,

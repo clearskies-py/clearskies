@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import MagicMock
-
-from clearskies import Configurable, configs, parameters_to_properties
+import clearskies.decorators
+from clearskies import Configurable, configs
 
 
 class HasConfigs(Configurable):
     my_string = configs.String(default="asdf")
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, my_string=None):
         self.finalize_and_validate_configuration()
 
@@ -15,7 +15,7 @@ class HasConfigs(Configurable):
 class HasConfigsRequired(Configurable):
     my_string = configs.String(required=True)
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, my_string=None):
         self.finalize_and_validate_configuration()
 

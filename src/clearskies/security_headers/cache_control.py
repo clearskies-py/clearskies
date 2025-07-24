@@ -1,5 +1,5 @@
 import clearskies.configs
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies.security_header import SecurityHeader
 
 
@@ -32,7 +32,7 @@ class CacheControl(SecurityHeader):
         "public",
     ]
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         max_age: int | None = None,

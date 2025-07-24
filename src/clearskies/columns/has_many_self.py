@@ -1,5 +1,5 @@
+import clearskies.decorators
 import clearskies.typing
-from clearskies import parameters_to_properties
 from clearskies.columns.has_many import HasMany
 
 
@@ -20,7 +20,7 @@ class HasManySelf(HasMany):
 
     _descriptor_config_map = None
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         foreign_column_name: str | None = None,

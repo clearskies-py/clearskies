@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import clearskies.decorators
 import clearskies.di
-import clearskies.parameters_to_properties
 import clearskies.typing
 from clearskies import configs
 from clearskies.columns.string import String
@@ -65,7 +65,7 @@ class Uuid(String):
 
     uuid = clearskies.di.inject.Uuid()
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         is_readable: bool = True,

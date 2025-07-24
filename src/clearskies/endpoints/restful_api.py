@@ -5,8 +5,8 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
 import clearskies.configs
+import clearskies.decorators
 import clearskies.exceptions
-import clearskies.parameters_to_properties
 from clearskies import authentication, autodoc, typing
 from clearskies.authentication import Authentication, Authorization, Public
 from clearskies.endpoint import Endpoint
@@ -293,7 +293,7 @@ class RestfulApi(EndpointGroup):
     where = clearskies.configs.Conditions(default=[])
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

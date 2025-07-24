@@ -130,7 +130,7 @@ class HealthCheck(Endpoint):
     """
     callables = clearskies.configs.Any(default=[])
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         dependency_injection_names: list[str] = [],

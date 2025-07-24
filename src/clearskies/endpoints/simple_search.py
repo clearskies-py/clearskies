@@ -194,7 +194,7 @@ class SimpleSearch(List):
     ```
     """
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

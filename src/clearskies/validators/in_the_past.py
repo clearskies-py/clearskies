@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 import dateparser
 
 import clearskies.configs
+import clearskies.decorators
 import clearskies.di
-import clearskies.parameters_to_properties
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:

@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
+import clearskies.decorators
 import clearskies.typing
-from clearskies import configs, parameters_to_properties  # type: ignore
+from clearskies import configs
 from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.column import Column
@@ -30,7 +31,7 @@ class ManyToManyPivots(Column):
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         many_to_many_column_name,

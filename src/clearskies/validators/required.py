@@ -4,7 +4,6 @@ import datetime
 from typing import TYPE_CHECKING, Any
 
 import clearskies.configs
-from clearskies import parameters_to_properties
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:

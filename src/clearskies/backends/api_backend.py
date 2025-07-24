@@ -9,9 +9,9 @@ import clearskies.columns.datetime
 import clearskies.columns.json
 import clearskies.configs
 import clearskies.configurable
+import clearskies.decorators
 import clearskies.model
 import clearskies.query
-from clearskies import parameters_to_properties
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -586,7 +586,7 @@ class ApiBackend(clearskies.configurable.Configurable, Backend, InjectableProper
     _auth_injected = False
     _response_to_model_map: dict[str, str] = None  # type: ignore
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         base_url: str,

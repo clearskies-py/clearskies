@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.autodoc.schema import Object as AutoDocObject
@@ -299,7 +299,7 @@ class BelongsToId(String):
     _allowed_search_operators = ["="]
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         parent_model_class,

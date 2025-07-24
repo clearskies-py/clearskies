@@ -1,7 +1,6 @@
 from typing import Any, Callable
 
 import clearskies
-from clearskies import parameters_to_properties
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString

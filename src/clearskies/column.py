@@ -9,9 +9,9 @@ import clearskies.configs.string
 import clearskies.configs.string_or_callable
 import clearskies.configs.validators
 import clearskies.configurable
+import clearskies.decorators
 import clearskies.di
 import clearskies.model
-import clearskies.parameters_to_properties
 import clearskies.typing
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -669,7 +669,7 @@ class Column(clearskies.configurable.Configurable, clearskies.di.InjectablePrope
     """
     auto_doc_class: type[AutoDocSchema] = AutoDocString
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         default: str | None = None,

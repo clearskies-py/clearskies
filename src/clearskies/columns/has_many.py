@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, overload
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -382,7 +382,7 @@ class HasMany(Column):
 
     input_output = InputOutput()
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         child_model_class,
