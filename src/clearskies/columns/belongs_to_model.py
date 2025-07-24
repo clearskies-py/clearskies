@@ -86,7 +86,7 @@ class BelongsToModel(Column):
     def __set__(self, model: Model, value: Model) -> None:
         # this makes sure we're initialized
         if "name" not in self._config:  # type: ignore
-            instance.get_columns()
+            model.get_columns()
 
         setattr(model, self.belongs_to_column_name, getattr(value, value.id_column_name))
 

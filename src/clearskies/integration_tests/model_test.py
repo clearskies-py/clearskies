@@ -495,6 +495,7 @@ class ModelTest(TestBase):
                 "name_changed": jane.was_changed("name"),
                 "age_changed": jane.was_changed("age"),
             }
+
         context = clearskies.contexts.Context(
             my_application,
             classes=[User],
@@ -543,7 +544,7 @@ class ModelTest(TestBase):
             jane = users.create({"name": "Jane"})
             is_anonymous_after_create = jane.is_anonymous
 
-            jane.save({"name":""})
+            jane.save({"name": ""})
             is_anonymous_after_first_update = jane.is_anonymous
 
             jane.save({"name": "Jane Doe"})
@@ -606,5 +607,7 @@ class ModelTest(TestBase):
         )
         (status_code, response, response_headers) = context()
         assert response == [
-            "My name is Jane and I am 25 years old", "My name is Jane and I am 26 years old", "My name is Jane and I am 30 years old"
+            "My name is Jane and I am 25 years old",
+            "My name is Jane and I am 26 years old",
+            "My name is Jane and I am 30 years old",
         ]
