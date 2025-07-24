@@ -5,6 +5,7 @@ from . import (
     columns,
     configs,
     contexts,
+    decorators,
     di,
     endpoints,
     exceptions,
@@ -15,25 +16,21 @@ from . import (
     typing,
     validators,
 )
-from . import parameters_to_properties as parameters_to_properties_module
+from .action import Action
 from .column import Column
 from .configurable import Configurable
 from .end import End  # type: ignore
 from .endpoint import Endpoint
 from .endpoint_group import EndpointGroup
-from .schema import Schema
-
-parameters_to_properties = parameters_to_properties_module.parameters_to_properties
-
-from .action import Action
 from .environment import Environment
 from .model import Model
+from .schema import Schema
 from .security_header import SecurityHeader
 from .validator import Validator
 
 __all__ = [
     "Action",
-    "Authentication",
+    "authentication",
     "autodoc",
     "backends",
     "Column",
@@ -50,7 +47,6 @@ __all__ = [
     "exceptions",
     "functional",
     "Model",
-    "parameters_to_properties",
     "Schema",
     "typing",
     "Validator",
@@ -59,4 +55,5 @@ __all__ = [
     "SecurityHeader",
     "security_headers",
     "validators",
+    "decorators",
 ]

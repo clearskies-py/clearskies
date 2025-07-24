@@ -3,8 +3,8 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
+import clearskies.decorators
 import clearskies.di
-import clearskies.parameters_to_properties
 import clearskies.typing
 from clearskies import configs
 from clearskies.columns.datetime import Datetime
@@ -85,7 +85,7 @@ class Updated(Datetime):
 
     now = clearskies.di.inject.Now()
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         in_utc: bool = True,

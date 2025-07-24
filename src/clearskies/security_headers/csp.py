@@ -1,5 +1,5 @@
 import clearskies.configs
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies.security_header import SecurityHeader
 
 
@@ -51,7 +51,7 @@ class Csp(SecurityHeader):
         "navigate_to",
     ]
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         default_src: str = "",

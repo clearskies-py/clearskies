@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.columns.string import String
@@ -100,7 +100,7 @@ class CreatedByAuthorizationData(String):
 
     _allowed_search_operators = ["=", "in", "is not null", "is null", "like"]
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         authorization_data_key_name: str,

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+import clearskies.decorators
 import clearskies.typing
-from clearskies import configs, parameters_to_properties
+from clearskies import configs
 from clearskies.column import Column
 from clearskies.columns.has_many import HasMany
 
@@ -65,7 +66,7 @@ class Audit(HasMany):
     _descriptor_config_map = None
     _parent_columns: dict[str, Column] | None
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         audit_model_class,

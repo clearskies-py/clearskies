@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 import dateparser  # type: ignore
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
@@ -127,7 +127,7 @@ class Datetime(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d %H:%M:%S",

@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 
-from clearskies import Configurable, configs, parameters_to_properties
+from clearskies import Configurable, configs
+import clearskies.decorators
 
 from .. import action
 
@@ -14,7 +15,7 @@ class FakeAction(action.Action):
 class HasConfigs(Configurable):
     actions = configs.Actions()
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, actions):
         self.finalize_and_validate_configuration()
 

@@ -159,7 +159,7 @@ class Get(Endpoint):
     """
     record_lookup_column_name = clearskies.configs.ReadableModelColumn("model_class", default=None)
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

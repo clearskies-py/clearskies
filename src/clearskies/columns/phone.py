@@ -1,8 +1,9 @@
 import re
 from typing import Any, Callable
 
+import clearskies.decorators
 import clearskies.typing
-from clearskies import configs, parameters_to_properties
+from clearskies import configs
 from clearskies.columns.string import String
 
 
@@ -98,7 +99,7 @@ class Phone(String):
     usa_only = configs.Boolean(default=True)
     _descriptor_config_map = None
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         usa_only: bool = True,

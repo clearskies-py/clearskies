@@ -239,7 +239,7 @@ class Callable(Endpoint):
     """
     return_records = clearskies.configs.Boolean(default=False)
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         to_call: CallableType,

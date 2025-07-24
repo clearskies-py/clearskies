@@ -1,13 +1,14 @@
 import unittest
 from unittest.mock import MagicMock
+import clearskies.decorators
 
-from clearskies import Configurable, configs, parameters_to_properties
+from clearskies import Configurable, configs
 
 
 class HasConfigs(Configurable):
     anything = configs.Any()
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, anything):
         self.finalize_and_validate_configuration()
 

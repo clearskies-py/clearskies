@@ -3,9 +3,10 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
+import clearskies.decorators
 import clearskies.di
 import clearskies.typing
-from clearskies import configs, parameters_to_properties  # type: ignore
+from clearskies import configs
 from clearskies.columns.datetime import Datetime
 
 if TYPE_CHECKING:
@@ -67,7 +68,7 @@ class Created(Datetime):
 
     now = clearskies.di.inject.Now()
 
-    @parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d %H:%M:%S",

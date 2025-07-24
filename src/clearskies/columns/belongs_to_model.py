@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Self, overload
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies import configs
 from clearskies.column import Column
 from clearskies.columns.belongs_to_id import BelongsToId
@@ -22,7 +22,7 @@ class BelongsToModel(Column):
     is_temporary = clearskies.configs.boolean.Boolean(default=True)
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         belongs_to_column_name: str,

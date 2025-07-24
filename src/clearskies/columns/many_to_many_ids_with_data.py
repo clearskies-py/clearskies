@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.columns.many_to_many_ids import ManyToManyIds
@@ -149,7 +149,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
     setable = configs.ListAnyDictOrCallable(default=None)  #  type: ignore
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         related_model_class,

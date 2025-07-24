@@ -1,6 +1,6 @@
 import clearskies.configs
+import clearskies.decorators
 import clearskies.di
-import clearskies.parameters_to_properties
 from clearskies import autodoc
 from clearskies.authentication.authentication import Authentication
 
@@ -460,7 +460,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     _secret: str = None  #  type: ignore
     _alternate_secret: str = None  # type: ignore
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         secret_key: str = "",

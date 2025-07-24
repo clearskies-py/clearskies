@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 import clearskies.typing
 from clearskies import configs
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -173,7 +173,7 @@ class ManyToManyIds(Column):
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         related_model_class,

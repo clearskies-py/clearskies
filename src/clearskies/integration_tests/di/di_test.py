@@ -4,7 +4,8 @@ import unittest
 import requests
 
 import clearskies.configs
-from clearskies import Configurable, parameters_to_properties
+import clearskies.decorators
+from clearskies import Configurable
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
 
 
@@ -195,7 +196,7 @@ class DiTest(unittest.TestCase):
             some_number = inject.ByName("some_number")
             my_other_thing = inject.ByClass(MyOtherThing)
 
-            @parameters_to_properties
+            @clearskies.decorators.parameters_to_properties
             def __init__(self, my_int: int):
                 self.finalize_and_validate_configuration()
 

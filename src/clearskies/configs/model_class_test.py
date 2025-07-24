@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-
-from clearskies import Configurable, Model, configs, parameters_to_properties
+import clearskies.decorators
+from clearskies import Configurable, Model, configs
 
 
 class MyModel(Model):
@@ -11,7 +11,7 @@ class MyModel(Model):
 class HasConfigs(Configurable):
     some_model_class = configs.ModelClass()
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, some_model_class):
         self.finalize_and_validate_configuration()
 

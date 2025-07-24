@@ -1,14 +1,14 @@
 import unittest
 from unittest.mock import MagicMock
 
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies import Configurable, configs
 
 
 class HasConfigs(Configurable):
     my_select_list = configs.SelectList(["asdf", "qwerty", "bob", "jane"], default=["asdf", "bob"])
 
-    @clearskies.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, my_select_list=None):
         self.finalize_and_validate_configuration()
 

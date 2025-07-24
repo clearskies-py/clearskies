@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Callable
 import clearskies.column
 import clearskies.configs
 import clearskies.configurable
+import clearskies.decorators
 import clearskies.di
 import clearskies.end
-import clearskies.parameters_to_properties
 import clearskies.typing
 from clearskies import autodoc, exceptions
 from clearskies.authentication import Authentication, Authorization, Public
@@ -879,7 +879,7 @@ class Endpoint(
     _sortable_columns: dict[str, clearskies.column.Column] = None  # type: ignore
     _as_json_map: dict[str, clearskies.column.Column] = None  # type: ignore
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         url: str = "",

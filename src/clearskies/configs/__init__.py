@@ -56,7 +56,7 @@ class MyConfigurableClass(configs.Configurable):
     age = configs.Integer(required=True)
     property_with_default = configs.String(default="some value")
 
-    @clearskies.parameters_to_properties()
+    @clearskies.decorators()
     def __init__(self, name: str, age: int, optional: string = None):
         self.finalize_and_validate_configuration()
 ```

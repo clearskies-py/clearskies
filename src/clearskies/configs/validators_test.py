@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 
-from clearskies import Configurable, configs, parameters_to_properties
+import clearskies.decorators
+from clearskies import Configurable, configs
 
 from .. import validator
 
@@ -14,7 +15,7 @@ class FakeValidator(validator.Validator):
 class HasConfigs(Configurable):
     validators = configs.Validators()
 
-    @parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, validators):
         self.finalize_and_validate_configuration()
 

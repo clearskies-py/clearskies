@@ -1,5 +1,5 @@
 import clearskies.configs
-import clearskies.parameters_to_properties
+import clearskies.decorators
 from clearskies.security_header import SecurityHeader
 
 
@@ -7,7 +7,7 @@ class Hsts(SecurityHeader):
     max_age = clearskies.configs.Integer(default=31536000)
     include_sub_domains = clearskies.configs.Boolean()
 
-    @clearskies.parameters_to_properties.parameters_to_properties
+    @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
         max_age: int = 31536000,
