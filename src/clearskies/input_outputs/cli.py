@@ -20,12 +20,13 @@ class Cli(InputOutput):
         super().__init__()
 
     def respond(self, response, status_code=200):
-        if status_code != 200:
-            sys.exit(response)
         if type(response) != str:
-            print(json.dumps(response))
+            final = json.dumps(response)
         else:
-            print(response)
+            final = respones
+        if status_code != 200:
+            sys.exit(final)
+        print(final)
 
     def get_arguments(self):
         return sys.argv

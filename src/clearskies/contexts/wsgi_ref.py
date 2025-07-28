@@ -14,6 +14,35 @@ from clearskies.input_outputs import Wsgi as WsgiInputOutput
 class WsgiRef(Context):
     """
     Use a built in WSGI server (for development purposes only).
+
+    This context will launch a built-in HTTP server for you, so you can run applications locally
+    without having to install extra dependencies.  Note that this server is not intended for production
+    usage, so this is best used for simple tests/demonstration purposes.  Unlike the WSGI context, where
+    you define the application handler and invoke the context from inside of it (passing along the
+    environment and start_response variables), in this case you simply directly invoke the context to
+    launch the server.  The default port is 8080:
+
+    ```
+    #!/usr/bin/env python
+    import clearskies
+
+    def hello_world(name):
+        return f"Hello {name}!"
+
+    wsgi = clearskies.contexts.WsgiRef(
+        clearskies.endpoints.Callable(
+            hello_world,
+            url="/hello/:name",
+        )
+    )
+    wsgi()
+    ```
+
+    And to invoke it:
+
+    ```
+    curl 'http://localhost:8080/hello/Friend'
+    ```
     """
 
     port: int = 8080

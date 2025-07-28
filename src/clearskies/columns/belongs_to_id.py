@@ -356,7 +356,7 @@ class BelongsToId(String):
         parent_model = self.parent_model
         matching_parents = parent_model.where(f"{parent_model.id_column_name}={value}")
         matching_parents = self.apply_wheres(matching_parents)
-        matching_parents = matching_parents.where_for_request(
+        matching_parents = matching_parents.where_for_request_all(
             matching_parents,
             self.input_output.routing_data,
             self.input_output.authorization_data,
