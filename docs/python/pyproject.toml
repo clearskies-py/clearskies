@@ -7,14 +7,27 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
+    "dateparser (>=1.2.2,<2.0.0)",
     "requests (>=2.32.4,<3.0.0)",
-    "wrapt (>=1.17.2,<2.0.0)",
-    "dateparser (>=1.2.2,<2.0.0)"
+    "wrapt (>=1.17.2,<2.0.0)"
 ]
 
+[tool.poetry]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pymarkdownlnt = "^0.9.31"
+
+[tool.pymarkdown]
+plugins.md007.enabled = true
+plugins.md007.code_block_line_length = 160
+plugins.md013.line_length = 120
+plugins.md036.enabled = false
+extensions.front-matter.enabled = true
+extensions.front-matter.allow_blank_lines = true

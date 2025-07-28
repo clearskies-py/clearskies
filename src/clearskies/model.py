@@ -59,9 +59,10 @@ class Model(Schema, InjectableProperties):
     exceptions to the grammatical rules of making words plural.  In this case you can simply extend the method
     and change it according to your needs, e.g.:
 
-    ```
+    ```python
     from typing import Self
     import clearskies
+
 
     class Fish(clearskies.Model):
         @classmethod
@@ -83,8 +84,9 @@ class Model(Schema, InjectableProperties):
     title case to snake case, but they are also available via the pluralized name.  Here's a quick example of all
     three approaches for dependency injection:
 
-    ```
+    ```python
     import clearskies
+
 
     class User(clearskies.Model):
         id_column_name = "id"
@@ -93,10 +95,14 @@ class Model(Schema, InjectableProperties):
         id = clearskies.columns.Uuid()
         name = clearskies.columns.String()
 
+
     def my_application(user, users, by_type_hint: User):
         return {
-            "all_are_user_models": isinstance(user, User) and isinstance(users, User) and isinstance(by_type_hint, User)
+            "all_are_user_models": isinstance(user, User)
+            and isinstance(users, User)
+            and isinstance(by_type_hint, User)
         }
+
 
     cli = clearskies.contexts.Cli(my_application, classes=[User])
     cli()
@@ -108,7 +114,7 @@ class Model(Schema, InjectableProperties):
     the depedency injection system via the `modules` argument to the context.  So you may have a directory structure
     like this:
 
-    ```
+    ```text
     ├── app/
     │   └── models/
     │       ├── __init__.py
@@ -122,7 +128,7 @@ class Model(Schema, InjectableProperties):
 
     Where `__init__.py` imports all the models:
 
-    ```
+    ```python
     from app.models.category import Category
     from app.models.order import Order
     from app.models.proudct import Product
@@ -134,7 +140,7 @@ class Model(Schema, InjectableProperties):
 
     Then in your main application you can just import the whole `models` module into your context:
 
-    ```
+    ```python
     import app.models
 
     cli = clearskies.contexts.cli(SomeApplication, modules=[app.models])
@@ -145,14 +151,16 @@ class Model(Schema, InjectableProperties):
     The base model class extends `clearskies.di.InjectableProperties` which means that you can inject dependencies into your model
     using the `di.inject` classes.  Here's an example that demonstrates dependency injection for models:
 
-    ```
+    ```python
     import datetime
     import clearskies
+
 
     class SomeClass:
         # Since this will be built by the DI system directly, we can declare dependencies in the __init__
         def __init__(self, some_date):
             self.some_date = some_date
+
 
     class User(clearskies.Model):
         id_column_name = "id"
@@ -167,15 +175,17 @@ class Model(Schema, InjectableProperties):
         def some_date_in_the_past(self):
             return self.some_class.some_date < self.utcnow
 
+
     def my_application(user):
         return user.some_date_in_the_past()
+
 
     cli = clearskies.contexts.Cli(
         my_application,
         classes=[User],
         bindings={
             "some_date": datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
-        }
+        },
     )
     cli()
     ```
@@ -321,6 +331,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -328,11 +339,13 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(user):
             user.save({
                 "name": "Awesome Person",
             })
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -346,6 +359,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -353,10 +367,12 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(user):
             user.name = "Awesome Person"
             user.save()
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -376,8 +392,9 @@ class Model(Schema, InjectableProperties):
         value - it will return True if a record has been loaded and false otherwise.  You can see that with this
         example, where all the `if` statements will evaluate to `True`:
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -386,8 +403,8 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
-        def my_application(user):
 
+        def my_application(user):
             if not user:
                 print("We will execute a create operation")
 
@@ -406,6 +423,7 @@ class Model(Schema, InjectableProperties):
 
             return {"id": user.id, "name": user.name}
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
@@ -419,8 +437,9 @@ class Model(Schema, InjectableProperties):
         providing data to the `save` call, this will raise an exception, but you can make this happen with the
         `no_data` kwarg:
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -428,6 +447,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(user):
             # create a record with just an id
@@ -437,6 +457,7 @@ class Model(Schema, InjectableProperties):
             user.save({"name": "Test"})
 
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -500,10 +521,10 @@ class Model(Schema, InjectableProperties):
 
         A column is considered to be changing if:
 
-         - During a create operation
-           - It is present in the data array, even if a null value
-         - During an update operation
-           - It is present in the data array and the value is changing
+        - During a create operation
+          - It is present in the data array, even if a null value
+        - During an update operation
+          - It is present in the data array and the value is changing
 
         Note whether or not the value is changing is typically evaluated with a simple `=` comparison,
         but columns can optionally implement their own custom logic.
@@ -513,9 +534,10 @@ class Model(Schema, InjectableProperties):
         (either on the model class itself or in a column).  Here's an examle that extends the `pre_save` hook
         on the model to demonstrate how `is_changing` works:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -536,6 +558,7 @@ class Model(Schema, InjectableProperties):
                     print("Nothing changed")
                 return data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 22})
@@ -543,6 +566,7 @@ class Model(Schema, InjectableProperties):
             jane.save({"name": "Anon", "age": 23})
 
             return {"id": jane.id, "name": jane.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -553,7 +577,7 @@ class Model(Schema, InjectableProperties):
 
         If you run the above example it will print out:
 
-        ```
+        ```shell
         Only my name is changing
         Only my age is changing
         My name and age have changed
@@ -596,9 +620,10 @@ class Model(Schema, InjectableProperties):
         via slightly verbose lines like: `data.get(column_name, getattr(self, column_name))`.  The `latest`
         method is just a substitue for this:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -618,10 +643,12 @@ class Model(Schema, InjectableProperties):
                 print("Latest age: " + str(self.latest("age", data)))
                 return data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 25})
             return {"id": jane.id, "name": jane.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -629,9 +656,10 @@ class Model(Schema, InjectableProperties):
         )
         cli()
         ```
+
         The above example will print:
 
-        ```
+        ```shell
         Create operation in progress!
         Latest name: Jane
         Latest age: None
@@ -641,7 +669,6 @@ class Model(Schema, InjectableProperties):
         ```
 
         e.g. `latest` returns the value in the data array (if present), the value for the column in the model, or None.
-
         """
         self.no_queries()
         if key in data:
@@ -656,8 +683,9 @@ class Model(Schema, InjectableProperties):
         the save prcess while `was_changed` is available after the save has finished.  Otherwise, the logic for
         deciding if a column has changed is identical as for `is_changing`.
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -667,12 +695,14 @@ class Model(Schema, InjectableProperties):
             name = clearskies.columns.String()
             age = clearskies.columns.Integer()
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             return {
                 "name_changed": jane.was_changed("name"),
                 "age_changed": jane.was_changed("age"),
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -710,8 +740,9 @@ class Model(Schema, InjectableProperties):
         """
         Return the value of a column from before the most recent save.
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -720,10 +751,12 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"name": "Jane Doe"})
             return {"name": jane.name, "previous_name": jane.previous_value("name")}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -755,8 +788,9 @@ class Model(Schema, InjectableProperties):
         both statements will be printed and the id and name in the "Alice" record will be returned,
         even though the record no longer exists:
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -764,6 +798,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             alice = users.create({"name": "Alice"})
@@ -778,12 +813,12 @@ class Model(Schema, InjectableProperties):
 
             return {"id": alice.id, "name": alice.name}
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
         )
         cli()
-
         ```
         """
         self.no_queries()
@@ -855,7 +890,7 @@ class Model(Schema, InjectableProperties):
 
     def pre_save(self: Self, data: dict[str, Any]) -> dict[str, Any]:
         """
-        A hook to add additional logic in the pre-save step of the save process.
+        Create a hook to add additional logic in the pre-save step of the save process.
 
         The pre/post/finished steps of the model are directly analogous to the pre/post/finished steps for the columns.
 
@@ -869,9 +904,10 @@ class Model(Schema, InjectableProperties):
 
         An here's an example of using it to set some additional data during a save:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -889,11 +925,12 @@ class Model(Schema, InjectableProperties):
 
                 return additional_data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             is_anonymous_after_create = jane.is_anonymous
 
-            jane.save({"name":""})
+            jane.save({"name": ""})
             is_anonymous_after_first_update = jane.is_anonymous
 
             jane.save({"name": "Jane Doe"})
@@ -904,6 +941,7 @@ class Model(Schema, InjectableProperties):
                 "is_anonymous_after_first_update": is_anonymous_after_first_update,
                 "is_anonymous_after_last_update": is_anonymous_after_last_update,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -923,16 +961,17 @@ class Model(Schema, InjectableProperties):
 
     def post_save(self: Self, data: dict[str, Any], id: str | int) -> None:
         """
-        A hook to add additional logic in the post-save step of the save process.
+        Create a hook to add additional logic in the post-save step of the save process.
 
         It is passed in the data being saved as well as the id of the record.  Keep in mind that the post save
         hook happens after the backend has been updated (but before the model is updated) so if you need to make
         any changes to the backend you must execute another save operation.  Since the backend is already updated,
         the return value from this function is ignored (it should return None):
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
+
 
         class History(clearskies.Model):
             id_column_name = "id"
@@ -941,6 +980,7 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             message = clearskies.columns.String()
             created_at = clearskies.columns.Created(date_format="%Y-%m-%d %H:%M:%S.%f")
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -959,6 +999,7 @@ class Model(Schema, InjectableProperties):
                 age = self.latest("age", data)
                 self.histories.create({"message": f"My name is {name} and I am {age} years old"})
 
+
         def my_application(users, histories):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 25})
@@ -966,6 +1007,7 @@ class Model(Schema, InjectableProperties):
             jane.save({"age": 30})
 
             return [history.message for history in histories.sort_by("created_at", "ASC")]
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -978,7 +1020,7 @@ class Model(Schema, InjectableProperties):
 
     def save_finished(self: Self) -> None:
         """
-        A hook to add additional logicin the save_finished step of the save process.
+        Create a hook to add additional logicin the save_finished step of the save process.
 
         It has no retrun value and is passed no data.  By the time this fires the model has already been
         updated with the new data.  You can decide on the necessary actions using the `was_changed` and
@@ -1031,8 +1073,9 @@ class Model(Schema, InjectableProperties):
         can't accidentally use a single model instance for both purposes, mostly because when this happens it's usually a sign
         of a bug.
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1040,6 +1083,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             jane = users.create({"name": "Jane"})
@@ -1060,6 +1104,7 @@ class Model(Schema, InjectableProperties):
                 "invalid_request_error": invalid_request_error,
             }
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
@@ -1069,14 +1114,13 @@ class Model(Schema, InjectableProperties):
 
         Which if you run will return:
 
-        ```
+        ```json
         {
             "jane_instance_has_query": false,
             "some_search_has_query": true,
-            "invalid_request_error": "You attempted to save/read record data for a model being used to make a query.  This is not allowed, as it is typically a sign of a bug in your application code."
+            "invalid_request_error": "You attempted to save/read record data for a model being used to make a query.  This is not allowed, as it is typically a sign of a bug in your application code.",
         }
         ```
-
         """
         return bool(self._query)
 
@@ -1157,7 +1201,7 @@ class Model(Schema, InjectableProperties):
         return self.with_query(self.get_query().set_select_all(select_all))
 
     def where(self: Self, where: str | Condition) -> Self:
-        """
+        r"""
         Add a condition to a query.
 
         The `where` method (in combination with the `find` method) is typically the starting point for query records in
@@ -1168,17 +1212,17 @@ class Model(Schema, InjectableProperties):
         supported operators for a given column can be seen by checking the `_allowed_search_operators` attribute of the
         column class.  Most columns accept all allowed operators, which are:
 
-         - "<=>"
-         - "!="
-         - "<="
-         - ">="
-         - ">"
-         - "<"
-         - "="
-         - "in"
-         - "is not null"
-         - "is null"
-         - "like"
+        - "<=>"
+        - "!="
+        - "<="
+        - ">="
+        - ">"
+        - "<"
+        - "="
+        - "in"
+        - "is not null"
+        - "is null"
+        - "like"
 
         When working with string conditions, it is safe to inject user input into the condition.  The allowed
         format for conditions is very simple: `f"{column_name}\\s?{operator}\\s?{value}"`.  This makes it possible to
@@ -1200,9 +1244,11 @@ class Model(Schema, InjectableProperties):
         To access the results you have to iterate over the resulting model.  If you are only expecting one result
         and want to work directly with it, then you can use `model.find(condition)` or `model.where(condition).first()`.
 
-        Example:
+        A basic example:
+
         ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1213,12 +1259,17 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
             orders.create({"user_id": "Jane", "status": "Pending", "total": 30})
 
-            return [order.user_id for order in orders.where("status=Pending").where(Order.total.greater_than(25))]
+            return [
+                order.user_id
+                for order in orders.where("status=Pending").where(Order.total.greater_than(25))
+            ]
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1240,21 +1291,21 @@ class Model(Schema, InjectableProperties):
         As with the `where` method, this expects a string which is parsed accordingly.  The syntax is not as flexible as
         SQL and expects a format of:
 
-        ```
+        ```sql
         [left|right|inner]? join [right_table_name] ON [right_table_name].[right_column_name]=[left_table_name].[left_column_name].
         ```
 
         This is case insensitive.  Aliases are allowed.  If you don't specify a join type it defaults to inner.
         Here are two examples of valid join statements:
 
-         - `join orders on orders.user_id=users.id`
-         - `left join user_orders as orders on orders.id=users.id`
+        - `join orders on orders.user_id=users.id`
+        - `left join user_orders as orders on orders.id=users.id`
 
         Note that joins are not strictly limited to SQL-like backends, but of course no all backends will support joining.
 
         A basic example:
 
-        ```
+        ```python
         import clearskies
 
         class User(clearskies.Model):
@@ -1346,9 +1397,11 @@ class Model(Schema, InjectableProperties):
         """
         Add a sort by clause to the query.  You can sort by up to two columns at once.
 
-        Example:
-        ```
+        An example
+
+        ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1359,13 +1412,17 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
             orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
-            return orders.sort_by("user_id", "asc", secondary_column_name="total", secondary_direction="desc")
+            return orders.sort_by(
+                "user_id", "asc", secondary_column_name="total", secondary_direction="desc"
+            )
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1389,8 +1446,9 @@ class Model(Schema, InjectableProperties):
         """
         Set the number of records to return.
 
-        ```
+        ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1401,6 +1459,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1408,6 +1467,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.limit(2)
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1434,9 +1494,11 @@ class Model(Schema, InjectableProperties):
         to declare pagination details via the `allowed_pagination_keys` method.  If you attempt to set invalid
         pagination data via this method, clearskies will raise a ValueError.
 
-        Example:
-        ```
+        An Example:
+
+        ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1447,6 +1509,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1454,6 +1517,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.sort_by("total", "asc").pagination(start=2)
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1468,7 +1532,7 @@ class Model(Schema, InjectableProperties):
 
         However, if the return line in `my_application` is switched for either of these:
 
-        ```
+        ```python
         return orders.sort_by("total", "asc").pagination(start="asdf")
         return orders.sort_by("total", "asc").pagination(something_else=5)
         ```
@@ -1494,6 +1558,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1502,6 +1567,7 @@ class Model(Schema, InjectableProperties):
             user_id = clearskies.columns.String()
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
+
 
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
@@ -1516,6 +1582,7 @@ class Model(Schema, InjectableProperties):
                 "user_id": jane.user_id,
                 "total": jane.total,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1555,8 +1622,9 @@ class Model(Schema, InjectableProperties):
         doesn't have a default limit, so in practice the `paginate_all` is unnecessary here, but this is done
         for demonstration purposes.
 
-        ```
+        ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1567,6 +1635,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1574,6 +1643,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.limit(1).paginate_all()
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1611,8 +1681,9 @@ class Model(Schema, InjectableProperties):
         In the following example we create a record in the backend and then make a new model instance using `model`, which
         we then use to udpate the record.  The returned name will be `Jane Doe`.
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1620,6 +1691,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             jane = users.create({"name": "Jane"})
@@ -1630,6 +1702,7 @@ class Model(Schema, InjectableProperties):
             another_jane_object.save({"name": "Jane Doe"})
 
             return {"id": another_jane_object.id, "name": another_jane_object.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1644,14 +1717,15 @@ class Model(Schema, InjectableProperties):
 
     def empty(self: Self) -> Self:
         """
-        An alias for self.model({})
+        Create an alias for self.model({}).
 
         This just provides you a fresh, empty model instance that you can use for populating with data or creating
         a new record.  Here's a simple exmaple.  Both print statements will be printed and it will return the id
         for the Alice record, and then null for `blank_id`:
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1659,6 +1733,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             alice = users.create({"name": "Alice"})
@@ -1672,6 +1747,7 @@ class Model(Schema, InjectableProperties):
                 print("Fresh instance, ready to go")
 
             return {"alice_id": alice.id, "blank_id": blank.id}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1692,8 +1768,9 @@ class Model(Schema, InjectableProperties):
         unambiguous shortcut to do exactly that.  So, you pass your save data to the `create` method and you will get
         back a new model:
 
-        ```
+        ```python
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1701,6 +1778,7 @@ class Model(Schema, InjectableProperties):
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(user):
             # let's create a new record
@@ -1713,6 +1791,7 @@ class Model(Schema, InjectableProperties):
                 "Alice": user.name,
                 "Bob": bob.name,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1734,8 +1813,9 @@ class Model(Schema, InjectableProperties):
         The `where` method returns an object meant to be iterated over.  If you are expecting your query to return a single
         record, then you can use first to turn that directly into the matching model so you don't have to iterate over it:
 
-        ```
+        ```python
         import clearskies
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1745,6 +1825,7 @@ class Model(Schema, InjectableProperties):
             user_id = clearskies.columns.String()
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
+
 
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
@@ -1760,12 +1841,12 @@ class Model(Schema, InjectableProperties):
                 "total": jane.total,
             }
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[Order],
         )
         cli()
-
         ```
         """
         self.no_single_model()

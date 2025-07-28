@@ -32,7 +32,7 @@ class SingleClass(Builder):
             self.raw_docblock_to_md(source_class.doc).lstrip("\n").lstrip(" ")
         )
         class_doc += f"\n\n# {self.title}\n\n{elevator_pitch}\n\n"
-        main_doc = f"## Overview\n\n{overview}\n\n"
+        main_doc = f"## Overview\n{overview}\n"
         table_of_contents = f" 1. [Overview](#overview)\n"
 
         default_args = self.default_args()
@@ -66,7 +66,7 @@ class SingleClass(Builder):
         for index, arg in enumerate(arguments.keys()):
             arg_data = arguments[arg]
             table_of_contents += f" {index+2}. [{arg}](#{arg})\n"
-            main_doc += f"## {arg}\n**" + ("Required" if arg_data["required"] else "Optional") + "**\n\n"
+            main_doc += f"## {arg}\n\n**" + ("Required" if arg_data["required"] else "Optional") + "**\n"
             main_doc += self.raw_docblock_to_md(arg_data["doc"].replace('"""', "")) + "\n\n"
 
         class_doc += f"{table_of_contents}\n{main_doc}"

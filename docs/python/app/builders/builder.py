@@ -31,9 +31,10 @@ class Builder:
 
     def parse_overview_doc(self, overview_doc):
         parts = overview_doc.lstrip("\n").split("\n", 1)
+        first_part = parts[0] if parts[0] != "None" else ""
         if len(parts) < 2:
-            return (parts[0], "")
-        return (parts[0], parts[1].lstrip(" "))
+            return (first_part, "")
+        return (first_part, parts[1].lstrip(" "))
 
     def extract_attribute_docs(self, source_class, argument_names, additional_attribute_sources=[]):
         """

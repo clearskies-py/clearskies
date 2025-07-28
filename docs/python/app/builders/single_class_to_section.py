@@ -24,17 +24,17 @@ class SingleClassToSection(Builder):
                 "_", "-"
             )
             doc = self.build_header(title, title_snake_case, section_name, self.title, index + 1, False)
-            doc += f"\n\n# {title}\n\n"
+            doc += f"\n# {title}\n"
             table_of_contents = ""
             attribute_docs = ""
 
             for index, attribute_name in enumerate(doc_data["attributes"]):
                 attribute = source_class.attributes.find(f"name={attribute_name}")
                 table_of_contents += f" {index+1}. [{attribute_name}]({title_snake_case}.html#{attribute_name})\n"
-                attribute_docs += f"\n\n## {attribute_name}\n\n"
-                attribute_docs += re.sub("^    ", "", self.raw_docblock_to_md(attribute.doc))
+                attribute_docs += f"\n## {attribute_name}\n"
+                attribute_docs += re.sub(r"^ {4}", "", self.raw_docblock_to_md(attribute.doc), flags=re.MULTILINE)
 
-            doc += f"{table_of_contents}{attribute_docs}"
+            doc += f"\n{table_of_contents}{attribute_docs}"
 
             output_file = section_folder_path / f"{title_snake_case}.md"
             with output_file.open(mode="w") as doc_file:

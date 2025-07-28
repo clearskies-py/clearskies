@@ -32,8 +32,10 @@ class Module(Builder):
             (elevator_pitch, overview) = self.parse_overview_doc(
                 self.raw_docblock_to_md(source_class.doc).lstrip("\n").lstrip(" ")
             )
+            if elevator_pitch == "None":
+                elevator_pitch = ""
             class_doc += f"\n\n# {title}\n\n{elevator_pitch}\n\n"
-            main_doc = f"## Overview\n\n{overview}\n\n"
+            main_doc = f"## Overview\n{overview}\n"
             table_of_contents = f" 1. [Overview](#overview)\n"
 
             # Find the documentation for all of our init args.
@@ -59,8 +61,8 @@ class Module(Builder):
             for index, arg in enumerate(arguments.keys()):
                 arg_data = arguments[arg]
                 table_of_contents += f" {index+2}. [{arg}](#{arg})\n"
-                main_doc += f"## {arg}\n**" + ("Required" if arg_data["required"] else "Optional") + "**\n\n"
-                main_doc += self.raw_docblock_to_md(arg_data["doc"].replace('"""', "")) + "\n\n"
+                main_doc += f"## {arg}\n\n**" + ("Required" if arg_data["required"] else "Optional") + "**\n"
+                main_doc += self.raw_docblock_to_md(arg_data["doc"].replace('"""', "")) + "\n"
 
             class_doc += f"{table_of_contents}\n{main_doc}"
 
