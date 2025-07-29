@@ -1059,7 +1059,9 @@ class Model(Schema, InjectableProperties):
         """
         for column in self.get_columns(overrides=overrides).values():
             models = column.where_for_request(model, input_output, routing_data, authorization_data)  # type: ignore
-        return self.where_for_request(model, input_output, routing_data=routing_data, authorization_data=authorization_data, overrides=overrides)
+        return self.where_for_request(
+            model, input_output, routing_data=routing_data, authorization_data=authorization_data, overrides=overrides
+        )
 
     def where_for_request(
         self: Self,

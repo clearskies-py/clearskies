@@ -23,7 +23,7 @@ class Cli(InputOutput):
         if type(response) != str:
             final = json.dumps(response)
         else:
-            final = respones
+            final = response
         if status_code != 200:
             sys.exit(final)
         print(final)

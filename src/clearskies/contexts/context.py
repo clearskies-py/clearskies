@@ -48,6 +48,7 @@ class Context:
             bindings=bindings,
             additional_configs=additional_configs,
             class_overrides=class_overrides,
+            overrides=overrides,
             now=now,
             utcnow=utcnow,
         )

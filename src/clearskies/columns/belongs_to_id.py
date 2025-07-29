@@ -358,9 +358,9 @@ class BelongsToId(String):
         matching_parents = self.apply_wheres(matching_parents)
         matching_parents = matching_parents.where_for_request_all(
             matching_parents,
-            self.input_output.routing_data,
-            self.input_output.authorization_data,
             self.input_output,
+            routing_data=self.input_output.routing_data,
+            authorization_data=self.input_output.authorization_data,
         )
         if not len(matching_parents):
             return f"Invalid selection for {self.name}: record does not exist"
