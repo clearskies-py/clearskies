@@ -963,11 +963,11 @@ class Endpoint(
                 model = self.di.call_function(where, model=model, **input_output.get_context_for_callables())
             else:
                 model = model.where(where)
-        model = model.where_for_request(
+        model = model.where_for_request_all(
             model,
+            input_output,
             input_output.routing_data,
             input_output.authorization_data,
-            input_output,
             overrides=self.column_overrides,
         )
         return self.authorization.filter_model(model, input_output.authorization_data, input_output)

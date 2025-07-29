@@ -611,3 +611,91 @@ class ModelTest(TestBase):
             "My name is Jane and I am 26 years old",
             "My name is Jane and I am 30 years old",
         ]
+
+    def test_save_finished(self):
+        class History(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            message = clearskies.columns.String()
+            created_at = clearskies.columns.Created(date_format="%Y-%m-%d %H:%M:%S.%f")
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            histories = clearskies.di.inject.ByClass(History)
+
+            id = clearskies.columns.Uuid()
+            age = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+            def save_finished(self: Self) -> None:
+                if not self.was_changed("age"):
+                    return
+
+                self.histories.create({"message": f"My name is {self.name} and I am {self.age} years old"})
+
+        def my_application(users, histories):
+            jane = users.create({"name": "Jane"})
+            jane.save({"age": 25})
+            jane.save({"age": 26})
+            jane.save({"age": 30})
+
+            return [history.message for history in histories.sort_by("created_at", "ASC")]
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User, History],
+        )
+        (status_code, response, response_headers) = context()
+        assert response == [
+            "My name is Jane and I am 25 years old",
+            "My name is Jane and I am 26 years old",
+            "My name is Jane and I am 30 years old",
+        ]
+
+    def test_where_for_request(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            age = clearskies.columns.Integer()
+
+            def where_for_request(
+                self: Self,
+                model: Self,
+                input_output: Any,
+                routing_data: dict[str, str],
+                authorization_data: dict[str, Any],
+                overrides: dict[str, clearskies.Column] = {},
+            ) -> Self:
+                return model.where("age>=18")
+
+        list_users = clearskies.endpoints.List(
+            model_class=User,
+            readable_column_names=["id", "name", "age"],
+            sortable_column_names=["id", "name", "age"],
+            default_sort_column_name="name",
+        )
+
+        context = clearskies.contexts.Context(
+            list_users,
+            classes=[User],
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Bob", "age": 20},
+                            {"id": "1-2-3-5", "name": "Jane", "age": 17},
+                            {"id": "1-2-3-6", "name": "Greg", "age": 22},
+                        ],
+                    },
+                ]
+            },
+        )
+        (status_code, response, response_headers) = context()
+
+        assert [user["name"] for user in response["data"]] == ["Bob", "Greg"]
