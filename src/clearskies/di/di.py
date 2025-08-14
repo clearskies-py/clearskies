@@ -15,6 +15,7 @@ import clearskies.secrets
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
 from clearskies.environment import Environment
+from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
 
 
@@ -83,6 +84,7 @@ class Di:
     | connection_details   | -                                                       | A dictionary containing credentials that pymysql should use when connecting to a database |
     | connection           | -                                                       | A pymysql connection object                                                               |
     | cursor               | -                                                       | A pymysql cursor object                                                                   |
+    | endpoint_groups      | -                                                       | The list of endpoint groups handling the request                                          |
 
     Note: for dependencies with an injection name but no injection type, this means that to inject those values you
     must name your argument with the given injection name.  In all of the above cases though you can still add type
@@ -635,7 +637,7 @@ class Di:
             return self._prepared[name]
 
         context_note = f" for {context}" if context else ""
-        raise ValueError(
+        raise MissingDependency(
             f"I was asked to build {name}{context_note} but there is no added class, configured binding, "
             + f"or a corresponding 'provide_{name}' method for this name."
         )
@@ -966,3 +968,6 @@ class Di:
         import akeyless  # type: ignore
 
         return akeyless
+
+    def provide_endpoint_groups(self):
+        return []

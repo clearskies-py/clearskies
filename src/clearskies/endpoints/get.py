@@ -231,7 +231,7 @@ class Get(Endpoint):
         )
 
         authentication = self.authentication
-        standard_error_responses = [self.documentation_input_error_response()]
+        standard_error_responses = []
         if not getattr(authentication, "is_public", False):
             standard_error_responses.append(self.documentation_access_denied_response())
             if getattr(authentication, "can_authorize", False):
@@ -251,17 +251,13 @@ class Get(Endpoint):
                 relative_path=self.url,
                 request_methods=self.request_methods,
                 parameters=[
-                    *self.documentation_routing_parameters(),
-                    *self.standard_url_parameters(),
+                    *self.documentation_url_parameters(),
                 ],
                 root_properties={
                     "security": self.documentation_request_security(),
                 },
             ),
         ]
-
-    def documentation_routing_parameters(self) -> list[autodoc.request.Parameter]:
-        return self.standard_url_request_parameters()
 
     def documentation_models(self) -> dict[str, autodoc.schema.Schema]:
         output_schema = self.output_schema if self.output_schema else self.model_class

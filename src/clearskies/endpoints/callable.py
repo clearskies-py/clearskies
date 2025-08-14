@@ -359,7 +359,7 @@ class Callable(Endpoint):
                 request_methods=self.request_methods,
                 parameters=[
                     *self.documentation_request_parameters(),
-                    *self.standard_url_parameters(),
+                    *self.documentation_url_parameters(),
                 ],
                 root_properties={
                     "security": self.documentation_request_security(),

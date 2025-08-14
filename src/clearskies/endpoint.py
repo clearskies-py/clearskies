@@ -1261,7 +1261,8 @@ class Endpoint(
     ) -> list[schema.Schema]:
         if schema is None:
             schema = self.model_class
-        if column_names is None and self.readable_column_names:
+        readable_column_names = [*column_names]
+        if not readable_column_names and self.readable_column_names:
             readable_column_names: list[str] = self.readable_column_names
         properties = []
 
@@ -1289,16 +1290,19 @@ class Endpoint(
 
         model_name = string.camel_case_to_snake_case(schema.__name__)
         columns = schema.get_columns()
-        return [
-            autodoc.request.JSONBody(
-                columns[column_name].documentation(name=self.auto_case_column_name(column_name, True)),
-                description=f"Set '{column_name}' for the {model_name}",
-                required=columns[column_name].is_required,
+        parameters = []
+        for column_name in column_names:
+            columns[column_name].injectable_properties(self.di)
+            parameters.append(
+                autodoc.request.JSONBody(
+                    columns[column_name].documentation(name=self.auto_case_column_name(column_name, True)),
+                    description=f"Set '{column_name}' for the {model_name}",
+                    required=columns[column_name].is_required,
+                )
             )
-            for column_name in column_names
-        ]
+        return parameters
 
-    def standard_url_request_parameters(self) -> list[Parameter]:
+    def documentation_url_parameters(self) -> list[Parameter]:
         parameter_names = routing.extract_url_parameter_name_map(self.url.strip("/"))
         return [
             autodoc.request.URLPath(

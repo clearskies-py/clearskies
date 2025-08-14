@@ -238,6 +238,8 @@ class EndpointGroup(
     cors_header: SecurityHeader = None  # type: ignore
     has_cors: bool = False
     endpoints_initialized = False
+    external_casing = "snake_case"
+    internal_casing = "snake_case"
 
     @clearskies.decorators.parameters_to_properties
     def __init__(
@@ -303,8 +305,25 @@ class EndpointGroup(
             return self.error(input_output, "Not Found", 404)
 
         self.add_response_headers(input_output)
+
+        # "register" ourself with the DI system
+        current_endpoint_groups = self.di.build_from_name("endpoint_groups", cache=True)
+        current_endpoint_groups.append(self)
+        self.di.add_binding("endpoint_groups", current_endpoint_groups)
+
         return endpoint(input_output)
 
     def error(self, input_output: InputOutput, message: str, status_code: int) -> Any:
         """Return a client-side error (e.g. 400)."""
         return self.respond_json(input_output, {"status": "client_error", "error": message}, status_code)
+
+    def all_endpoints(self) -> list[Endpoint]:
+        """Returns the full (recursive) list of all endpoints associated with this endpoint group"""
+        all_endpoints = []
+        for endpoint in self.endpoints:
+            if hasattr(endpoint, "all_endpoints"):
+                all_endpoints = [*all_endpoints, *endpoint.all_endpoints()]
+            else:
+                all_endpoints.append(endpoint)
+
+        return all_endpoints

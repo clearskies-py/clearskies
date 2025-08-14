@@ -162,7 +162,6 @@ class HealthCheck(Endpoint):
 
     def documentation(self) -> list[autodoc.request.Request]:
         output_schema = self.model_class
-        nice_model = string.camel_case_to_words(output_schema.__name__)
         output_autodoc = (autodoc.schema.Object(self.auto_case_internal_column_name("data"), children=[]),)
 
         description = self.description if self.description else "Health Check"
@@ -177,5 +176,8 @@ class HealthCheck(Endpoint):
                 ],
                 relative_path=self.url,
                 request_methods=self.request_methods,
+                parameters=[
+                    *self.documentation_url_parameters(),
+                ],
             ),
         ]

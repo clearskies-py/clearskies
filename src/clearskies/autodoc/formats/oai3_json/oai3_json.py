@@ -4,7 +4,7 @@ from typing import Any
 from .request import Request
 
 
-class OAI3JSON:
+class Oai3Json:
     requests: Any = None
     formatted: Any = None
     models: Any = None
@@ -67,7 +67,7 @@ class OAI3JSON:
             path_data = request.convert()
             for request_method, path_doc in path_data.items():
                 if request_method in paths[absolute_path]:
-                    raise ValueError(f"Two routes had the same path and method: {absolute_path} - {request_method}")
+                    continue
                 paths[absolute_path][request_method] = path_doc
 
         data: dict[str, Any] = {

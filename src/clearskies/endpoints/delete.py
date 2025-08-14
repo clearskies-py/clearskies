@@ -127,7 +127,7 @@ class Delete(Get):
                 relative_path=self.url,
                 request_methods=self.request_methods,
                 parameters=[
-                    *self.documentation_routing_parameters(),
+                    *self.documentation_url_parameters(),
                 ],
                 root_properties={
                     "security": self.documentation_request_security(),
