@@ -324,7 +324,7 @@ class EndpointGroup(
 
     def all_endpoints(self) -> list[Endpoint]:
         """Returns the full (recursive) list of all endpoints associated with this endpoint group"""
-        all_endpoints = []
+        all_endpoints: list[Endpoint] = []
         for endpoint in self.endpoints:
             if hasattr(endpoint, "all_endpoints"):
                 all_endpoints = [*all_endpoints, *endpoint.all_endpoints()]
