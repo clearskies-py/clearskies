@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Callable, Type
 
 import clearskies.autodoc
 import clearskies.configs
@@ -13,7 +13,7 @@ from clearskies.endpoint import Endpoint
 from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, Schema, SecurityHeader
+    from clearskies import Column, SecurityHeader
     from clearskies.model import Model
 
 
@@ -62,7 +62,7 @@ class Schema(Endpoint):
         "created_at",
         "updated_at",
     ]
-    writeable_user_column_names = ["name", "username", "age", "company_id"]
+    writeable_user_column_names = ["name", "username", "age", "company_name"]
     users_api = clearskies.EndpointGroup(
         [
             clearskies.endpoints.Schema(url="schema"),
@@ -70,7 +70,7 @@ class Schema(Endpoint):
                 url="users",
                 model_class=User,
                 readable_column_names=readable_column_names,
-                writeable_column_names=["name", "username", "age", "company_name"],
+                writeable_column_names=writeable_user_column_names,
                 sortable_column_names=readable_column_names,
                 searchable_column_names=readable_column_names,
                 default_sort_column_name="name",
@@ -94,6 +94,8 @@ class Schema(Endpoint):
             clearskies.endpoints.Callable(
                 lambda request_data, some_things: some_things.create(request_data),
                 model_class=SomeThing,
+                readable_column_names=["id", "thing_1", "thing_2"],
+                writeable_column_names=["thing_1", "thing_2"],
                 request_methods=["POST"],
                 url="some_thing",
             ),
@@ -165,9 +167,9 @@ class Schema(Endpoint):
         # if we don't hvae any endpoint groups then we've been attached directly to a context,
         # which is pointless - there's nothing for us to document.  So, treat it as an error.
         endpoint_group = current_endpoint_groups[-1]
-        requests = []
-        models = {}
-        security_schemes = {}
+        requests: list[Any] = []
+        models: dict[str, Any] = {}
+        security_schemes: dict[str, Any] = {}
         for endpoint in endpoint_group.all_endpoints():
             requests.extend(endpoint.documentation())
             models = {**models, **endpoint.documentation_models()}

@@ -275,6 +275,11 @@ class EndpointGroup(
             if self.url.strip("/"):
                 endpoint.add_url_prefix(self.url)
 
+    def add_url_prefix(self, prefix: str) -> None:
+        self.url = (prefix.rstrip("/") + "/" + self.url.lstrip("/")).lstrip("/")
+        for endpoint in self.endpoints:
+            endpoint.add_url_prefix(self.url)
+
     def matches_request(self, input_output: InputOutput, allow_partial=True) -> bool:
         """Whether or not we can handle an incoming request based on URL and request method."""
         expected_url = self.url.strip("/")
@@ -319,7 +324,7 @@ class EndpointGroup(
 
     def all_endpoints(self) -> list[Endpoint]:
         """Returns the full (recursive) list of all endpoints associated with this endpoint group"""
-        all_endpoints = []
+        all_endpoints: list[Endpoint] = []
         for endpoint in self.endpoints:
             if hasattr(endpoint, "all_endpoints"):
                 all_endpoints = [*all_endpoints, *endpoint.all_endpoints()]

@@ -1263,7 +1263,7 @@ class Endpoint(
             schema = self.model_class
         readable_column_names = [*column_names]
         if not readable_column_names and self.readable_column_names:
-            readable_column_names: list[str] = self.readable_column_names
+            readable_column_names: list[str] = self.readable_column_names  # type: ignore
         properties = []
 
         columns = schema.get_columns()
@@ -1300,7 +1300,7 @@ class Endpoint(
                     required=columns[column_name].is_required,
                 )
             )
-        return parameters
+        return parameters  # type: ignore
 
     def documentation_url_parameters(self) -> list[Parameter]:
         parameter_names = routing.extract_url_parameter_name_map(self.url.strip("/"))
