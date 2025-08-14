@@ -476,6 +476,7 @@ class List(Endpoint):
             *self.documentation_url_sort_parameters(),
             *self.documentation_url_search_parameters(),
             *self.documentation_json_search_parameters(),
+            *self.documentation_url_parameters(),
         ]
 
     def documentation_models(self) -> dict[str, autodoc.schema.Schema]:

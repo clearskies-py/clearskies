@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 
@@ -12,6 +13,14 @@ class Request:
     def __init__(
         self, description, responses, relative_path="", request_methods="GET", parameters=None, root_properties=None
     ):
+        # clearskies supports path parameters via {parameter} and :parameter but we want to normalize to {paramter} for
+        # autodoc purposes
+        if ":" in relative_path:
+            relative_path = "/" + relative_path.strip("/") + "/"
+            for match in re.findall("/(:[^/]+)/", relative_path):
+                name = match[1:]
+                relative_path = relative_path.replace(f"/:{name}/", "/{" + name + "}/")
+
         self.description = description
         self.responses = responses
         self.relative_path = relative_path.lstrip("/")

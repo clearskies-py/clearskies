@@ -4,6 +4,12 @@ from typing import Any
 class Object:
     def __init__(self, schema, oai3_schema_resolver):
         self.schema = schema
+        # shhhh
+        self.schema.children = [
+            child[0] if (isinstance(child, tuple) or isinstance(child, list)) else child
+            for child in self.schema.children
+        ]
+
         self.oai3_schema_resolver = oai3_schema_resolver
 
     def convert(self, include_required=False):

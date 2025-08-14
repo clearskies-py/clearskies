@@ -6,6 +6,7 @@ from clearskies.endpoints.get import Get
 from clearskies.endpoints.health_check import HealthCheck
 from clearskies.endpoints.list import List
 from clearskies.endpoints.restful_api import RestfulApi
+from clearskies.endpoints.schema import Schema
 from clearskies.endpoints.simple_search import SimpleSearch
 from clearskies.endpoints.update import Update
 
@@ -18,6 +19,7 @@ __all__ = [
     "HealthCheck",
     "List",
     "RestfulApi",
+    "Schema",
     "SimpleSearch",
     "Update",
 ]

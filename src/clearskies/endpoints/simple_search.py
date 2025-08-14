@@ -274,8 +274,8 @@ class SimpleSearch(List):
 
     def documentation_url_search_parameters(self) -> list[autodoc.request.Parameter]:
         docs = []
-        for column in self._get_searchable_columns().values():
-            column_doc = column.documentation()
+        for column in self.searchable_columns.values():
+            column_doc = column.documentation()[0]
             column_doc.name = self.auto_case_internal_column_name(column_doc.name)
             docs.append(
                 autodoc.request.URLParameter(

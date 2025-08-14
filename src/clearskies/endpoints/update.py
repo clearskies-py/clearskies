@@ -143,7 +143,11 @@ class Update(Get):
         )
 
         authentication = self.authentication
-        standard_error_responses = [self.documentation_input_error_response()]
+        # Many swagger UIs will only allow one response per status code, and we use the same status code (200)
+        # for both a success response and an input error response.  This could be fixed by changing the status
+        # code for input error responses, but there's not actually a great HTTP status code for that, so :shrug:
+        # standard_error_responses = [self.documentation_input_error_response()]
+        standard_error_responses = []
         if not getattr(authentication, "is_public", False):
             standard_error_responses.append(self.documentation_access_denied_response())
             if getattr(authentication, "can_authorize", False):
@@ -164,7 +168,7 @@ class Update(Get):
                 request_methods=self.request_methods,
                 parameters=[
                     *self.documentation_request_parameters(),
-                    *self.standard_url_parameters(),
+                    *self.documentation_url_parameters(),
                 ],
                 root_properties={
                     "security": self.documentation_request_security(),
@@ -175,7 +179,6 @@ class Update(Get):
     def documentation_request_parameters(self) -> list[autodoc.request.Parameter]:
         return [
             *self.standard_json_request_parameters(self.model_class),
-            *self.standard_url_request_parameters(),
         ]
 
     def documentation_models(self) -> dict[str, autodoc.schema.Schema]:

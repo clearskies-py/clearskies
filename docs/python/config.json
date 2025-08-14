@@ -108,7 +108,8 @@
                 "clearskies.endpoints.SimpleSearch",
                 "clearskies.endpoints.AdvancedSearch",
                 "clearskies.endpoints.RestfulApi",
-                "clearskies.endpoints.HealthCheck"
+                "clearskies.endpoints.HealthCheck",
+                "clearskies.endpoints.Schema"
             ]
         },
         {
