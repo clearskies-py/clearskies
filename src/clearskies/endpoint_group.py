@@ -230,6 +230,8 @@ class EndpointGroup(
     """
     endpoints = clearskies.configs.EndpointList()
 
+    internal_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    external_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
     response_headers = clearskies.configs.StringListOrCallable(default=[])
     authentication = clearskies.configs.Authentication(default=Public())
     authorization = clearskies.configs.Authorization(default=Authorization())
@@ -248,6 +250,8 @@ class EndpointGroup(
         url: str = "",
         response_headers: list[str | Callable[..., list[str]]] = [],
         security_headers: list[SecurityHeader] = [],
+        internal_casing: str = "snake_case",
+        external_casing: str = "snake_case",
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
     ):
