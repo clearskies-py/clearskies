@@ -240,8 +240,6 @@ class EndpointGroup(
     cors_header: SecurityHeader = None  # type: ignore
     has_cors: bool = False
     endpoints_initialized = False
-    external_casing = "snake_case"
-    internal_casing = "snake_case"
 
     @clearskies.decorators.parameters_to_properties
     def __init__(
