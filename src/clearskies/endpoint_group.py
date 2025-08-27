@@ -248,8 +248,8 @@ class EndpointGroup(
         url: str = "",
         response_headers: list[str | Callable[..., list[str]]] = [],
         security_headers: list[SecurityHeader] = [],
-        internal_casing: str = 'snake_case',
-        external_casing: str = 'snake_case',
+        internal_casing: str = "snake_case",
+        external_casing: str = "snake_case",
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
     ):
