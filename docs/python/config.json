@@ -3,7 +3,7 @@
         {
             "title": "Models",
             "source": "clearskies.Model",
-            "builder": "app.builders.SingleClassToSection",
+            "builder": "clearskies_doc_builder.builders.SingleClassToSection",
             "docs": [
                 {
                     "title": "Querying Records",
@@ -46,7 +46,7 @@
         {
             "title": "Backends",
             "source": "clearskies.backends.Backend",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.backends.CursorBackend",
                 "clearskies.backends.MemoryBackend",
@@ -56,7 +56,7 @@
         {
             "title": "Columns",
             "source": "clearskies.Column",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.columns.Audit",
                 "clearskies.columns.BelongsToId",
@@ -97,7 +97,7 @@
         {
             "title": "Endpoints",
             "source": "clearskies.endpoint.Endpoint",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.endpoints.Callable",
                 "clearskies.endpoints.Create",
@@ -114,7 +114,7 @@
         {
             "title": "Endpoint Groups",
             "source": "clearskies.EndpointGroup",
-            "builder": "app.builders.SingleClass",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
             "additional_attribute_sources": [
                 "clearskies.endpoint.Endpoint"
             ]
@@ -122,7 +122,7 @@
         {
             "title": "Input Validators",
             "source": "clearskies.Validator",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.validators.AfterColumn",
                 "clearskies.validators.BeforeColumn",
@@ -144,7 +144,7 @@
         {
             "title": "Security Headers",
             "source": "clearskies.endpoint.Endpoint",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.security_headers.CacheControl",
                 "clearskies.security_headers.Cors",
@@ -155,7 +155,7 @@
         {
             "title": "Authentication",
             "source": "clearskies.authentication.Authentication",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.authentication.Authorization",
                 "clearskies.authentication.Public",
@@ -166,7 +166,7 @@
         {
             "title": "Context",
             "source": "clearskies.contexts.Context",
-            "builder": "app.builders.Module",
+            "builder": "clearskies_doc_builder.builders.Module",
             "args_to_additional_attributes_map": {
                 "classes": "clearskies.di.Di.add_classes",
                 "modules": "clearskies.di.Di.add_modules",
@@ -185,7 +185,7 @@
         {
             "title": "Dependency Injection",
             "source": "clearskies.di.Di",
-            "builder": "app.builders.SingleClass",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
             "args_to_additional_attributes_map": {
                 "classes": "clearskies.di.Di.add_classes",
                 "modules": "clearskies.di.Di.add_modules",
@@ -199,7 +199,7 @@
         {
             "title": "Injectable Properties",
             "source": "clearskies.di.injectable_properties.InjectableProperties",
-            "builder": "app.builders.SingleClass",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
             "parent": "Dependency Injection"
         }
     ]

@@ -115,6 +115,43 @@ files = [
 ]
 
 [[package]]
+name = "clear-skies"
+version = "2.0.4"
+description = "A framework for building backends in the cloud"
+optional = false
+python-versions = "<4.0,>=3.11"
+groups = ["main"]
+files = [
+    {file = "clear_skies-2.0.4-py3-none-any.whl", hash = "sha256:27760e7120a9e5a02062dddb13b93dba9f4c56bdc3f8c0669ecc60adfee8529e"},
+    {file = "clear_skies-2.0.4.tar.gz", hash = "sha256:3c92f1cd506c32818c6c2a633c7a04dfbcece30a12f1a9483d62458d90e2c827"},
+]
+
+[package.dependencies]
+dateparser = ">=1.1.8,<2.0.0"
+requests = ">=2.31.0,<3.0.0"
+wrapt = ">=1.16.0,<2.0.0"
+
+[package.extras]
+jwcrypto = ["jwcrypto (>=1.5.6,<2.0.0)"]
+mysql = ["pymysql (>=1.1.0,<2.0.0)"]
+secrets = ["akeyless (>=4.0.0,<5.0.0)", "akeyless-cloud-id (>=0.2.3,<0.3.0)"]
+
+[[package]]
+name = "clear-skies-doc-builder"
+version = "2.0.0"
+description = "The docbuilder for all 'official' clearskies plugins (as well as the main clearskies docs)"
+optional = false
+python-versions = "<4.0,>=3.11"
+groups = ["main"]
+files = [
+    {file = "clear_skies_doc_builder-2.0.0-py3-none-any.whl", hash = "sha256:2ab7c9fb7d3569f5cbd68076497876e8e2c216492e71d6590ba6d52cc62ad600"},
+    {file = "clear_skies_doc_builder-2.0.0.tar.gz", hash = "sha256:9c9790fb15b39816f1a40abc4a0b9726137994bc8baa57e06e436c68acce1f37"},
+]
+
+[package.dependencies]
+clear-skies = ">=2.0.0,<3.0.0"
+
+[[package]]
 name = "dateparser"
 version = "1.2.2"
 description = "Date parsing library designed to parse dates from HTML pages"
@@ -457,5 +494,5 @@ files = [
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.11"
-content-hash = "fc065002d7fd81cd71f4005fcb7e7f317170c73d3c5bf472c264f46a7004adb6"
+python-versions = ">=3.11,<4.0"
+content-hash = "22f4264f51e3e9f3c36ece10afbde73ae059d40783b3e01e43af77b2d72c0004"
