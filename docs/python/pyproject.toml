@@ -1,17 +1,15 @@
 [project]
-name = "docs-builder"
+name = "clearskies-docs"
 version = "0.1.0"
-description = "Doc site builder for clearskies.info"
+description = "Doc site builder for main clearskies project"
 authors = [
     {name = "Conor Mancone",email = "cmancone@gmail.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
-    "requests (>=2.32.4,<3.0.0)",
-    "wrapt (>=1.17.2,<2.0.0)",
-    "dateparser (>=1.2.2,<2.0.0)"
+    "clear-skies-doc-builder (>=2.0.0,<3.0.0)"
 ]
 
 
