@@ -75,8 +75,8 @@ class Json(Column):
     @clearskies.decorators.parameters_to_properties
     def __init__(
         self,
-        default: dict[str, Any] | None = None,
-        setable: dict[str, Any] | Callable[..., dict[str, Any]] | None = None,
+        default: dict[str, Any] | list[Any] | None = None,
+        setable: dict[str, Any] | list[Any] | Callable[..., dict[str, Any]] | None = None,
         is_readable: bool = True,
         is_writeable: bool = True,
         is_temporary: bool = False,
