@@ -1,0 +1,731 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+- Merge pull request #14 from clearskies-py/docs-switch
+- R2G?
+- Moving along
+- Bug fix for error message
+
+### Fixed
+- Set input/output schema to type[Schema]
+- Set input/output schema to type[Schema]
+
+### Removed
+- Remove dupes
+
+## [2.0.4] - 2025-08-27
+
+### Added
+- Add input_outputs to the __init__.py
+
+### Changed
+- Merge pull request #13 from clearskies-py/fix/endpointgroup
+- Merge pull request #12 from clearskies-py/autodoc
+- Tooling fixes
+- Url prefix ignored by endpoint group, example fixes
+- Merge pull request #11 from clearskies-py/autodoc
+- Schema
+- Merge pull request #10 from clearskies-py/fix/import
+
+### Fixed
+- Bug in endpoint group for 404s
+- Bug in endpoint group for 404s
+
+## [2.0.3] - 2025-07-29
+
+### Changed
+- Merge pull request #9 from clearskies-py/moar-moar-docs
+- Make the tooling happy
+- Context docs
+
+## [2.0.2] - 2025-07-24
+
+### Changed
+- Merge pull request #8 from clearskies-py/fix/decorators
+- Merge pull request #6 from clearskies-py/moar-docs
+- Tooling
+- Merge branch 'main' into moar-docs
+
+### Fixed
+- Rename parameters_to_properties.py to decorators.py
+
+## [2.0.1] - 2025-07-24
+
+### Changed
+- Merge pull request #7 from clearskies-py/hotfix
+- Merge pull request #5 from clearskies-py/moar-docs
+- ENDLESS TESTSgit add .git add .
+- NEVER ENDING DOCSgit add .!
+- MOAR docs
+- MOAR documentation
+- MOAR docs
+- Merge pull request #4 from clearskies-py/docs
+- Docs only on main
+- Pre-commit
+- And push to S3?
+- Sigh
+- Sigh
+- Sudo?
+- Ruby?
+- The lazy way
+- Triggers help
+- Playing with doc building
+- Wheee!
+- Moving along
+- Merge branch 'main' into docs
+
+### Fixed
+- Wrong key, missing types
+
+## [2.0.0] - 2025-07-05
+
+### Added
+- Add black ruff check
+- Add code formatting
+- Add ruff, remove black, add github actions
+- Added create endpoint and continuing to document column
+- Support 3.12 and 3.11
+- Add some more typecasting for self
+- Add timezone to test + assertEquals is deprected in favor of asserEqual
+- Add configurable timezone
+- Add backend to __init__.py
+- Add optional deps
+- Add extensions module
+- Add new secret bearer flags to decorator
+- Add issuer to JWKS check
+- Add profile for saml auth in Akeyless
+- Adding a 'mixin' like functionality to DI configuration
+- Adding more helpers to the handler baser
+
+### Changed
+- Merge pull request #3 from clearskies-py/publish
+- New version
+- Load version via plugin
+- Fixes per comments
+- Re-enable tests
+- Release test 2
+- Release strategy?
+- Test out switch to tag version
+- Try a differnt action just for kicks
+- S/var/action
+- Test basic pypi publishing
+- Merge pull request #2 from clearskies-py/cleanup
+- Happy tooling?
+- Merge main
+- Merge pull request #1 from tnijboer/feat/secrets-backend
+- Move secrets backend to v2
+- Mypy cleanup
+- MOAR docs
+- Good progress on autodocs
+- Tweaks while documenting
+- Lock update
+- Minor fixes
+- Merge pull request #31 from tnijboer/v2
+- Update secrets backend to v2
+- Merge pull request #30 from tnijboer/v2
+- Merge branch 'cmancone:v2' into v2
+- Merge pull request #29 from tnijboer/v2
+- Allow test to fail for now
+- Disable older python versions
+- Enable black again
+- Linter fixes
+- Ruff format
+- Ruff linter
+- Merge pull request #28 from tnijboer/v2
+- Mypy + pytest
+- MOAR mypy cleanup
+- Mypy
+- MOAR test cleanup
+- Cleanup
+- Cleanup
+- Restful API
+- Endpoint Groups
+- Advanced search, finally
+- More endpoints
+- More endpoints
+- More endpoints and tweaks
+- The last columns!
+- MOAR columns
+- MOAR columns
+- More column docs and tests
+- Base column docs and tests
+- Starting on base column
+- Belongs to docs+tests
+- API backend tests
+- More backends!
+- Working API Backend
+- Test for cursor backend
+- Cursor Backend
+- Working through examples
+- More tests for endpoints
+- Callable docs
+- Docs on endpoint
+- Input validation callable
+- ...
+- Working through validators
+- Wheee!
+- Some first working endpoints
+- It's probably coming together
+- Wheee!
+- Base endpoint
+- Making this up as I go
+- Some progress on default endpoint
+- Working through supporting stuff for endpoint base
+- Starting on endpoints
+- Security headers
+- MOAR fixes
+- Column cleanup
+- Working through more columns
+- Bringing in autodocs and filling out more columns
+- Moving aong
+- Working on the backend reorg
+- Saving so I can change branches
+- Merging models into model and separating out the query
+- Filling out some columns
+- Docs and test
+- Just need some docs?
+- Endless overhauls...
+- To/from backend for columns
+- Mypy cleanup
+- More cleanup for configs
+- Moving through our tests quicker now...
+- Starting up tests for examples
+- DI documentation and typing
+- Whee!
+- Importable!
+- Continuing to polish the column definitions
+- Slowly filling out all the columns
+- MOAR columns
+- Save my work!
+- Starting to make sense
+- A quick rundown
+- Duh
+- Just testing
+- Finding a new org
+- Saving some work
+- Pytest in pre-commit
+- DI via type hinting and switch to pytest
+- Minor bugfix
+- HasMany always overrides parent id column name
+- Better handling of 'where' in HasMany
+- Cache control for additional configs
+- Update for has many
+- A fix for the children of HasMany
+- Finalize the ApiGetOnlyBackend
+- Small bug fix
+- Bug fix
+- Missed a param
+- Where for belong to + has many
+- Auth pass through
+- More flexible URL scheme for API backend
+- And better
+- Early test on some changes to the category tree
+- Version bump, python-dependent python-extensions
+- Merge pull request #19 from tnijboer/master
+- Version bump, timestamp update, system-wide timezone
+- Merge pull request #18 from tnijboer/master
+- Fine then! :p
+- And the lock
+- Version bump
+- Merge pull request #16 from tnijboer/master
+- Update akeyless
+- Has one column type
+- Timestamp column type
+- Version bump
+- Merge pull request #15 from tnijboer/master
+- Fix an edge case in the audit system
+- Phone column
+- CLI should have authorization data, even if it will always be empty
+- Min/max value input requirements
+- Minor updates
+- Catch more errors
+- Better audience check
+- Ancient bug in autodocs for non-Auth0 JWKS
+- JWCrypto for those who prefer it
+- Rename dependency before we get too far
+- Version bump
+- Merge pull request #14 from tnijboer/optional-deps
+- Minor updates
+- Always include table name in where conditions
+- A little date/string helper
+- Created by only on create
+- Edge case!
+- Mix created by sources with different types
+- Misc fixes, allow group on another table
+- Some edge cases in auditing
+- Audit needs masking and excludes
+- Need another option for audit field
+- Forgot to expose the new requirements
+- More date-related input requirements
+- Time-related input requirements
+- Email validation was too strict
+- Update get to match update in terms of fetching id via hook
+- Didn't properly support fall-back routes
+- Check where_for_request when checking belongs to input values
+- Provide default status code for consistency
+- Really shouldn't cache now
+- Date formats and microsecond column types
+- Make context specifics reachable for test context
+- Sigh
+- And the import
+- Missed a change
+- More ways to set values for columns
+- Allow DI names on output map
+- Minor addition
+- Fixes/improvements for exposing belongs to via list/search handlers
+- Don't drop the table
+- Rotated secrets
+- Version bump
+- Proper handling of input errors
+- Better string comparison
+- Bugfix for list folders
+- Merge pull request #12 from tnijboer/master
+- Args for dynamic secrets
+- Fix for repeating cors
+- Ability to turn off greedy matching
+- Strict email not required when fuzzy searching, list sub folders for secrets
+- Better kwarg handling when calling functions through DI
+- Version bump
+- Death to backticks
+- Audit headers
+- Minor bug fi
+- Minor bug fix
+- A bit more flexibility
+- Version bump
+- A bit of flexibility for descendents
+- Minor bug fix
+- Minor tweak
+- Route debugging
+- Misc updates and fixes
+- Version bump
+- Auto import configs for modules
+- Oops
+- Working through the edge cases
+- More minor updates/fixes
+- Misc bugfixes
+- Misc bug fixes
+- Handler hooks
+- Bug for an edge case
+- Getting base caught up with the rest
+- Columns for auditing
+- Don't need that import
+- No more json body for GET requests to search
+- Version bump
+- Extra input columns for validators
+- Normalize the return value of to_json
+- Allow authn|z to return 404
+- Fix for url quoting in lambdas...
+- One more small tweak
+- Better support for stand alone update handlers
+- And test updates
+- Need slightly different behavior
+- Bugfix
+- Misc bugfixes + minor reorg
+- Minor bugfix + minor audit reorg
+- Play nice
+- Default
+- Merge pull request #11 from cmancone/reformat
+- Black
+- Black
+- Preparing for black
+- Bug fixes for audit
+- Audit
+- Context-specifics
+- Switch to poetry
+- Ruff?
+- S/yapf/ruff
+- Use 0 for an example of pagination params
+- More cleanup
+- Deprecations...
+- The ability to mock out classes from binding configs
+- No more implicit readable ids, bugs regarding inconsistent autodoc path params
+- Null dates FTW
+- :(
+- Version bump
+- Forward/backward support for requests 2
+- Separate out schema
+- Src/clearskies/
+- Triggers!
+- Separate out schema helper as it will be needed elsewhere
+- Better support for sub-routing in callables
+- Misc bug fixes
+- Expose the silent flag
+- Bump
+- Input validation hook
+- Allow names for authz
+- Search endpoint should accept GET for simple search
+- Another oldie
+- Oldest bug ever
+- Tiny bit of logging
+- Missing datetime as an injectable
+- Better Handling for missing secrets
+- Upsert
+- Missing options for secret bearer
+- Optionally convert to date
+- Minor bug fixes
+- Bugfix
+- Merge pull request #10 from cmancone/decorators
+- Version bump
+- Finishing touches for now
+- Handle DI config
+- Starting on decorator usage
+- Basic decorators done
+- Working down the list
+- Moving along
+- Getting started
+- Misc updates
+- Misc bug fixes
+- That bug was hiding for a while
+- Return actual JSON
+- Silent by default
+- File backends
+- Misc bug fixes
+- Version bump
+- Merge pull request #8 from tnijboer/akeyless-saml-profiles
+- Levels and docs were backwards
+- Boolean type
+- Input output for converting models
+- Category tree!
+- Extend wheres to other operations
+- Filter functions for list/search handlers
+- Final authn/z tests
+- More robust authz but needs more tests
+- Official support for nested simple routers
+- Better handling of relationship columns for docs
+- Configurable model column name
+- Clearly needs tests
+- Minor bug
+- Better type control
+- Client side
+- Related search
+- Searching on parents via API
+- Regrets
+- Version bump
+- And done
+- N plus one done?
+- Ground work for N+1
+- Cache some stuff for performance
+- Logging
+- Better column transformations and backend control
+- Updates for autodocs and callables
+- Minor fixes
+- Give control to the handler
+- Types!
+- Security headers for hosted schema endpoint
+- CLI routing data
+- My shame is complete
+- Better CORS routing
+- Some missing CORS automation
+- Misc fixes
+- Slightly different expansion for child columns
+- Include route parameters in autodocs
+- Merge pull request #7 from cmancone/security-headers
+- G2G?
+- Merge branch 'master' into security-headers
+- Resource routing for callables
+- Couple more minor fixes
+- Missing import for readable columns
+- Minor tweak
+- Stop hiding downstream errors
+- And tests
+- Return of the auto-integration
+- 3.10 support
+- Gt-lt could not compare non-numbers
+- Merge pull request #6 from cmancone/many-to-many-with-data
+- Excellent
+- First go, needs tests
+- Simplify routing for callables
+- Better error handling for callables
+- Better cooperation between simple routing and CLI
+- Need base_url in callables to use with routing
+- Make auth data more generally available
+- Starting on CORS
+- Working through the list
+- Skeleton for a better approach to security headers
+- No need for a security scheme for public auth
+- Extra call
+- Proper OAPI3.0 support, more flexible components for future
+- Wasn't including root parameters in request doc
+- Properly pass response headers through simple routing handler
+- Version bump
+- Schema bug, include respond headers on schema
+- Properly pass through response header config
+- More fine-tuning of routing
+- Health Check handler
+- Minor routing bug in schema endpoint
+- Fix routing inconsistencies
+- Forgot to set default value
+- Bug fix with test
+- Sigh
+- Forgot to hook new backend up in DI
+- More secrets
+- More flexibility from datetime column
+- Version bump, id column name bug
+- Fixed memory backend to work with autoincrementing ids
+- Minor bugs
+- Test fix
+- Minor bug fix
+- Upstream changes in mygrations
+- Version bump
+- Various bug fixes/updates
+- Minor bug fixes
+- Version bump
+- Minor tweaks
+- Making use of additional configs
+- New build process
+- Merge pull request #5 from cmancone/moar_aws
+- Ready for real-world testing
+- Basic mygrations integration
+- Pre-commit and another yapf round
+- Doc updates
+- Final details for callable schema and docs
+- Tests for callable handler
+- Starting on callable+schema, needs more tests
+- Starting on schema for CLI handler
+- Moving pagination to backend is complete (hopefully)!
+- Next level of overhaul to move pagination into backends
+- Moving pagination to backends
+- Update one last test for auto case
+- Done with autocasing
+- Read cleanup, start on case swapping
+- Final overhaul of handler separation
+- New restful API
+- Get handler
+- Advanced search + tests
+- Starting advanced search
+- Simple search done!
+- Slowly working through things...
+- Finalizing details of simple search
+- Test overhaul and separating list and search
+- Updating tests for latest overhaul
+- Separating out read controllers and finishing transition to single model class
+- Combine model and models
+- Start reorg of model/models to combine
+- Tests!
+- Start of dynamodb tests
+- DynamoDB! (needs tests)
+- DynamoDB backend that needs lots of tests
+- String IDs, configurable id column name, and start of AWS
+- Test docs
+- One more silly bug
+- Forgot to return on success
+- Subtle logic error
+- Version bump
+- Fix an issue with auto import
+- Debug mode?
+- Searching with in operator
+- Simple tweaks
+- Moar docs!
+- More docs and declare di_class at application level
+- No periods in links
+- Documentation updates and new DI priorities
+- Lots more docs
+- API backends
+- Docs and optional memory backend replacement on tests
+- Docs, docs, docs
+- Docs, docs, docs
+- Obnoxious bug fix
+- Docs, docs, more docs
+- Normalization and version bump
+- More flexible context input
+- Version bump
+- Misc bug fixes
+- MOAR documentation
+- More docs
+- Version bump
+- Auth method documentation fixes
+- Updates
+- Cleanup and documentation
+- Fixes
+- Models
+- Clarification and typos
+- Nav
+- SRP
+- More docs!
+- Outline of next steps
+- Less is more
+- Now with schema endpoint!
+- OAI3!
+- Very close to functional OAI3 autodoc
+- Docs with routing
+- Basic autodocs for the 'root' handlers
+- Working through autodoc
+- Version bump
+- Starting on autodoc
+- Version bump
+- Another bug
+- Bug fix
+- Version bump
+- Minor tweak and G2G
+- Starting on docs, small adjustment to backend
+- Update README.md
+- README update
+- Searching many-to-many (untested)
+- Search by query parameters
+- Some (almost) e2e tests
+- Less caching, more input checking
+- Tests look good
+- First tests and minor bug fixes
+- Untested attempt at joins
+- JOIN parsing
+- Working on join parsing
+- Various fixes
+- Minor improvements
+- Misc bug fixes
+- Also cache for function calls
+- Bug fixes
+- Missed the bind method on context
+- Various bug fixes
+- Untested ManyToMany
+- Version bump
+- AWS Contexts
+- Tweak for config info
+- Switching to pymysql because it is pure python and works on a lambda
+- Minor bug is swallowing errors
+- Authorization?
+- Auth0 JWKs auth
+- Untested attempt to add routing to CLI
+- Minor updates after some production use
+- Merge pull request #4 from cmancone/feature/native_di
+- Pinject is dead
+- Ditch pinject
+- Starting on tests for DI
+- Just laying some basic thoughts
+- Minor fixes
+- Version bump
+- Merge pull request #3 from cmancone/feature/callable-cli
+- Cli, secrets, and API backend overhaul
+- Untested callable handler
+- Version bump
+- Merge pull request #2 from cmancone/feature/relationships
+- Final changes after tests
+- Test context (needs tests)
+- Separate application configuration from execution context
+- Input output is now passed in at call time rather than a singleton
+- Load backend results in memory to avoid cursor confusion
+- Working but issues with a shared cursor
+- Simple routing + tests
+- Simple routing, needs more tests
+- WIP
+- Column overrides
+- Output map
+- Better way of setting input requirements
+- Final HasMany + tests
+- WIP but want to save
+- Rolling this back: this feature will cause more confusion then it will solve problems
+- Working out just how crazy I want to get with this feature
+- Working on can_create functionality for belongs_to
+- Updates per codereview answers
+- Version bump
+- Merge pull request #1 from cmancone/feature/configurable_auth
+- Cleanup
+- Verified changes for auth-in-handler-config
+- Finished tweaks and tests for auth in configuration
+- Flow seems to work but haven't updated all the tests
+- Finished with tests
+- Version bump
+- Working changes for integration testing, needs a double check
+- Final touches and tests
+- Testing
+- Working filtering
+- All operators covered
+- Possibly the most ridiculous python I've ever written
+- Version bump
+- Minor tweaks
+- Version bump
+- Latest changes working
+- Some more tweaks for new config method
+- Experimenting with a new way of managing DI config
+- Bumping version for new release
+- Restful API with basic tests
+- Restful API - needs tests
+- Last changes for working example
+- Working through changes for a fully functional example
+- Reorg for input checking, easier column generation, and email column type
+- Sigh
+- Routed handlers and CRUD
+- Basics and one working test for routing handlers
+- Working on some basic routing
+- Updated everything to use InputOutput
+- Convert handlers to use new InputOutput object
+- First public release
+- Preparing for packaging
+- WSGI ready?
+- Done with column types for now
+- Select column and more input checks/tests
+- Tested belongs to
+- BelongsTo - needs tests
+- Tests for created and updated
+- Forgot to update init.py
+- Starting on created and updated columns - need tests
+- Better consistency and concept of writeable column types
+- Rename + add a brief overview of the project
+- Fill in some tests
+- Filling out search helpers
+- Close to finishing up read handler
+- Starting on read
+- Delete functionality
+- Auth tests + update + update tests
+- Create handler working and tested
+- First test on create handler: needs more!
+- Ready to test create handler, but need some mocks
+- Updating columns for some better config checking and adding in input checks
+- Tests for input requirements
+- Starting up on organization for input requirements/checking
+- JSON conversion?
+- Starting to fill out create handler
+- Finished tests for handler base
+- Couple more quick tests
+- Start on handlers
+- SecretBearer authentication
+- Finished tests for api backend
+- Small reorg, working on cursor backend tests
+- Finished test on new models class
+- Working on tests for models
+- Tests on new cursor backend
+- Moved searching to backend - needs tests everywhere
+- Switching model to backend system
+- JSON column type
+- Tests for environment file
+- Working through tests and final details
+- More details on environment and secret configuration: needs tests
+- Working models, some tests, starting up on environment/secrets
+- Working on model and columns
+- Filling out model, needs tests
+- Len for models
+- Query building
+- Building out query builder
+- Working condition parser
+- Models and model base in progress
+
+### Fixed
+- Exit 1 on pytest error
+- Github actions
+- Pre-commit fail on poetry
+- Use built-in function for non count backend
+- Fix workflow black
+- Fix tests
+- Fix workflow
+- Fix workflow
+- Timestamp issue
+- Fix list_sub_folders
+- Tests for WSGI input/output
+
+### Removed
+- Remove old handlers
+- Remove auto dependency loading
+
+[unreleased]: https://github.com///compare/v2.0.4..HEAD
+[2.0.4]: https://github.com///compare/v2.0.3..v2.0.4
+[2.0.3]: https://github.com///compare/v2.0.2..v2.0.3
+[2.0.2]: https://github.com///compare/v2.0.1..v2.0.2
+[2.0.1]: https://github.com///compare/v2.0.0..v2.0.1
+
+<!-- generated by git-cliff -->
