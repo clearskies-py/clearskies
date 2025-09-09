@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "clear-skies",
-#     "clear-skies-doc-builder",
+#     "-e ../../src/clearskies",
+#     "clearskies-doc-builder",
 # ]
 # ///
 
