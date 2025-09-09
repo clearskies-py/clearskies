@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 2025-09-09
+
+### Changed
+- Undo local dep
+
+### Fixed
+- Fix local dependencies
+- Fix docs dependency
+- Fix docs use latest changelog;
+
 ## [2.0.5] - 2025-09-09
 
 ### Added
@@ -13,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add uv and release workflow
 
 ### Changed
+- Bump version to v2.0.5 by @github-actions[bot]
 - Switch build to uv by @tnijboer in [#18](https://github.com/clearskies-py/clearskies/pull/18)
 - Reuse readme.md
 - Switch build to uv by @cmancone
@@ -35,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Remove dupes by @cmancone
 
+## New Contributors
+* @github-actions[bot] made their first contribution
 ## [2.0.4] - 2025-08-27
 
 ### Added
@@ -742,6 +755,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.6]: https://github.com/clearskies-py/clearskies/compare/v2.0.5..v2.0.6
 [2.0.5]: https://github.com/clearskies-py/clearskies/compare/v2.0.4..v2.0.5
 [2.0.4]: https://github.com/clearskies-py/clearskies/compare/v2.0.3..v2.0.4
 [2.0.3]: https://github.com/clearskies-py/clearskies/compare/v2.0.2..v2.0.3
