@@ -20,17 +20,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: docs-deploy
           aws-region: us-east-1
-      - uses: ./.github/actions/bootstrap-poetry
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Publish
         run: |
           cd docs/python
-          poetry install --no-root
-          poetry run python build.py
+          uv run build.py
           sudo apt update
           sudo apt-get install -y ruby ruby-dev
           sudo gem install bundler
           cd ../build
+          cp ../../README.md _includes/project_readme.md
+          cp ../../CHANGELOG.md _includes/project_changelog.md
           sudo bundle install
           sudo bundle exec jekyll build
           cd _site
-          aws s3 cp . s3://clearskies.info --recursive
+          aws s3 cp . s3://clearskies.info/ --recursive

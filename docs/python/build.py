@@ -1,4 +1,10 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "clear-skies",
+#     "clear-skies-doc-builder",
+# ]
+# ///
 
 import clearskies_doc_builder
 
