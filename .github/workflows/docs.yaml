@@ -27,7 +27,7 @@ jobs:
           cd docs/python
           uv run build.py
           sudo apt update
-          sudo apt-get install -y ruby ruby-dev jq
+          sudo apt-get install -y ruby ruby-dev
           sudo gem install bundler
           cd ../build
           cp ../../README.md _includes/project_readme.md
@@ -35,4 +35,4 @@ jobs:
           sudo bundle install
           sudo bundle exec jekyll build
           cd _site
-          aws s3 sync --delete . s3://clearskies.info/
+          aws s3 cp . s3://clearskies.info/ --recursive
