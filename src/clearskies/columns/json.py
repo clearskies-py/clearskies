@@ -69,6 +69,8 @@ class Json(Column):
 
     """
 
+    setable = clearskies.configs.Any(default=None)  # type: ignore
+    default = clearskies.configs.Any(default=None)  # type: ignore
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
