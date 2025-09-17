@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.configs
+from clearskies import configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class MinimumLength(Validator):
-    minimum_length = clearskies.configs.Integer(required=True)
+    minimum_length = configs.Integer(required=True)
 
     def __init__(self, minimum_length: int):
         self.minimum_length = minimum_length

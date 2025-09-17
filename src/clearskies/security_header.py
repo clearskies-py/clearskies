@@ -1,7 +1,7 @@
-from clearskies.configurable import Configurable
+from clearskies import configurable
 
 
-class SecurityHeader(Configurable):
+class SecurityHeader(configurable.Configurable):
     """
     Attach all the various security headers to endpoints.
 

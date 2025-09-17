@@ -1,4 +1,4 @@
-import clearskies.di
+from clearskies import di
 
 from .jwks import Jwks
 
@@ -14,7 +14,7 @@ class AuthorizationPassThrough(Jwks):
     """
     The input output helper
     """
-    input_output = clearskies.di.inject.InputOutput()
+    input_output = di.inject.InputOutput()
 
     def headers(self, retry_auth=False):
         return {"Authorization": self.input_output.request_headers.get("authorization", True)}

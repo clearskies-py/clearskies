@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.autodoc.schema import Schema as AutoDocSchema
@@ -382,17 +380,17 @@ class HasMany(Column):
 
     input_output = InputOutput()
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         child_model_class,
         foreign_column_name: str | None = None,
         readable_child_column_names: list[str] = [],
-        where: clearskies.typing.condition | list[clearskies.typing.condition] = [],
+        where: typing.condition | list[typing.condition] = [],
         is_readable: bool = True,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         pass
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.configs
+from clearskies import configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class MaximumValue(Validator):
-    maximum_value = clearskies.configs.Integer(required=True)
+    maximum_value = configs.Integer(required=True)
 
     def __init__(self, maximum_value: int):
         self.maximum_value = maximum_value

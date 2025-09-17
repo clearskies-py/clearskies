@@ -6,17 +6,15 @@ from typing import TYPE_CHECKING, Any
 
 import dateparser
 
-import clearskies.configs
-import clearskies.decorators
-import clearskies.di
+from clearskies import configs, decorators, di
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
     import clearskies.model
 
 
-class InTheFuture(Validator, clearskies.di.InjectableProperties):
-    utcnow = clearskies.di.inject.Utcnow()
+class InTheFuture(Validator, di.InjectableProperties):
+    utcnow = di.inject.Utcnow()
 
     def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
         if not data.get(column_name):

@@ -1,20 +1,19 @@
-import clearskies.configs
-import clearskies.decorators
+from clearskies import configs, decorators
 from clearskies.security_header import SecurityHeader
 
 
 class CacheControl(SecurityHeader):
-    max_age = clearskies.configs.Integer()
-    s_maxage = clearskies.configs.Integer()
-    stale_while_revalidate = clearskies.configs.Integer()
-    stale_if_error = clearskies.configs.Integer()
-    immutable = clearskies.configs.Boolean(default=False)
-    must_understand = clearskies.configs.Boolean(default=False)
-    no_cache = clearskies.configs.Boolean(default=False)
-    no_store = clearskies.configs.Boolean(default=False)
-    no_transform = clearskies.configs.Boolean(default=False)
-    private = clearskies.configs.Boolean(default=False)
-    public = clearskies.configs.Boolean(default=False)
+    max_age = configs.Integer()
+    s_maxage = configs.Integer()
+    stale_while_revalidate = configs.Integer()
+    stale_if_error = configs.Integer()
+    immutable = configs.Boolean(default=False)
+    must_understand = configs.Boolean(default=False)
+    no_cache = configs.Boolean(default=False)
+    no_store = configs.Boolean(default=False)
+    no_transform = configs.Boolean(default=False)
+    private = configs.Boolean(default=False)
+    public = configs.Boolean(default=False)
 
     numbers: list[str] = [
         "max_age",
@@ -32,7 +31,7 @@ class CacheControl(SecurityHeader):
         "public",
     ]
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         max_age: int | None = None,

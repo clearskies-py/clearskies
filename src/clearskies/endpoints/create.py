@@ -4,9 +4,7 @@ import inspect
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
+from clearskies import authentication, autodoc, decorators, exceptions, schema
 from clearskies.endpoint import Endpoint
 from clearskies.functional import string
 from clearskies.input_outputs import InputOutput
@@ -102,7 +100,7 @@ class Create(Endpoint):
      5. We provided an extra column (`not_a_column`) that wasn't in the list of allowed columns.
     """
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],
@@ -114,7 +112,7 @@ class Create(Endpoint):
         request_methods: list[str] = ["POST"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
-        output_schema: clearskies.Schema | None = None,
+        output_schema: schema.Schema | None = None,
         column_overrides: dict[str, Column] = {},
         internal_casing: str = "snake_case",
         external_casing: str = "snake_case",
@@ -137,7 +135,7 @@ class Create(Endpoint):
     def handle(self, input_output: InputOutput) -> Any:
         request_data = self.get_request_data(input_output)
         if not request_data and input_output.has_body():
-            raise clearskies.exceptions.ClientError("Request body was not valid JSON")
+            raise exceptions.ClientError("Request body was not valid JSON")
         self.validate_input_against_schema(request_data, input_output, self.model_class)
         new_model = self.model.create(request_data, columns=self.columns)
         return self.success(input_output, self.model_as_json(new_model, input_output))

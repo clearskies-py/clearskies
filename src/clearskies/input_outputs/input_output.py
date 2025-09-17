@@ -3,22 +3,20 @@ from abc import ABC, abstractmethod
 from typing import Any
 from urllib.parse import parse_qs
 
-import clearskies.configurable
 import clearskies.typing
-from clearskies.configs import AnyDict, StringDict
-from clearskies.exceptions import ClientError
+from clearskies import configs, configurable
 
 from .headers import Headers
 
 
-class InputOutput(ABC, clearskies.configurable.Configurable):
+class InputOutput(ABC, configurable.Configurable):
     """Manage the request and response to the client."""
 
     response_headers: Headers = None  # type: ignore
     request_headers: Headers = None  # type: ignore
-    query_parameters = clearskies.configs.AnyDict(default={})
-    routing_data = clearskies.configs.StringDict(default={})
-    authorization_data = clearskies.configs.AnyDict(default={})
+    query_parameters = configs.AnyDict(default={})
+    routing_data = configs.StringDict(default={})
+    authorization_data = configs.AnyDict(default={})
 
     _body_as_json: dict[str, Any] | list[Any] | None = {}
     _body_loaded_as_json = False

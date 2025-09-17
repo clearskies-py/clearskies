@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 import dateparser  # type: ignore
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
@@ -127,7 +125,7 @@ class Datetime(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d %H:%M:%S",
@@ -140,10 +138,10 @@ class Datetime(Column):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,
@@ -184,7 +182,7 @@ class Datetime(Column):
             self.name: value.strftime(self.date_format),
         }
 
-    def to_json(self, model: clearskies.model.Model) -> dict[str, Any]:
+    def to_json(self, model: Model) -> dict[str, Any]:
         """Grabs the column out of the model and converts it into a representation that can be turned into JSON."""
         value = self.__get__(model, model.__class__)
         if value and (isinstance(value, datetime.datetime) or isinstance(value, datetime.date)):

@@ -1,10 +1,9 @@
-import inspect
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Type
+from __future__ import annotations
 
-import clearskies.column
-import clearskies.model
-import clearskies.query
+from abc import ABC, abstractmethod
+from typing import Any, Callable
+
+from clearskies import column, model, query
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
@@ -26,29 +25,27 @@ class Backend(ABC):
     can_count = True
 
     @abstractmethod
-    def update(self, id: int | str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
         """Update the record with the given id with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def create(self, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
         """Create a record with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def delete(self, id: int | str, model: clearskies.model.Model) -> bool:
+    def delete(self, id: int | str, model: model.Model) -> bool:
         """Delete the record with the given id."""
         pass
 
     @abstractmethod
-    def count(self, query: clearskies.query.Query) -> int:
+    def count(self, query: query.Query) -> int:
         """Return the number of records which match the given query configuration."""
         pass
 
     @abstractmethod
-    def records(
-        self, query: clearskies.query.Query, next_page_data: dict[str, str | int] | None = None
-    ) -> list[dict[str, Any]]:
+    def records(self, query: query.Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         """
         Return a list of records that match the given query configuration.
 
@@ -107,7 +104,7 @@ class Backend(ABC):
         """
         pass
 
-    def column_from_backend(self, column: clearskies.column.Column, value: Any) -> Any:
+    def column_from_backend(self, column: column.Column, value: Any) -> Any:
         """
         Manage transformations from the backend.
 
@@ -121,7 +118,7 @@ class Backend(ABC):
         """
         return column.from_backend(value)
 
-    def column_to_backend(self, column: clearskies.column.Column, backend_data: dict[str, Any]) -> dict[str, Any]:
+    def column_to_backend(self, column: column.Column, backend_data: dict[str, Any]) -> dict[str, Any]:
         """
         Manage transformations to the backend.
 

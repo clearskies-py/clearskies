@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import clearskies.decorators
-import clearskies.di
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, di, typing
 from clearskies.columns.string import String
 
 if TYPE_CHECKING:
@@ -63,17 +60,17 @@ class Uuid(String):
     is_writeable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    uuid = clearskies.di.inject.Uuid()
+    uuid = di.inject.Uuid()
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         is_readable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         pass
 

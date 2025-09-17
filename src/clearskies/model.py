@@ -63,6 +63,7 @@ class Model(Schema, InjectableProperties):
     from typing import Self
     import clearskies
 
+
     class Fish(clearskies.Model):
         @classmethod
         def destination_name(cls: type[Self]) -> str:
@@ -86,6 +87,7 @@ class Model(Schema, InjectableProperties):
     ```
     import clearskies
 
+
     class User(clearskies.Model):
         id_column_name = "id"
         backend = clearskies.backends.MemoryBackend()
@@ -93,10 +95,14 @@ class Model(Schema, InjectableProperties):
         id = clearskies.columns.Uuid()
         name = clearskies.columns.String()
 
+
     def my_application(user, users, by_type_hint: User):
         return {
-            "all_are_user_models": isinstance(user, User) and isinstance(users, User) and isinstance(by_type_hint, User)
+            "all_are_user_models": isinstance(user, User)
+            and isinstance(users, User)
+            and isinstance(by_type_hint, User)
         }
+
 
     cli = clearskies.contexts.Cli(my_application, classes=[User])
     cli()
@@ -149,10 +155,12 @@ class Model(Schema, InjectableProperties):
     import datetime
     import clearskies
 
+
     class SomeClass:
         # Since this will be built by the DI system directly, we can declare dependencies in the __init__
         def __init__(self, some_date):
             self.some_date = some_date
+
 
     class User(clearskies.Model):
         id_column_name = "id"
@@ -167,15 +175,17 @@ class Model(Schema, InjectableProperties):
         def some_date_in_the_past(self):
             return self.some_class.some_date < self.utcnow
 
+
     def my_application(user):
         return user.some_date_in_the_past()
+
 
     cli = clearskies.contexts.Cli(
         my_application,
         classes=[User],
         bindings={
             "some_date": datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
-        }
+        },
     )
     cli()
     ```
@@ -321,6 +331,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -328,11 +339,15 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(user):
-            user.save({
-                "name": "Awesome Person",
-            })
+            user.save(
+                {
+                    "name": "Awesome Person",
+                }
+            )
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -346,6 +361,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -353,10 +369,12 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(user):
             user.name = "Awesome Person"
             user.save()
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -379,6 +397,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -386,8 +405,8 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
-        def my_application(user):
 
+        def my_application(user):
             if not user:
                 print("We will execute a create operation")
 
@@ -406,6 +425,7 @@ class Model(Schema, InjectableProperties):
 
             return {"id": user.id, "name": user.name}
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
@@ -422,12 +442,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(user):
             # create a record with just an id
@@ -437,6 +459,7 @@ class Model(Schema, InjectableProperties):
             user.save({"name": "Test"})
 
             return {"id": user.id, "name": user.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -517,6 +540,7 @@ class Model(Schema, InjectableProperties):
         from typing import Any, Self
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -536,6 +560,7 @@ class Model(Schema, InjectableProperties):
                     print("Nothing changed")
                 return data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 22})
@@ -543,6 +568,7 @@ class Model(Schema, InjectableProperties):
             jane.save({"name": "Anon", "age": 23})
 
             return {"id": jane.id, "name": jane.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -600,6 +626,7 @@ class Model(Schema, InjectableProperties):
         from typing import Any, Self
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -618,10 +645,12 @@ class Model(Schema, InjectableProperties):
                 print("Latest age: " + str(self.latest("age", data)))
                 return data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 25})
             return {"id": jane.id, "name": jane.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -659,6 +688,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -667,12 +697,14 @@ class Model(Schema, InjectableProperties):
             name = clearskies.columns.String()
             age = clearskies.columns.Integer()
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             return {
                 "name_changed": jane.was_changed("name"),
                 "age_changed": jane.was_changed("age"),
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -713,6 +745,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -720,10 +753,12 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             jane.save({"name": "Jane Doe"})
             return {"name": jane.name, "previous_name": jane.previous_value("name")}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -758,12 +793,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             alice = users.create({"name": "Alice"})
@@ -778,12 +815,12 @@ class Model(Schema, InjectableProperties):
 
             return {"id": alice.id, "name": alice.name}
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
         )
         cli()
-
         ```
         """
         self.no_queries()
@@ -855,7 +892,7 @@ class Model(Schema, InjectableProperties):
 
     def pre_save(self: Self, data: dict[str, Any]) -> dict[str, Any]:
         """
-        A hook to add additional logic in the pre-save step of the save process.
+        Add a hook to add additional logic in the pre-save step of the save process.
 
         The pre/post/finished steps of the model are directly analogous to the pre/post/finished steps for the columns.
 
@@ -873,6 +910,7 @@ class Model(Schema, InjectableProperties):
         from typing import Any, Self
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -889,11 +927,12 @@ class Model(Schema, InjectableProperties):
 
                 return additional_data
 
+
         def my_application(users):
             jane = users.create({"name": "Jane"})
             is_anonymous_after_create = jane.is_anonymous
 
-            jane.save({"name":""})
+            jane.save({"name": ""})
             is_anonymous_after_first_update = jane.is_anonymous
 
             jane.save({"name": "Jane Doe"})
@@ -904,6 +943,7 @@ class Model(Schema, InjectableProperties):
                 "is_anonymous_after_first_update": is_anonymous_after_first_update,
                 "is_anonymous_after_last_update": is_anonymous_after_last_update,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -923,7 +963,7 @@ class Model(Schema, InjectableProperties):
 
     def post_save(self: Self, data: dict[str, Any], id: str | int) -> None:
         """
-        A hook to add additional logic in the post-save step of the save process.
+        Add  hook to add additional logic in the post-save step of the save process.
 
         It is passed in the data being saved as well as the id of the record.  Keep in mind that the post save
         hook happens after the backend has been updated (but before the model is updated) so if you need to make
@@ -934,6 +974,7 @@ class Model(Schema, InjectableProperties):
         from typing import Any, Self
         import clearskies
 
+
         class History(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -941,6 +982,7 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             message = clearskies.columns.String()
             created_at = clearskies.columns.Created(date_format="%Y-%m-%d %H:%M:%S.%f")
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -959,6 +1001,7 @@ class Model(Schema, InjectableProperties):
                 age = self.latest("age", data)
                 self.histories.create({"message": f"My name is {name} and I am {age} years old"})
 
+
         def my_application(users, histories):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 25})
@@ -966,6 +1009,7 @@ class Model(Schema, InjectableProperties):
             jane.save({"age": 30})
 
             return [history.message for history in histories.sort_by("created_at", "ASC")]
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -978,15 +1022,16 @@ class Model(Schema, InjectableProperties):
 
     def save_finished(self: Self) -> None:
         """
-        A hook to add additional logicin the save_finished step of the save process.
+        Add a hook to add additional logic in the save_finished step of the save process.
 
-        It has no retrun value and is passed no data.  By the time this fires the model has already been
+        It has no return value and is passed no data.  By the time this fires the model has already been
         updated with the new data.  You can decide on the necessary actions using the `was_changed` and
         the `previous_value` functions.
 
         ```
         from typing import Any, Self
         import clearskies
+
 
         class History(clearskies.Model):
             id_column_name = "id"
@@ -995,6 +1040,7 @@ class Model(Schema, InjectableProperties):
             id = clearskies.columns.Uuid()
             message = clearskies.columns.String()
             created_at = clearskies.columns.Created(date_format="%Y-%m-%d %H:%M:%S.%f")
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1011,6 +1057,7 @@ class Model(Schema, InjectableProperties):
 
                 self.histories.create({"message": f"My name is {self.name} and I am {self.age} years old"})
 
+
         def my_application(users, histories):
             jane = users.create({"name": "Jane"})
             jane.save({"age": 25})
@@ -1018,6 +1065,7 @@ class Model(Schema, InjectableProperties):
             jane.save({"age": 30})
 
             return [history.message for history in histories.sort_by("created_at", "ASC")]
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1054,9 +1102,7 @@ class Model(Schema, InjectableProperties):
         authorization_data: dict[str, Any],
         overrides: dict[str, Column] = {},
     ) -> Self:
-        """
-        A hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler.
-        """
+        """Add a hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler."""
         for column in self.get_columns(overrides=overrides).values():
             models = column.where_for_request(model, input_output, routing_data, authorization_data)  # type: ignore
         return self.where_for_request(
@@ -1072,7 +1118,7 @@ class Model(Schema, InjectableProperties):
         overrides: dict[str, Column] = {},
     ) -> Self:
         """
-        A hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler.
+        Add a hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler.
 
         Note that this automatically affects the behavior of the various list endpoints, but won't be called when you create your
         own queries directly.  Here's an example where the model restricts the list endpoint so that it only returns users with
@@ -1081,6 +1127,7 @@ class Model(Schema, InjectableProperties):
         ```
         from typing import Any, Self
         import clearskies
+
 
         class User(clearskies.Model):
             id_column_name = "id"
@@ -1098,6 +1145,7 @@ class Model(Schema, InjectableProperties):
                 overrides: dict[str, clearskies.Column] = {},
             ) -> Self:
                 return model.where("age>=18")
+
 
         list_users = clearskies.endpoints.List(
             model_class=User,
@@ -1144,12 +1192,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             jane = users.create({"name": "Jane"})
@@ -1170,6 +1220,7 @@ class Model(Schema, InjectableProperties):
                 "invalid_request_error": invalid_request_error,
             }
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[User],
@@ -1183,7 +1234,7 @@ class Model(Schema, InjectableProperties):
         {
             "jane_instance_has_query": false,
             "some_search_has_query": true,
-            "invalid_request_error": "You attempted to save/read record data for a model being used to make a query.  This is not allowed, as it is typically a sign of a bug in your application code."
+            "invalid_request_error": "You attempted to save/read record data for a model being used to make a query.  This is not allowed, as it is typically a sign of a bug in your application code.",
         }
         ```
 
@@ -1267,7 +1318,7 @@ class Model(Schema, InjectableProperties):
         return self.with_query(self.get_query().set_select_all(select_all))
 
     def where(self: Self, where: str | Condition) -> Self:
-        """
+        r"""
         Add a condition to a query.
 
         The `where` method (in combination with the `find` method) is typically the starting point for query records in
@@ -1314,6 +1365,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1323,12 +1375,17 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
             orders.create({"user_id": "Jane", "status": "Pending", "total": 30})
 
-            return [order.user_id for order in orders.where("status=Pending").where(Order.total.greater_than(25))]
+            return [
+                order.user_id
+                for order in orders.where("status=Pending").where(Order.total.greater_than(25))
+            ]
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1367,12 +1424,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         class Order(clearskies.Model):
             id_column_name = "id"
@@ -1383,6 +1442,7 @@ class Model(Schema, InjectableProperties):
             user = clearskies.columns.BelongsToModel("user_id")
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
+
 
         def my_application(users, orders):
             jane = users.create({"name": "Jane"})
@@ -1402,7 +1462,13 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": bob.id, "status": "In Progress", "total": 35})
 
             # return all orders for anyone named Jane that have a status of Pending
-            return orders.join("join users on users.id=orders.user_id").where("users.name=Jane").sort_by("total", "asc").where("status=Pending")
+            return (
+                orders.join("join users on users.id=orders.user_id")
+                .where("users.name=Jane")
+                .sort_by("total", "asc")
+                .where("status=Pending")
+            )
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1413,7 +1479,6 @@ class Model(Schema, InjectableProperties):
             classes=[Order, User],
         )
         cli()
-
         ```
         """
         self.no_single_model()
@@ -1460,6 +1525,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1469,13 +1535,17 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
             orders.create({"user_id": "Alice", "status": "Pending", "total": 30})
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
-            return orders.sort_by("user_id", "asc", secondary_column_name="total", secondary_direction="desc")
+            return orders.sort_by(
+                "user_id", "asc", secondary_column_name="total", secondary_direction="desc"
+            )
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1502,6 +1572,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1511,6 +1582,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1518,6 +1590,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.limit(2)
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1548,6 +1621,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1557,6 +1631,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1564,6 +1639,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.sort_by("total", "asc").pagination(start=2)
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1604,6 +1680,7 @@ class Model(Schema, InjectableProperties):
         ```python
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1612,6 +1689,7 @@ class Model(Schema, InjectableProperties):
             user_id = clearskies.columns.String()
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
+
 
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
@@ -1626,6 +1704,7 @@ class Model(Schema, InjectableProperties):
                 "user_id": jane.user_id,
                 "total": jane.total,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1668,6 +1747,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1677,6 +1757,7 @@ class Model(Schema, InjectableProperties):
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
 
+
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
             orders.create({"user_id": "Alice", "status": "In Progress", "total": 15})
@@ -1684,6 +1765,7 @@ class Model(Schema, InjectableProperties):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 26})
 
             return orders.limit(1).paginate_all()
+
 
         cli = clearskies.contexts.Cli(
             clearskies.endpoints.Callable(
@@ -1724,12 +1806,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             jane = users.create({"name": "Jane"})
@@ -1740,6 +1824,7 @@ class Model(Schema, InjectableProperties):
             another_jane_object.save({"name": "Jane Doe"})
 
             return {"id": another_jane_object.id, "name": another_jane_object.name}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1754,7 +1839,9 @@ class Model(Schema, InjectableProperties):
 
     def empty(self: Self) -> Self:
         """
-        An alias for self.model({})
+        Create a an empty model instance.
+
+        An alias for self.model({}).
 
         This just provides you a fresh, empty model instance that you can use for populating with data or creating
         a new record.  Here's a simple exmaple.  Both print statements will be printed and it will return the id
@@ -1763,12 +1850,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(users):
             alice = users.create({"name": "Alice"})
@@ -1782,6 +1871,7 @@ class Model(Schema, InjectableProperties):
                 print("Fresh instance, ready to go")
 
             return {"alice_id": alice.id, "blank_id": blank.id}
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1805,12 +1895,14 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class User(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
             name = clearskies.columns.String()
+
 
         def my_application(user):
             # let's create a new record
@@ -1823,6 +1915,7 @@ class Model(Schema, InjectableProperties):
                 "Alice": user.name,
                 "Bob": bob.name,
             }
+
 
         cli = clearskies.contexts.Cli(
             my_application,
@@ -1847,6 +1940,7 @@ class Model(Schema, InjectableProperties):
         ```
         import clearskies
 
+
         class Order(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -1855,6 +1949,7 @@ class Model(Schema, InjectableProperties):
             user_id = clearskies.columns.String()
             status = clearskies.columns.Select(["Pending", "In Progress"])
             total = clearskies.columns.Float()
+
 
         def my_application(orders):
             orders.create({"user_id": "Bob", "status": "Pending", "total": 25})
@@ -1870,12 +1965,12 @@ class Model(Schema, InjectableProperties):
                 "total": jane.total,
             }
 
+
         cli = clearskies.contexts.Cli(
             my_application,
             classes=[Order],
         )
         cli()
-
         ```
         """
         self.no_single_model()

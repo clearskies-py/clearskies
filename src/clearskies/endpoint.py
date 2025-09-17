@@ -3,16 +3,9 @@ from __future__ import annotations
 import inspect
 import urllib.parse
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
-import clearskies.column
-import clearskies.configs
-import clearskies.configurable
-import clearskies.decorators
-import clearskies.di
-import clearskies.end
-import clearskies.typing
-from clearskies import autodoc, exceptions
+from clearskies import autodoc, column, configs, configurable, decorators, di, end, exceptions
 from clearskies.authentication import Authentication, Authorization, Public
 from clearskies.autodoc import schema
 from clearskies.autodoc.request import Parameter, Request
@@ -27,12 +20,12 @@ if TYPE_CHECKING:
 
 
 class Endpoint(
-    clearskies.end.End,  # type: ignore
-    clearskies.configurable.Configurable,
-    clearskies.di.InjectableProperties,
+    end.End,  # type: ignore
+    configurable.Configurable,
+    di.InjectableProperties,
 ):
     """
-    Automating drudgery!
+    Automating drudgery.
 
     With clearskies, endpoints exist to offload some drudgery and make your life easier, but they can also
     get out of your way when you don't need them.  Think of them as pre-built endpoints that can execute
@@ -47,7 +40,7 @@ class Endpoint(
     """
     The dependency injection container
     """
-    di = clearskies.di.inject.Di()
+    di = di.inject.Di()
 
     """
     Whether or not this endpoint can handle CORS
@@ -57,7 +50,7 @@ class Endpoint(
     """
     The actual CORS header
     """
-    cors_header: Cors | None = None
+    cors_header: Optional[Cors] = None
 
     """
     Set some response headers that should be returned for this endpoint.
@@ -82,7 +75,7 @@ class Endpoint(
     wsgi()
     ```
     """
-    response_headers = clearskies.configs.StringListOrCallable(default=[])
+    response_headers = configs.StringListOrCallable(default=[])
 
     """
     Set the URL for the endpoint
@@ -161,7 +154,7 @@ class Endpoint(
     ```
 
     """
-    url = clearskies.configs.Url(default="")
+    url = configs.Url(default="")
 
     """
     The allowed request methods for this endpoint.
@@ -204,7 +197,7 @@ class Endpoint(
     }
     ```
     """
-    request_methods = clearskies.configs.SelectList(
+    request_methods = configs.SelectList(
         allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH", "QUERY"], default=["GET"]
     )
 
@@ -214,7 +207,7 @@ class Endpoint(
     Use this to attach an instance of `clearskies.authentication.Authentication` to an endpoint, which enforces authentication.
     For more details, see the dedicated documentation section on authentication and authorization. By default, all endpoints are public.
     """
-    authentication = clearskies.configs.Authentication(default=Public())
+    authentication = configs.Authentication(default=Public())
 
     """
     The authorization rules for this endpoint
@@ -222,7 +215,7 @@ class Endpoint(
     Use this to attach an instance of `clearskies.authentication.Authorization` to an endpoint, which enforces authorization.
     For more details, see the dedicated documentation section on authentication and authorization. By default, no authorization is enforced.
     """
-    authorization = clearskies.configs.Authorization(default=Authorization())
+    authorization = configs.Authorization(default=Authorization())
 
     """
     An override of the default model-to-json mapping for endpoints that auto-convert models to json.
@@ -329,7 +322,7 @@ class Endpoint(
     ```
 
     """
-    output_map = clearskies.configs.Callable(default=None)
+    output_map = configs.Callable(default=None)
 
     """
     A schema that describes the expected output to the client.
@@ -338,14 +331,14 @@ class Endpoint(
     Note that this is typically not required - when returning models and relying on clearskies to auto-convert to JSON,
     it will also automatically generate your documentation.
     """
-    output_schema = clearskies.configs.Schema(default=None)
+    output_schema = configs.Schema(default=None)
 
     """
     The model class used by this endpoint.
 
     The endpoint will use this to fetch/save/validate incoming data as needed.
     """
-    model_class = clearskies.configs.ModelClass(default=None)
+    model_class = configs.ModelClass(default=None)
 
     """
     Columns from the model class that should be returned to the client.
@@ -421,7 +414,7 @@ class Endpoint(
 
     ```
     """
-    readable_column_names = clearskies.configs.ReadableModelColumns("model_class", default=[])
+    readable_column_names = configs.ReadableModelColumns("model_class", default=[])
 
     """
     Specifies which columns from a model class can be set by the client.
@@ -486,14 +479,14 @@ class Endpoint(
     ```
 
     """
-    writeable_column_names = clearskies.configs.WriteableModelColumns("model_class", default=[])
+    writeable_column_names = configs.WriteableModelColumns("model_class", default=[])
 
     """
     Columns from the model class that can be searched by the client.
 
     Sets which columns the client is allowed to search (for endpoints that support searching).
     """
-    searchable_column_names = clearskies.configs.SearchableModelColumns("model_class", default=[])
+    searchable_column_names = configs.SearchableModelColumns("model_class", default=[])
 
     """
     A function to call to add custom input validation logic.
@@ -557,7 +550,7 @@ class Endpoint(
     ```
 
     """
-    input_validation_callable = clearskies.configs.Callable(default=None)
+    input_validation_callable = configs.Callable(default=None)
 
     """
     A dictionary with columns that should override columns in the model.
@@ -579,7 +572,7 @@ class Endpoint(
     )
     ```
     """
-    column_overrides = clearskies.configs.Columns(default={})
+    column_overrides = configs.Columns(default={})
 
     """
     Used in conjunction with external_casing to change the casing of the key names in the outputted JSON of the endpoint.
@@ -638,14 +631,14 @@ class Endpoint(
     }
     ```
     """
-    internal_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    internal_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
 
     """
     Used in conjunction with internal_casing to change the casing of the key names in the outputted JSON of the endpoint.
 
     See the docs for `internal_casing` for more details and usage examples.
     """
-    external_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
 
     """
     Configure standard security headers to be sent along in the response from this endpoint.
@@ -689,19 +682,19 @@ class Endpoint(
     ```
 
     """
-    security_headers = clearskies.configs.SecurityHeaders(default=[])
+    security_headers = configs.SecurityHeaders(default=[])
 
     """
     A description for this endpoint.  This is added to any auto-documentation
     """
-    description = clearskies.configs.String(default="")
+    description = configs.String(default="")
 
     """
     Whether or not the routing data should also be persisted to the model.  Defaults to False.
 
     Note: this is only relevant for handlers that accept request data
     """
-    include_routing_data_in_request_data = clearskies.configs.Boolean(default=False)
+    include_routing_data_in_request_data = configs.Boolean(default=False)
 
     """
     Additional conditions to always add to the results.
@@ -783,7 +776,7 @@ class Endpoint(
     and note that neither Greg nor Ann are returned.  Ann because she doesn't make the grade criteria, and Greg because
     he won't graduate.
     """
-    where = clearskies.configs.Conditions(default=[])
+    where = configs.Conditions(default=[])
 
     """
     Additional joins to always add to the query.
@@ -868,18 +861,18 @@ class Endpoint(
     e.g., the inner join reomves all the students that don't have an entry in the PastRecord model.
 
     """
-    joins = clearskies.configs.Joins(default=[])
+    joins = configs.Joins(default=[])
 
     cors_header: Cors = None  # type: ignore
-    _model: clearskies.model.Model = None  # type: ignore
-    _columns: dict[str, clearskies.column.Column] = None  # type: ignore
-    _readable_columns: dict[str, clearskies.column.Column] = None  # type: ignore
-    _writeable_columns: dict[str, clearskies.column.Column] = None  # type: ignore
-    _searchable_columns: dict[str, clearskies.column.Column] = None  # type: ignore
-    _sortable_columns: dict[str, clearskies.column.Column] = None  # type: ignore
-    _as_json_map: dict[str, clearskies.column.Column] = None  # type: ignore
+    _model: Model = None  # type: ignore
+    _columns: dict[str, column.Column] = None  # type: ignore
+    _readable_columns: dict[str, column.Column] = None  # type: ignore
+    _writeable_columns: dict[str, column.Column] = None  # type: ignore
+    _searchable_columns: dict[str, column.Column] = None  # type: ignore
+    _sortable_columns: dict[str, column.Column] = None  # type: ignore
+    _as_json_map: dict[str, column.Column] = None  # type: ignore
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         url: str = "",
@@ -1025,7 +1018,9 @@ class Endpoint(
         input_output.response_headers.add("content-type", "text/html")
         input_output.response_headers.add("location", location)
         return self.respond(
-            '<meta http-equiv="refresh" content="0; url=' + urllib.parse.quote(location) + '">Redirecting', status_code
+            input_output,
+            '<meta http-equiv="refresh" content="0; url=' + urllib.parse.quote(location) + '">Redirecting',
+            status_code,
         )
 
     def success(
@@ -1053,7 +1048,7 @@ class Endpoint(
 
         return self.respond_json(input_output, response_data, 200)
 
-    def model_as_json(self, model: clearskies.model.Model, input_output: InputOutput) -> dict[str, Any]:
+    def model_as_json(self, model: Model, input_output: InputOutput) -> dict[str, Any]:
         if self.output_map:
             return self.di.call_function(self.output_map, model=model, **input_output.get_context_for_callables())
 
@@ -1070,7 +1065,7 @@ class Endpoint(
                     json[self.auto_case_column_name(key, True)] = value
         return json
 
-    def _build_as_json_map(self, model: clearskies.model.Model) -> dict[str, clearskies.column.Column]:
+    def _build_as_json_map(self, model: Model) -> dict[str, column.Column]:
         conversion_map = {}
         if not self.readable_column_names:
             raise ValueError(

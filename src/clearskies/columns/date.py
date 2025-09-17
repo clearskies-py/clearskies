@@ -3,11 +3,9 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import dateparser  # type: ignore
+import dateparser
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.columns.datetime import Datetime
@@ -102,7 +100,7 @@ class Date(Datetime):
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d",
@@ -113,10 +111,10 @@ class Date(Datetime):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,

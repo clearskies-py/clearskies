@@ -1,5 +1,6 @@
-import clearskies.decorators
-import clearskies.typing
+from __future__ import annotations
+
+from clearskies import decorators, typing
 from clearskies.columns.has_many import HasMany
 
 
@@ -20,16 +21,16 @@ class HasManySelf(HasMany):
 
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         foreign_column_name: str | None = None,
         readable_child_columns: list[str] = [],
-        where: clearskies.typing.condition | list[clearskies.typing.condition] = [],
+        where: typing.condition | list[typing.condition] = [],
         is_readable: bool = True,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         pass
 

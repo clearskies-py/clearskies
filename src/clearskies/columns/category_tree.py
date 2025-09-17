@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, typing
 from clearskies.columns.belongs_to_id import BelongsToId
 
 if TYPE_CHECKING:
@@ -163,7 +161,7 @@ class CategoryTree(BelongsToId):
 
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         tree_model_class,
@@ -175,17 +173,17 @@ class CategoryTree(BelongsToId):
         load_relatives_strategy: str = "join",
         readable_parent_columns: list[str] = [],
         join_type: str | None = None,
-        where: clearskies.typing.condition | list[clearskies.typing.condition] = [],
+        where: typing.condition | list[typing.condition] = [],
         default: str | None = None,
         setable: str | Callable | None = None,
         is_readable: bool = True,
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,

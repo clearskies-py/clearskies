@@ -1,8 +1,13 @@
-from typing import Any
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
+
+import clearskies.configurable
 
 
-class Secrets:
-    def create(self, path: str, value: str) -> None:
+class Secrets(ABC, clearskies.configurable.Configurable):
+    def create(self, path: str, value: str) -> bool:
         raise NotImplementedError(
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
         )

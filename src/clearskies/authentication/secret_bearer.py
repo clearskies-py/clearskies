@@ -1,11 +1,9 @@
-import clearskies.configs
-import clearskies.decorators
-import clearskies.di
-from clearskies import autodoc
-from clearskies.authentication.authentication import Authentication
+from clearskies import autodoc, configs, decorators, di
+
+from .authentication import Authentication
 
 
-class SecretBearer(Authentication, clearskies.di.InjectableProperties):
+class SecretBearer(Authentication, di.InjectableProperties):
     """
     Secret Bearer performs authentication by checking against a static API key stored in either environment variables or a secret manager.
 
@@ -191,8 +189,8 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     is_public = False
     can_authorize = False
 
-    environment = clearskies.di.inject.Environment()
-    secrets = clearskies.di.inject.Secrets()
+    environment = di.inject.Environment()
+    secrets = di.inject.Secrets()
 
     """
     The path in our secret manager from which the secret should be fetched.
@@ -248,7 +246,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     ```
 
     """
-    secret_key = clearskies.configs.String(default="")
+    secret_key = configs.String(default="")
 
     """
     The path in our secret manager where an alternate secret can also be fetched
@@ -322,12 +320,12 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     ```
 
     """
-    alternate_secret_key = clearskies.configs.String(default="")
+    alternate_secret_key = configs.String(default="")
 
     """
     The name of the environment variable from which we should fetch our key.
     """
-    environment_key = clearskies.configs.String(default="")
+    environment_key = configs.String(default="")
 
     """
     The name of an alternate environment variable from which we should fetch our key.
@@ -392,7 +390,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     ```
 
     """
-    alternate_environment_key = clearskies.configs.String(default="")
+    alternate_environment_key = configs.String(default="")
 
     """
     The expected prefix (if any) that should come before the secret key in the authorization header.
@@ -445,7 +443,7 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     }
     ```
     """
-    header_prefix = clearskies.configs.String(default="")
+    header_prefix = configs.String(default="")
 
     """
     The length of our header prefix
@@ -455,12 +453,12 @@ class SecretBearer(Authentication, clearskies.di.InjectableProperties):
     """
     The name of our security scheme in the auto-generated documentation
     """
-    documentation_security_name = clearskies.configs.String(default="ApiKey")
+    documentation_security_name = configs.String(default="ApiKey")
 
     _secret: str = None  #  type: ignore
     _alternate_secret: str = None  # type: ignore
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         secret_key: str = "",

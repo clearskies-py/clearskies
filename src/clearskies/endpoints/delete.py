@@ -4,9 +4,7 @@ import inspect
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Type
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
+from clearskies import authentication, autodoc, configs, decorators, exceptions, schema, typing
 from clearskies.endpoints.get import Get
 from clearskies.functional import routing, string
 from clearskies.input_outputs import InputOutput
@@ -73,7 +71,7 @@ class Delete(Get):
     ```
     """
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],

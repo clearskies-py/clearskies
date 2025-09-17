@@ -1,18 +1,17 @@
-import clearskies.configs
-import clearskies.decorators
+from clearskies import configs, decorators
 from clearskies.security_header import SecurityHeader
 
 
 class Cors(SecurityHeader):
-    origin = clearskies.configs.String()
-    methods = clearskies.configs.StringList(default=[])
-    headers = clearskies.configs.StringList(default=[])
-    max_age = clearskies.configs.Integer(default=5)
-    credentials = clearskies.configs.Boolean(default=False)
-    expose_headers = clearskies.configs.StringList(default=[])
+    origin = configs.String()
+    methods = configs.StringList(default=[])
+    headers = configs.StringList(default=[])
+    max_age = configs.Integer(default=5)
+    credentials = configs.Boolean(default=False)
+    expose_headers = configs.StringList(default=[])
     is_cors = True
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         credentials: bool = False,

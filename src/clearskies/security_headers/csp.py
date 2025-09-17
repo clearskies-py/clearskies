@@ -1,31 +1,30 @@
-import clearskies.configs
-import clearskies.decorators
+from clearskies import configs, decorators
 from clearskies.security_header import SecurityHeader
 
 
 class Csp(SecurityHeader):
     header_name = "content-security-policy"
-    default_src = clearskies.configs.String()
-    script_src = clearskies.configs.String()
-    style_src = clearskies.configs.String()
-    img_src = clearskies.configs.String()
-    connect_src = clearskies.configs.String()
-    font_src = clearskies.configs.String()
-    object_src = clearskies.configs.String()
-    media_src = clearskies.configs.String()
-    frame_src = clearskies.configs.String()
-    sandbox = clearskies.configs.String()
-    report_uri = clearskies.configs.String()
-    child_src = clearskies.configs.String()
-    form_action = clearskies.configs.String()
-    frame_ancestors = clearskies.configs.String()
-    plugin_types = clearskies.configs.String()
-    base_uri = clearskies.configs.String()
-    report_to = clearskies.configs.String()
-    worker_src = clearskies.configs.String()
-    manifest_src = clearskies.configs.String()
-    prefetch_src = clearskies.configs.String()
-    navigate_to = clearskies.configs.String()
+    default_src = configs.String()
+    script_src = configs.String()
+    style_src = configs.String()
+    img_src = configs.String()
+    connect_src = configs.String()
+    font_src = configs.String()
+    object_src = configs.String()
+    media_src = configs.String()
+    frame_src = configs.String()
+    sandbox = configs.String()
+    report_uri = configs.String()
+    child_src = configs.String()
+    form_action = configs.String()
+    frame_ancestors = configs.String()
+    plugin_types = configs.String()
+    base_uri = configs.String()
+    report_to = configs.String()
+    worker_src = configs.String()
+    manifest_src = configs.String()
+    prefetch_src = configs.String()
+    navigate_to = configs.String()
 
     directives = [
         "default_src",
@@ -51,7 +50,7 @@ class Csp(SecurityHeader):
         "navigate_to",
     ]
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         default_src: str = "",

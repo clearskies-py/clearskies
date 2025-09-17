@@ -3,8 +3,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Self, overload
 
-import clearskies.decorators
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.column import Column
 from clearskies.columns.belongs_to_id import BelongsToId
 from clearskies.functional import validations
@@ -19,10 +18,10 @@ class BelongsToModel(Column):
     """ The name of the belongs to column we are connected to. """
     belongs_to_column_name = configs.ModelColumn(required=True)
 
-    is_temporary = clearskies.configs.boolean.Boolean(default=True)
+    is_temporary = configs.boolean.Boolean(default=True)
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         belongs_to_column_name: str,
@@ -106,9 +105,7 @@ class BelongsToModel(Column):
     def join_table_alias(self) -> str:
         return getattr(self.model_class, self.belongs_to_column_name).join_table_alias()
 
-    def add_search(
-        self, model: clearskies.model.Model, value: str, operator: str = "", relationship_reference: str = ""
-    ) -> clearskies.model.Model:
+    def add_search(self, model: Model, value: str, operator: str = "", relationship_reference: str = "") -> Model:
         return getattr(self.model_class, self.belongs_to_column_name).add_search(
             model, value, operator, relationship_reference=relationship_reference
         )

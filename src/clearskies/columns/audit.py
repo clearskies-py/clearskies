@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators, model, typing
 from clearskies.column import Column
 from clearskies.columns.has_many import HasMany
 
@@ -66,7 +64,7 @@ class Audit(HasMany):
     _descriptor_config_map = None
     _parent_columns: dict[str, Column] | None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         audit_model_class,
@@ -74,17 +72,17 @@ class Audit(HasMany):
         mask_columns: list[str] = [],
         foreign_column_name: str | None = None,
         readable_child_columns: list[str] = [],
-        where: clearskies.typing.condition | list[clearskies.typing.condition] = [],
+        where: typing.condition | list[typing.condition] = [],
         default: str | None = None,
         is_readable: bool = True,
         is_temporary: bool = False,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         self.child_model_class = self.audit_model_class
 
-    def save_finished(self, model):
+    def save_finished(self, model: model.Model):
         super().save_finished(model)
         old_data: dict[str, Any] = model._previous_data
         new_data: dict[str, Any] = model.get_raw_data()
@@ -114,8 +112,8 @@ class Audit(HasMany):
         # note that this is fairly simple logic to get started.  It's not going to detect changes that happen
         # in other "tables".  For instance, disconnecting a record by deleting an entry in a many-to-many relationship
         # won't be picked up by this.
-        old_model = model.empty_model()
-        old_model.data = old_data
+        old_model = model.empty()
+        old_model._data = old_data
         from_data: dict[str, Any] = {}
         to_data: dict[str, Any] = {}
         for column, new_value in new_data.items():
