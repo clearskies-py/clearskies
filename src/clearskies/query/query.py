@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self
 
-from .condition import Condition
-from .join import Join
-from .sort import Sort
-
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.query import Condition, Join, Sort
 
 
 class Query:

@@ -1,19 +1,21 @@
+from __future__ import annotations
+
 import datetime
 from typing import Any
 
-import clearskies.configs
-from clearskies.di import InjectableProperties, inject
+from clearskies import configs, secrets
+from clearskies.di import inject
 
 
-class Akeyless(clearskies.Configurable, clearskies.di.InjectableProperties):
-    requests = clearskies.di.inject.Requests()
-    environment = clearskies.di.inject.Environment()
-    akeyless = clearskies.di.inject.ByName("akeyless")
+class Akeyless(secrets.Secrets):
+    requests = inject.Requests()
+    environment = inject.Environment()
+    akeyless = inject.ByName("akeyless_sdk")
 
-    access_id = clearskies.configs.String(required=True, regexp=r"^p-[\d\w]+$")
-    access_type = clearskies.configs.Select(["aws_iam", "saml", "jwt"], required=True)
-    api_host = clearskies.configs.String(default="https://api.akeyless.io")
-    profile = clearskies.configs.String(regexp=r"^[\d\w\-]+$")
+    access_id = configs.String(required=True, regexp=r"^p-[\d\w]+$")
+    access_type = configs.Select(["aws_iam", "saml", "jwt"], required=True)
+    api_host = configs.String(default="https://api.akeyless.io")
+    profile = configs.String(regexp=r"^[\d\w\-]+$")
 
     _token_refresh: datetime.datetime = None  # type: ignore
     _token: str = ""

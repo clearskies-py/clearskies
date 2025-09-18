@@ -1,27 +1,19 @@
 from __future__ import annotations
 
 import inspect
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.configs
-import clearskies.decorators
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
+from clearskies import configs, decorators
 from clearskies.authentication import Authentication, Authorization, Public
-from clearskies.endpoint import Endpoint
 from clearskies.endpoint_group import EndpointGroup
 from clearskies.endpoints.create import Create
 from clearskies.endpoints.delete import Delete
 from clearskies.endpoints.get import Get
 from clearskies.endpoints.simple_search import SimpleSearch
 from clearskies.endpoints.update import Update
-from clearskies.functional import string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import SecurityHeader
-    from clearskies.model import Column, Model, Schema
+    from clearskies import Column, Endpoint, Model, Schema, SecurityHeader
 
 
 class RestfulApi(EndpointGroup):
@@ -190,7 +182,7 @@ class RestfulApi(EndpointGroup):
     This defaults to `clearskies.endpoints.Create`.  To disable the create operation all together,
     set this to None.
     """
-    create_endpoint = clearskies.configs.Endpoint(default=Create)
+    create_endpoint = configs.Endpoint(default=Create)
 
     """
     The endpoint class to use for managing the delete operation.
@@ -198,7 +190,7 @@ class RestfulApi(EndpointGroup):
     This defaults to `clearskies.endpoints.Delete`.  To disable the delete operation all together,
     set this to None.
     """
-    delete_endpoint = clearskies.configs.Endpoint(default=Delete)
+    delete_endpoint = configs.Endpoint(default=Delete)
 
     """
     The endpoint class to use for managing the update operation.
@@ -206,7 +198,7 @@ class RestfulApi(EndpointGroup):
     This defaults to `clearskies.endpoints.Update`.  To disable the update operation all together,
     set this to None.
     """
-    update_endpoint = clearskies.configs.Endpoint(default=Update)
+    update_endpoint = configs.Endpoint(default=Update)
 
     """
     The endpoint class to use to fetch individual records.
@@ -214,7 +206,7 @@ class RestfulApi(EndpointGroup):
     This defaults to `clearskies.endpoints.Get`.  To disable the get operation all together,
     set this to None.
     """
-    get_endpoint = clearskies.configs.Endpoint(default=Get)
+    get_endpoint = configs.Endpoint(default=Get)
 
     """
     The endpoint class to use to list records.
@@ -222,78 +214,76 @@ class RestfulApi(EndpointGroup):
     This defaults to `clearskies.endpoints.SimpleSearch`.  To disable the list operation all together,
     set this to None.
     """
-    list_endpoint = clearskies.configs.Endpoint(default=SimpleSearch)
+    list_endpoint = configs.Endpoint(default=SimpleSearch)
 
     """
     The request method(s) to use to route to the create operation.  Default is ["POST"].
     """
-    create_request_methods = clearskies.configs.SelectList(
+    create_request_methods = configs.SelectList(
         allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH"], default=["POST"]
     )
 
     """
     The request method(s) to use to route to the update operation.  Default is ["PATCH"].
     """
-    update_request_methods = clearskies.configs.SelectList(
+    update_request_methods = configs.SelectList(
         allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH"], default=["PATCH"]
     )
 
     """
     The request method(s) to use to route to the delete operation.  Default is ["DELETE"].
     """
-    delete_request_methods = clearskies.configs.SelectList(
+    delete_request_methods = configs.SelectList(
         allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH"], default=["DELETE"]
     )
 
     """
     The request method(s) to use to route to the get operation.  Default is ["GET"].
     """
-    get_request_methods = clearskies.configs.SelectList(
-        allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH"], default=["GET"]
-    )
+    get_request_methods = configs.SelectList(allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH"], default=["GET"])
 
     """
     The request method(s) to use to route to the create operation.  Default is ["GET"].
     """
-    list_request_methods = clearskies.configs.SelectList(
+    list_request_methods = configs.SelectList(
         allowed_values=["GET", "POST", "PUT", "DELETE", "PATCH", "QUERY"], default=["GET", "POST", "QUERY"]
     )
 
     """
     The request method(s) to use to route to the create operation.  Default is ["POST"].
     """
-    id_column_name = clearskies.configs.ModelColumn("model_class", default=None)
+    id_column_name = configs.ModelColumn("model_class", default=None)
 
     """
     The base URL to be used for all the endpoints.
     """
-    url = clearskies.configs.String(default="")
+    url = configs.String(default="")
 
-    authentication = clearskies.configs.Authentication(default=Public())
-    authorization = clearskies.configs.Authorization(default=Authorization())
-    output_map = clearskies.configs.Callable(default=None)
-    output_schema = clearskies.configs.Schema(default=None)
-    model_class = clearskies.configs.ModelClass(default=None)
-    readable_column_names = clearskies.configs.ReadableModelColumns("model_class", default=[])
-    writeable_column_names = clearskies.configs.WriteableModelColumns("model_class", default=[])
-    searchable_column_names = clearskies.configs.SearchableModelColumns("model_class", default=[])
-    sortable_column_names = clearskies.configs.ReadableModelColumns("model_class", default=[])
-    default_sort_column_name = clearskies.configs.ModelColumn("model_class", required=True)
-    default_sort_direction = clearskies.configs.Select(["ASC", "DESC"], default="ASC")
-    default_limit = clearskies.configs.Integer(default=50)
-    maximum_limit = clearskies.configs.Integer(default=200)
-    group_by_column_name = clearskies.configs.ModelColumn("model_class")
-    input_validation_callable = clearskies.configs.Callable(default=None)
-    include_routing_data_in_request_data = clearskies.configs.Boolean(default=False)
-    column_overrides = clearskies.configs.Columns(default={})
-    internal_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
-    external_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
-    security_headers = clearskies.configs.SecurityHeaders(default=[])
-    description = clearskies.configs.String(default="")
-    where = clearskies.configs.Conditions(default=[])
+    authentication = configs.Authentication(default=Public())
+    authorization = configs.Authorization(default=Authorization())
+    output_map = configs.Callable(default=None)
+    output_schema = configs.Schema(default=None)
+    model_class = configs.ModelClass(default=None)
+    readable_column_names = configs.ReadableModelColumns("model_class", default=[])
+    writeable_column_names = configs.WriteableModelColumns("model_class", default=[])
+    searchable_column_names = configs.SearchableModelColumns("model_class", default=[])
+    sortable_column_names = configs.ReadableModelColumns("model_class", default=[])
+    default_sort_column_name = configs.ModelColumn("model_class", required=True)
+    default_sort_direction = configs.Select(["ASC", "DESC"], default="ASC")
+    default_limit = configs.Integer(default=50)
+    maximum_limit = configs.Integer(default=200)
+    group_by_column_name = configs.ModelColumn("model_class")
+    input_validation_callable = configs.Callable(default=None)
+    include_routing_data_in_request_data = configs.Boolean(default=False)
+    column_overrides = configs.Columns(default={})
+    internal_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    security_headers = configs.SecurityHeaders(default=[])
+    description = configs.String(default="")
+    where = configs.Conditions(default=[])
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],
@@ -303,11 +293,11 @@ class RestfulApi(EndpointGroup):
         sortable_column_names: list[str],
         default_sort_column_name: str,
         read_only: bool = False,
-        create_endpoint: Endpoint | None = Create,
-        delete_endpoint: Endpoint | None = Delete,
-        update_endpoint: Endpoint | None = Update,
-        get_endpoint: Endpoint | None = Get,
-        list_endpoint: Endpoint | None = SimpleSearch,
+        create_endpoint: type[Endpoint] | None = Create,
+        delete_endpoint: type[Endpoint] | None = Delete,
+        update_endpoint: type[Endpoint] | None = Update,
+        get_endpoint: type[Endpoint] | None = Get,
+        list_endpoint: type[Endpoint] | None = SimpleSearch,
         create_request_methods: list[str] = ["POST"],
         update_request_methods: list[str] = ["PATCH"],
         delete_request_methods: list[str] = ["DELETE"],

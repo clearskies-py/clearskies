@@ -1,5 +1,5 @@
 class Schema:
-    name = None
+    name: str
     example = None
     value = None
     _type = "string"

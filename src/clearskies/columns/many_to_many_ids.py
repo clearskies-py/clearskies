@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.column import Column
-from clearskies.functional import string
 
 if TYPE_CHECKING:
-    from clearskies import Column, Model
+    from clearskies import Column, Model, typing
 
 
 class ManyToManyIds(Column):
@@ -78,10 +74,12 @@ class ManyToManyIds(Column):
         thing_1 = thingies.create({"name": "Thing 1"})
         thing_2 = thingies.create({"name": "Thing 2"})
         thing_3 = thingies.create({"name": "Thing 3"})
-        widget = widgets.create({
-            "name": "Widget 1",
-            "thingy_ids": [thing_1.id, thing_2.id],
-        })
+        widget = widgets.create(
+            {
+                "name": "Widget 1",
+                "thingy_ids": [thing_1.id, thing_2.id],
+            }
+        )
 
         # remove an item by saving without it's id in place
         widget.save({"thingy_ids": [thing.id for thing in widget.thingies if thing.id != thing_1.id]})
@@ -173,7 +171,7 @@ class ManyToManyIds(Column):
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         related_model_class,
@@ -186,10 +184,10 @@ class ManyToManyIds(Column):
         is_readable: bool = True,
         is_writeable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,
@@ -280,7 +278,7 @@ class ManyToManyIds(Column):
             f"{self.own_column_name_in_pivot}=" + getattr(model, self.model_class.id_column_name)
         )
 
-    def post_save(self, data: dict[str, Any], model: clearskies.model.Model, id: int | str) -> None:
+    def post_save(self, data: dict[str, Any], model: Model, id: int | str) -> None:
         # if our incoming data is not in the data array or is None, then nothing has been set and we do not want
         # to make any changes
         if self.name not in data or data[self.name] is None:

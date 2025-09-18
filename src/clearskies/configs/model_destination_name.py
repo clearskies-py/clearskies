@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from clearskies.configs.string import String
-from clearskies.functional import string
 
 
 class ModelDestinationName(String):

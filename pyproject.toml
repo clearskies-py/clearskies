@@ -61,7 +61,7 @@ exclude = [
 [tool.black]
 line-length = 120
 skip-magic-trailing-comma = false
-preview = true
+preview = false
 
 [tool.mypy]
 python_version = "3.11"
@@ -81,3 +81,8 @@ testpaths = [
 pythonpath = [
   "app"
 ]
+
+# Add a specific rule for wrapt
+[[tool.mypy.overrides]]
+module = "wrapt"
+ignore_missing_imports = true

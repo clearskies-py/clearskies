@@ -1,17 +1,22 @@
-# type: ignore
 from __future__ import annotations
 
 from abc import ABC
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from clearskies.input_output import InputOutput
+    from clearskies import typing
+    from clearskies.input_outputs import InputOutput
 
-from clearskies import exceptions
+from clearskies import configs, configurable, di, exceptions
+from clearskies.authentication import Authorization, Public
 from clearskies.functional import string
 
 
-class End(ABC):
+class End(
+    ABC,
+    configurable.Configurable,
+    di.InjectableProperties,
+):
     """
     DRY for endpoint and endpoint groups.
 
@@ -19,6 +24,24 @@ class End(ABC):
     The two classes have plenty of overlap but are different enough that I don't want either to inherit
     from the other.
     """
+
+    di = di.inject.Di()
+
+    url = configs.String(required=False, default="")
+
+    authentication = configs.Authentication(default=None)
+
+    authorization = configs.Authorization(default=None)
+
+    internal_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    response_headers = configs.StringListOrCallable(default=[])
+    authentication = configs.Authentication(default=Public())
+    authorization = configs.Authorization(default=Authorization())
+    security_headers = configs.SecurityHeaders(default=[])
+
+    cors_header: SecurityHeader = None  # type: ignore
+    has_cors: bool = False
 
     def add_url_prefix(self, prefix: str) -> None:
         self.url = (prefix.rstrip("/") + "/" + self.url.lstrip("/")).lstrip("/")
@@ -41,7 +64,7 @@ class End(ABC):
                 if not self.authorization.gate(input_output.authorization_data, input_output):
                     raise exceptions.Authorization("Not Authorized")
             except exceptions.ClientError as client_error:
-                raise exception.Authorization(str(client_error))
+                raise exceptions.Authorization(str(client_error))
 
     def __call__(self, input_output: InputOutput) -> Any:
         """
@@ -116,7 +139,7 @@ class End(ABC):
             for index, response_header in enumerate(response_headers):
                 if not isinstance(response_header, str):
                     raise TypeError(
-                        f"Invalid response header in entry #{index + 1}: the header should be a string, but I was given a type of '{header.__class__.__name__}' instead."
+                        f"Invalid response header in entry #{index + 1}: the header should be a string, but I was given a type of '{response_header.__class__.__name__}' instead."
                     )
                 parts = response_header.split(":", 1)
                 if len(parts) != 2:
@@ -127,7 +150,7 @@ class End(ABC):
         for security_header in self.security_headers:
             security_header.set_headers_for_input_output(input_output)
 
-    def respond(self, input_output: InputOutput, response: clearskies.typing.response, status_code: int) -> Any:
+    def respond(self, input_output: InputOutput, response: typing.response, status_code: int) -> Any:
         self.add_response_headers(input_output)
         return input_output.respond(response, status_code)
 
@@ -181,3 +204,18 @@ class End(ABC):
             self.external_casing,
             self.internal_casing,
         )
+
+    def error(self, input_output: InputOutput, message: str, status_code: int) -> Any:
+        """Return a client-side error (e.g. 400)."""
+        return self.respond_json(input_output, {"status": "client_error", "error": message}, status_code)
+
+    def input_errors(self, input_output: InputOutput, errors: dict[str, str], status_code: int = 200) -> Any:
+        """Return input errors to the client."""
+        return self.respond_json(input_output, {"status": "input_errors", "input_errors": errors}, status_code)
+
+    def redirect(self, input_output: InputOutput, location: str, status_code: int) -> Any:
+        """Return a redirect response (e.g. 302)."""
+        return self.respond_json(input_output, {"status": "redirect", "location": location}, status_code)
+
+    def handle(self, input_output: InputOutput) -> Any:
+        raise NotImplementedError()

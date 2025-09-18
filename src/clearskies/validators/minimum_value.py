@@ -3,21 +3,21 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.configs
+from clearskies import configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
 class MinimumValue(Validator):
-    minimum_value = clearskies.configs.Integer(required=True)
+    minimum_value = configs.Integer(required=True)
 
     def __init__(self, minimum_value: int):
         self.minimum_value = minimum_value
         self.finalize_and_validate_configuration()
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         if column_name not in data:
             return ""
         try:

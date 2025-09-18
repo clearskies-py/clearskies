@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from clearskies.configs import string
 from clearskies.functional import routing
 

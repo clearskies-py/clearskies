@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Integer(Column):
@@ -77,7 +75,7 @@ class Integer(Column):
 
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         default: int | None = None,
@@ -86,10 +84,10 @@ class Integer(Column):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,

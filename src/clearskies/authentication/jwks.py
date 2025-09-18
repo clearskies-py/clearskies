@@ -1,73 +1,75 @@
-import json
-from typing import Any
+from __future__ import annotations
 
-import clearskies.configs
-import clearskies.decorators
-import clearskies.di
+import datetime
+import json
+from typing import TYPE_CHECKING, Any
+
+from clearskies import configs, decorators, di
 from clearskies.authentication.authentication import Authentication
 from clearskies.exceptions import ClientError
 from clearskies.security_headers.cors import Cors
 
+if TYPE_CHECKING:
+    from clearskies.input_outputs.input_output import InputOutput
 
-class Jwks(Authentication, clearskies.di.InjectableProperties):
-    """
-    Validate a JWT against a JWKS (JSON Web Key Set)
-    """
+
+class Jwks(Authentication, di.InjectableProperties):
+    """Validate a JWT against a JWKS (JSON Web Key Set)."""
 
     """
     The URL of the JWKS
     """
-    jwks_url = clearskies.configs.String(required=True)
+    jwks_url = configs.String(required=True)
 
     """
     The audience to accept JWTs for.
     """
-    audience = clearskies.configs.StringList(default=[])
+    audience = configs.StringList(default=[])
 
     """
     The expected issuer of the JWTs.
     """
-    issuer = clearskies.configs.String(default="")
+    issuer = configs.String(default="")
 
     """
     The allowed algorithms
     """
-    algorithms = clearskies.configs.StringList(default=["RS256"])
+    algorithms = configs.StringList(default=["RS256"])
 
     """
     The number of seconds for which the JWKS URL contents can be cached
     """
-    jwks_cache_time = clearskies.configs.Integer(default=86400)
+    jwks_cache_time = configs.Integer(default=86400)
 
     """
     The Authorization URL (used in the auto-generated documentation)
     """
-    authorization_url = clearskies.configs.String()
+    authorization_url = configs.String()
 
     """
     The name of the security scheme in the auto-generated documentation.
     """
-    documentation_security_name = clearskies.configs.String(default="jwt")
+    documentation_security_name = configs.String(default="jwt")
 
     """
     The environment helper.
     """
-    environment = clearskies.di.inject.Environment()
+    environment = di.inject.Environment()
 
     """
     The requests object.
     """
-    requests = clearskies.di.inject.Requests()
+    requests = di.inject.Requests()
 
     """
     The JoseJwt library
     """
-    jose_jwt = clearskies.di.inject.ByName("jose_jwt")
+    jose_jwt = di.inject.ByName("jose_jwt")
 
     """
     The current time
     """
-    now = clearskies.di.inject.Now()
+    now = di.inject.Now()
 
     """
     Local cache of the JWKS
@@ -77,9 +79,9 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
     """
     The time when the JWKS was last fetched
     """
-    _jwks_fetched = None
+    _jwks_fetched: datetime.datetime
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         jwks_url: str,
@@ -92,8 +94,8 @@ class Jwks(Authentication, clearskies.di.InjectableProperties):
     ):
         self.finalize_and_validate_configuration()
 
-    def authenticate(self, input_output) -> bool:
-        auth_header = input_output.get_request_header("authorization", True)
+    def authenticate(self, input_output: InputOutput) -> bool:
+        auth_header = input_output.request_headers.get("authorization", None)
         if not auth_header:
             raise ClientError("Missing 'Authorization' header in request")
         if auth_header[:7].lower() != "bearer ":

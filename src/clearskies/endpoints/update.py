@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
+from clearskies import authentication, autodoc, decorators, exceptions
 from clearskies.endpoints.get import Get
-from clearskies.functional import routing, string
+from clearskies.functional import string
 from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import SecurityHeader
-    from clearskies.model import Column, Model, Schema
+    from clearskies import Column, Model, Schema, SecurityHeader, typing
 
 
 class Update(Get):
@@ -90,7 +85,7 @@ class Update(Get):
     }
     """
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],
@@ -124,7 +119,7 @@ class Update(Get):
     def handle(self, input_output: InputOutput) -> Any:
         request_data = self.get_request_data(input_output)
         if not request_data and input_output.has_body():
-            raise clearskies.exceptions.ClientError("Request body was not valid JSON")
+            raise exceptions.ClientError("Request body was not valid JSON")
         model = self.fetch_model(input_output)
         self.validate_input_against_schema(request_data, input_output, model)
         model.save(request_data)

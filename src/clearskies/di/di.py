@@ -11,7 +11,6 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore
 
 import clearskies.input_outputs.input_output
-import clearskies.secrets
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
 from clearskies.environment import Environment
@@ -350,9 +349,9 @@ class Di:
         import my_module
 
         di = Di()
-        di.add_modules([
-            my_module
-        ])  # also equivalent: di.add_modules(my_module), or Di(modules=[my_module])
+        di.add_modules(
+            [my_module]
+        )  # also equivalent: di.add_modules(my_module), or Di(modules=[my_module])
 
 
         def my_function(my_class):
@@ -956,6 +955,8 @@ class Di:
         return uuid
 
     def provide_secrets(self):
+        import clearskies.secrets
+
         return clearskies.secrets.Secrets()
 
     def provide_memory_backend_default_data(self):
@@ -964,8 +965,8 @@ class Di:
     def provide_global_table_prefix(self):
         return ""
 
-    def provide_akeyless(self):
-        import akeyless  # type: ignore
+    def provide_akeyles_sdk(self):
+        import akeyless  # type: ignore[import-untyped]
 
         return akeyless
 

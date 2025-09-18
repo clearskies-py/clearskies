@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.decorators
-import clearskies.di
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.columns.datetime import Datetime
+from clearskies.di import inject
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Created(Datetime):
@@ -66,9 +63,9 @@ class Created(Datetime):
     is_writeable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    now = clearskies.di.inject.Now()
+    now = inject.Now()
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d %H:%M:%S",
@@ -77,9 +74,9 @@ class Created(Datetime):
         is_readable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         pass
 

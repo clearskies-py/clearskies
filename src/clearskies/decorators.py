@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 
-import wrapt  # type: ignore
+import wrapt
 
 
 @wrapt.decorator

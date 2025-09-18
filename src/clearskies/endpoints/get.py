@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
-from clearskies.authentication import Authentication, Authorization
+from clearskies import autodoc, configs, decorators, exceptions
+from clearskies.authentication import Authentication, Authorization, Public
 from clearskies.endpoint import Endpoint
 from clearskies.functional import routing, string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, Schema, SecurityHeader
+    from clearskies import Column, Schema, SecurityHeader, typing
+    from clearskies.input_outputs import InputOutput
     from clearskies.model import Model
 
 
@@ -157,9 +153,9 @@ class Get(Endpoint):
     }
     ```
     """
-    record_lookup_column_name = clearskies.configs.ReadableModelColumn("model_class", default=None)
+    record_lookup_column_name = configs.ReadableModelColumn("model_class", default=None)
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         model_class: type[Model],
@@ -177,8 +173,8 @@ class Get(Endpoint):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
-        authentication: Authentication = authentication.Public(),
-        authorization: Authorization = authentication.Authorization(),
+        authentication: Authentication = Public(),
+        authorization: Authorization = Authorization(),
     ):
         try:
             # we will set the value for this if it isn't already set, and the easiest way is to just fetch it and see if it blows up
@@ -211,7 +207,7 @@ class Get(Endpoint):
             self.record_lookup_column_name + "=" + lookup_column_value
         )
         if not model:
-            raise clearskies.exceptions.NotFound("Not Found")
+            raise exceptions.NotFound("Not Found")
         return model
 
     def handle(self, input_output: InputOutput) -> Any:

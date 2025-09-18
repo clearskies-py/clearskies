@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Self
 
-import clearskies.configurable
-import clearskies.di
-import clearskies.end
-from clearskies import exceptions
+from clearskies import configs, configurable, decorators, di, end
 from clearskies.authentication import Authentication, Authorization, Public
 from clearskies.endpoint import Endpoint
 from clearskies.functional import routing
@@ -16,9 +13,9 @@ if TYPE_CHECKING:
 
 
 class EndpointGroup(
-    clearskies.end.End,  # type: ignore
-    clearskies.configurable.Configurable,
-    clearskies.di.InjectableProperties,
+    end.End,  # type: ignore
+    configurable.Configurable,
+    di.InjectableProperties,
 ):
     """
     An endpoint group brings endpoints together: it basically handles routing.
@@ -216,32 +213,32 @@ class EndpointGroup(
     """
     The dependency injection container
     """
-    di = clearskies.di.inject.Di()
+    di = di.inject.Di()
 
     """
     The base URL for the endpoint group.
 
     This URL is added as a prefix to all endpoints attached to the group.  This includes any named URL parameters:
     """
-    url = clearskies.configs.String(default="")
+    url = configs.String(default="")
 
     """
     The list of endpoints connected to this endpoint group
     """
-    endpoints = clearskies.configs.EndpointList()
+    endpoints = configs.EndpointList()
 
-    internal_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
-    external_casing = clearskies.configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
-    response_headers = clearskies.configs.StringListOrCallable(default=[])
-    authentication = clearskies.configs.Authentication(default=Public())
-    authorization = clearskies.configs.Authorization(default=Authorization())
-    security_headers = clearskies.configs.SecurityHeaders(default=[])
+    internal_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
+    response_headers = configs.StringListOrCallable(default=[])
+    authentication = configs.Authentication(default=Public())
+    authorization = configs.Authorization(default=Authorization())
+    security_headers = configs.SecurityHeaders(default=[])
 
     cors_header: SecurityHeader = None  # type: ignore
     has_cors: bool = False
     endpoints_initialized = False
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         endpoints: list[Endpoint | Self],
@@ -325,7 +322,7 @@ class EndpointGroup(
         return self.respond_json(input_output, {"status": "client_error", "error": message}, status_code)
 
     def all_endpoints(self) -> list[Endpoint]:
-        """Returns the full (recursive) list of all endpoints associated with this endpoint group"""
+        """Return the full (recursive) list of all endpoints associated with this endpoint group."""
         all_endpoints: list[Endpoint] = []
         for endpoint in self.endpoints:
             if hasattr(endpoint, "all_endpoints"):

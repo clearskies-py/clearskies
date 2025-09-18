@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Callable, Self, Type, overload
+from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.columns.datetime import Datetime
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Timestamp(Datetime):
@@ -36,10 +34,12 @@ class Timestamp(Datetime):
 
 
     def demo_timestamp(utcnow: datetime.datetime, pets: Pet) -> dict[str, str | int]:
-        pet = pets.create({
-            "name": "Spot",
-            "last_fed": utcnow,
-        })
+        pet = pets.create(
+            {
+                "name": "Spot",
+                "last_fed": utcnow,
+            }
+        )
         return {
             "last_fed": pet.last_fed.isoformat(),
             "raw_data": pet.get_raw_data()["last_fed"],
@@ -76,7 +76,7 @@ class Timestamp(Datetime):
     include_microseconds = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         include_microseconds: bool = False,
@@ -86,10 +86,10 @@ class Timestamp(Datetime):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,
@@ -106,7 +106,7 @@ class Timestamp(Datetime):
                     f"Invalid data was found in the backend for model {self.model_class.__name__} and column {self.name}: a string value was found that is not a timestamp.  It was '{value}'"
                 )
             date = datetime.datetime.fromtimestamp(int(value) / mult, datetime.timezone.utc)
-        elif isinstance(value, int) or isinstance(value, float):
+        elif isinstance(value, (int, float)):
             date = datetime.datetime.fromtimestamp(value / mult, datetime.timezone.utc)
         else:
             if not isinstance(value, datetime.datetime):
