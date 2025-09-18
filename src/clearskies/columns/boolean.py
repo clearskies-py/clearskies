@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, overload
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Boolean as AutoDocBoolean
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Boolean(Column):

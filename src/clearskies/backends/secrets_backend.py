@@ -1,12 +1,13 @@
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies
-from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
-from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
-from clearskies.di import InjectableProperties, inject
-from clearskies.functional import routing, string
+from clearskies.di import inject
+from clearskies.query import Condition, Query
+
+if TYPE_CHECKING:
+    from clearskies import Model
+    from clearskies.authentication import Authentication
 
 
 class SecretsBackend(Backend):
@@ -31,11 +32,11 @@ class SecretsBackend(Backend):
     def __init__(self):
         pass
 
-    def check_query(self, query: clearskies.query.Query) -> None:
+    def check_query(self, query: Query) -> None:
         if not query.conditions:
             raise KeyError(f"You must search by an id when using the secrets backend.")
 
-    def update(self, id: str, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:  # type: ignore[override]
+    def update(self, id: str, data: dict[str, Any], model: Model) -> dict[str, Any]:  # type: ignore[override]
         """Update the record with the given id with the information from the data dictionary."""
         folder_path = self._make_folder_path(model, id)
         for key, value in data.items():
@@ -44,20 +45,16 @@ class SecretsBackend(Backend):
             self.secrets.update(f"{folder_path}{key}", value)
 
         # and now query again to fetch the updated record.
-        return self.records(
-            clearskies.query.Query(
-                model.__class__, conditions=[clearskies.query.Condition(f"{model.id_column_name}={id}")]
-            )
-        )[0]
+        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))[0]
 
-    def create(self, data: dict[str, Any], model: clearskies.model.Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         if not model.id_column_name in data:
             raise ValueError(
                 f"You must provide '{model.id_column_name}' when creating a record with the secrets backend"
             )
         return self.update(data[model.id_column_name], data, model)
 
-    def delete(self, id: str, model: clearskies.model.Model) -> bool:  # type: ignore[override]
+    def delete(self, id: str, model: Model) -> bool:  # type: ignore[override]
         """
         Delete the record with the given id.
 
@@ -65,9 +62,7 @@ class SecretsBackend(Backend):
         """
         return True
 
-    def records(
-        self, query: clearskies.query.Query, next_page_data: dict[str, str | int] | None = None
-    ) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         """Return a list of records that match the given query configuration."""
         self.check_query(query)
         for condition in query.conditions:

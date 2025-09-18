@@ -1,4 +1,4 @@
-import datetime
+from __future__ import annotations
 
 from clearskies.di.injectable import Injectable
 from clearskies.secrets.secrets import Secrets as SecretsHelper

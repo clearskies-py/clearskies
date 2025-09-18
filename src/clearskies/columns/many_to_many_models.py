@@ -91,7 +91,7 @@ class ManyToManyModels(Column):
 
         # we allow a list of models or a model, but if it's a model it may represent a single record or a query.
         # if it's a single record then we want to wrap it in a list so we can iterate over it.
-        if hasattr(value, "_data") and value._data:
+        if hasattr(value, "_data") and isinstance(value, Model) and value._data:
             value = []
         many_to_many_column: ManyToManyIds = self.many_to_many_column  # type: ignore
         related_model_class = many_to_many_column.related_model_class
@@ -145,7 +145,7 @@ class ManyToManyModels(Column):
 
         for column_name in many_to_many_column.readable_related_column_names:
             related_docs = columns[column_name].documentation()
-            if type(related_docs) != list:
+            if not isinstance(related_docs, list):
                 related_docs = [related_docs]
             related_properties.extend(related_docs)
 

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, overload
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Number as AutoDocNumber
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Float(Column):
@@ -145,7 +145,5 @@ class Float(Column):
 
     def input_error_for_value(self, value, operator=None):
         return (
-            "value should be an integer or float"
-            if (type(value) != int and type(value) != float and value is not None)
-            else ""
+            "value should be an integer or float" if not isinstance(value, (int, float)) and value is not None else ""
         )

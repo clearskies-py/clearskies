@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.column import Column
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Json(Column):
@@ -109,7 +109,7 @@ class Json(Column):
         instance._next_data[self.name] = value
 
     def from_backend(self, value) -> dict[str, Any] | list[Any] | None:
-        if type(value) == list or type(value) == dict:
+        if isinstance(value, (list, dict)):
             return value
         if not value:
             return None

@@ -3,11 +3,11 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.columns.datetime import Datetime
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Timestamp(Datetime):
@@ -106,7 +106,7 @@ class Timestamp(Datetime):
                     f"Invalid data was found in the backend for model {self.model_class.__name__} and column {self.name}: a string value was found that is not a timestamp.  It was '{value}'"
                 )
             date = datetime.datetime.fromtimestamp(int(value) / mult, datetime.timezone.utc)
-        elif isinstance(value, int) or isinstance(value, float):
+        elif isinstance(value, (int, float)):
             date = datetime.datetime.fromtimestamp(value / mult, datetime.timezone.utc)
         else:
             if not isinstance(value, datetime.datetime):

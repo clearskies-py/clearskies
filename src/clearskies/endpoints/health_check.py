@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import inspect
-from typing import Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import autodoc, configs, decorators, exceptions, typing
+from clearskies import autodoc, configs, decorators
 from clearskies.endpoint import Endpoint
-from clearskies.functional import routing, string
-from clearskies.input_outputs import InputOutput
+
+if TYPE_CHECKING:
+    from clearskies.input_outputs import InputOutput
 
 
 class HealthCheck(Endpoint):

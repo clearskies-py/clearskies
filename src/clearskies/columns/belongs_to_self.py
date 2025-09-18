@@ -1,7 +1,12 @@
-from typing import Callable
+from __future__ import annotations
 
-from clearskies import decorators, typing
+from typing import TYPE_CHECKING, Callable
+
+from clearskies import decorators
 from clearskies.columns.belongs_to_id import BelongsToId
+
+if TYPE_CHECKING:
+    from clearskies import typing
 
 
 class BelongsToSelf(BelongsToId):

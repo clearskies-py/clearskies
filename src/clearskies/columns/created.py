@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from clearskies import configs, decorators, di, typing
+from clearskies import configs, decorators
 from clearskies.columns.datetime import Datetime
+from clearskies.di import inject
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Created(Datetime):
@@ -62,7 +63,7 @@ class Created(Datetime):
     is_writeable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    now = di.inject.Now()
+    now = inject.Now()
 
     @decorators.parameters_to_properties
     def __init__(

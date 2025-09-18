@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, Type, overload
+from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-from clearskies import configs, configurable, decorators, di, model, typing
-from clearskies.autodoc.schema import Schema as AutoDocSchema
+from clearskies import configs, configurable, decorators
 from clearskies.autodoc.schema import String as AutoDocString
-from clearskies.query.condition import Condition, ParsedCondition
+from clearskies.di import InjectableProperties, inject
+from clearskies.query.condition import ParsedCondition
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    from clearskies import Model, Schema
+    from clearskies import Model, Schema, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query.condition import Condition
 
 
-class Column(configurable.Configurable, di.InjectableProperties):
+class Column(configurable.Configurable, InjectableProperties):
     """
     Columns are used to build schemes and enable a variety of levels of automation with.
 
@@ -23,7 +25,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
     """
     The column class gets the full DI container, because it does a lot of object building itself
     """
-    di = di.inject.Di()
+    di = inject.Di()
 
     """
     A default value to set for this column.
@@ -800,11 +802,11 @@ class Column(configurable.Configurable, di.InjectableProperties):
             }
         return additional_write_columns
 
-    def to_json(self, model: model.Model) -> dict[str, Any]:
+    def to_json(self, model: Model) -> dict[str, Any]:
         """Grabs the column out of the model and converts it into a representation that can be turned into JSON."""
         return {self.name: self.__get__(model, model.__class__)}
 
-    def input_errors(self, model: model.Model, data: dict[str, Any]) -> dict[str, Any]:
+    def input_errors(self, model: Model, data: dict[str, Any]) -> dict[str, Any]:
         """
         Check the given dictionary of data for any possible input errors.
 
@@ -875,7 +877,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
         """
         return ""
 
-    def pre_save(self, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def pre_save(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         """
         Make any necessary changes to the data before starting the save process.
 
@@ -904,7 +906,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
             data = self.execute_actions_with_data(self.on_change_pre_save, model, data)
         return data
 
-    def post_save(self, data: dict[str, Any], model: model.Model, id: int | str) -> None:
+    def post_save(self, data: dict[str, Any], model: Model, id: int | str) -> None:
         """
         Make any changes needed after persisting data to the backend.
 
@@ -930,7 +932,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
                 require_dict_return_value=False,
             )
 
-    def save_finished(self, model: model.Model) -> None:
+    def save_finished(self, model: Model) -> None:
         """
         Make any necessary changes needed after a save has completely finished.
 
@@ -971,7 +973,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
     def execute_actions_with_data(
         self,
         actions: list[typing.action],
-        model: model.Model,
+        model: Model,
         data: dict[str, Any],
         id: int | str | None = None,
         context: str = "on_change_pre_save",
@@ -1007,7 +1009,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
     def execute_actions(
         self,
         actions: list[typing.action],
-        model: model.Model,
+        model: Model,
     ) -> None:
         """Execute a given set of actions."""
         input_output = self.di.build("input_output", cache=True)
@@ -1026,9 +1028,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
         """
         return value_1 == value_2
 
-    def add_search(
-        self, model: model.Model, value: str, operator: str = "", relationship_reference: str = ""
-    ) -> model.Model:
+    def add_search(self, model: Model, value: str, operator: str = "", relationship_reference: str = "") -> Model:
         return model.where(self.condition(operator, value))
 
     def build_condition(self, value: str, operator: str = "", column_prefix: str = ""):
@@ -1058,7 +1058,7 @@ class Column(configurable.Configurable, di.InjectableProperties):
         """Process user data to decide if the end-user is specifying an allowed operator."""
         return operator.lower() in self._allowed_search_operators
 
-    def n_plus_one_add_joins(self, model: model.Model, column_names: list[str] = []) -> model.Model:
+    def n_plus_one_add_joins(self, model: Model, column_names: list[str] = []) -> Model:
         """Add any additional joins to solve the N+1 problem."""
         return model
 
@@ -1084,11 +1084,11 @@ class Column(configurable.Configurable, di.InjectableProperties):
 
     def where_for_request(
         self,
-        model: model.Model,
+        model: Model,
         routing_data: dict[str, str],
         authorization_data: dict[str, Any],
         input_output,
-    ) -> model.Model:
+    ) -> Model:
         """
         Create a hook to automatically apply filtering whenever the column makes an appearance in a get/update/list/search handler.
 

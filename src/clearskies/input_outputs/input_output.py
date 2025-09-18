@@ -1,19 +1,21 @@
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs
 
-import clearskies.typing
-from clearskies import configs, configurable
+from clearskies import configs, configurable, input_outputs
 
-from .headers import Headers
+if TYPE_CHECKING:
+    from clearskies import typing
 
 
 class InputOutput(ABC, configurable.Configurable):
     """Manage the request and response to the client."""
 
-    response_headers: Headers = None  # type: ignore
-    request_headers: Headers = None  # type: ignore
+    response_headers: input_outputs.Headers = None  # type: ignore
+    request_headers: input_outputs.Headers = None  # type: ignore
     query_parameters = configs.AnyDict(default={})
     routing_data = configs.StringDict(default={})
     authorization_data = configs.AnyDict(default={})
@@ -22,15 +24,15 @@ class InputOutput(ABC, configurable.Configurable):
     _body_loaded_as_json = False
 
     def __init__(self):
-        self.response_headers = Headers()
-        self.request_headers = Headers(self.get_request_headers())
+        self.response_headers = input_outputs.Headers()
+        self.request_headers = input_outputs.Headers(self.get_request_headers())
         self.query_parameters = {key: val[0] for (key, val) in parse_qs(self.get_query_string()).items()}
         self.authorization_data = {}
         self.routing_data = {}
         self.finalize_and_validate_configuration()
 
     @abstractmethod
-    def respond(self, body: clearskies.typing.response, status_code: int = 200) -> Any:
+    def respond(self, body: typing.response, status_code: int = 200) -> Any:
         """
         Pass along a response to the client.
 

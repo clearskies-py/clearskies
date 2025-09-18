@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.column import Column
 
 if TYPE_CHECKING:
-    from clearskies import Column, Model
+    from clearskies import Column, Model, typing
 
 
 class ManyToManyIds(Column):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from clearskies.columns.has_many import HasMany
 
 

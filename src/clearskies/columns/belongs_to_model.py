@@ -44,11 +44,11 @@ class BelongsToModel(Column):
         belongs_to_column.model_column_name = name
 
     @overload
-    def __get__(self, instance: None, cls: type[Model]) -> Self:
+    def __get__(self, model: None, cls: type[Model]) -> Self:
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, model: Model, cls: type[Model]) -> Model:
         pass
 
     def __get__(self, model, cls):

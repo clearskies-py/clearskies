@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 import inspect
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, typing
+from clearskies import configs, decorators
 from clearskies.authentication import Authentication, Authorization, Public
-from clearskies.endpoint import Endpoint
 from clearskies.endpoint_group import EndpointGroup
 from clearskies.endpoints.create import Create
 from clearskies.endpoints.delete import Delete
 from clearskies.endpoints.get import Get
 from clearskies.endpoints.simple_search import SimpleSearch
 from clearskies.endpoints.update import Update
-from clearskies.functional import string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import SecurityHeader
-    from clearskies.model import Column, Model, Schema
+    from clearskies import Column, Endpoint, Model, Schema, SecurityHeader
 
 
 class RestfulApi(EndpointGroup):
@@ -298,11 +293,11 @@ class RestfulApi(EndpointGroup):
         sortable_column_names: list[str],
         default_sort_column_name: str,
         read_only: bool = False,
-        create_endpoint: Endpoint | None = Create,
-        delete_endpoint: Endpoint | None = Delete,
-        update_endpoint: Endpoint | None = Update,
-        get_endpoint: Endpoint | None = Get,
-        list_endpoint: Endpoint | None = SimpleSearch,
+        create_endpoint: type[Endpoint] | None = Create,
+        delete_endpoint: type[Endpoint] | None = Delete,
+        update_endpoint: type[Endpoint] | None = Update,
+        get_endpoint: type[Endpoint] | None = Get,
+        list_endpoint: type[Endpoint] | None = SimpleSearch,
         create_request_methods: list[str] = ["POST"],
         update_request_methods: list[str] = ["PATCH"],
         delete_request_methods: list[str] = ["DELETE"],

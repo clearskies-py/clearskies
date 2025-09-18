@@ -1,3 +1,5 @@
+from typing import Any
+
 from clearskies import di
 
 from .jwks import Jwks
@@ -16,5 +18,5 @@ class AuthorizationPassThrough(Jwks):
     """
     input_output = di.inject.InputOutput()
 
-    def headers(self, retry_auth=False):
+    def headers(self, retry_auth: bool = False) -> dict[str, Any]:
         return {"Authorization": self.input_output.request_headers.get("authorization", True)}

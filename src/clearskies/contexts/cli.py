@@ -4,7 +4,7 @@ from clearskies.input_outputs import Cli as CliInputOutput
 
 class Cli(Context):
     """
-    Run an application via a CLI command
+    Run an application via a CLI command.
 
     This context converts a clearskies application into a CLI command.  Here's a simple example:
 
@@ -12,8 +12,10 @@ class Cli(Context):
     #!/usr/bin/env python
     import clearskies
 
+
     def my_function():
         return "Hello World!"
+
 
     cli = clearskies.contexts.Cli(my_function)
     cli()
@@ -32,8 +34,10 @@ class Cli(Context):
     #!/usr/bin/env python
     import clearskies
 
+
     def my_function(name):
         return f"Hello {name}!"
+
 
     cli = clearskies.contexts.Cli(
         clearskies.endpoints.Callable(
@@ -59,8 +63,10 @@ class Cli(Context):
     #!/usr/bin/env python
     import clearskies
 
+
     def my_function(name):
         return f"Hello {name}!"
+
 
     cli = clearskies.contexts.Cli(
         clearskies.endpoints.Callable(
@@ -87,8 +93,10 @@ class Cli(Context):
     #!/usr/bin/env python
     import clearskies
 
+
     def my_function(request_data):
         return request_data
+
 
     cli = clearskies.contexts.Cli(
         clearskies.endpoints.Callable(

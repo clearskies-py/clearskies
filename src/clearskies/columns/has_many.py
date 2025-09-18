@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING, Any, Self, overload
 from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import Object as AutoDocObject
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
 from clearskies.di.inject import InputOutput
 from clearskies.functional import string, validations
 
 if TYPE_CHECKING:
-    from clearskies import Column, Model
+    from clearskies import Column, Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
 class HasMany(Column):

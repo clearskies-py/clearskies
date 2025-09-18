@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from clearskies import configs, decorators, model, typing
+from clearskies import configs, decorators
 from clearskies.column import Column
 from clearskies.columns.has_many import HasMany
+
+if TYPE_CHECKING:
+    from clearskies import Model, typing
 
 
 class Audit(HasMany):
@@ -82,7 +85,7 @@ class Audit(HasMany):
     ):
         self.child_model_class = self.audit_model_class
 
-    def save_finished(self, model: model.Model):
+    def save_finished(self, model: Model):
         super().save_finished(model)
         old_data: dict[str, Any] = model._previous_data
         new_data: dict[str, Any] = model.get_raw_data()
@@ -185,7 +188,7 @@ class Audit(HasMany):
     def parent_columns(self) -> dict[str, Column]:
         if self._parent_columns == None:
             self._parent_columns = self.di.build(self.model_class, cache=True).columns()
-        return self._parent_columns
+        return self._parent_columns  # type: ignore[return-value]
 
     def record(self, model, action, data=None, record_data=None):
         audit_data = {

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from clearskies import configs, decorators
 from clearskies.security_header import SecurityHeader
 

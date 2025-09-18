@@ -1,4 +1,4 @@
-import requests
+from __future__ import annotations
 
 from clearskies.di.injectable import Injectable
 from clearskies.environment import Environment as EnvironmentDependency

@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, schema, typing
+from clearskies import authentication, autodoc, decorators
 from clearskies.endpoints.get import Get
-from clearskies.functional import routing, string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import SecurityHeader
-    from clearskies.model import Model, Schema
+    from clearskies import Model, SecurityHeader, typing
+    from clearskies.input_outputs import InputOutput
 
 
 class Delete(Get):

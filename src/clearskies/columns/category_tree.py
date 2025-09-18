@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.columns.belongs_to_id import BelongsToId
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class CategoryTree(BelongsToId):
@@ -214,7 +214,7 @@ class CategoryTree(BelongsToId):
         self.update_tree_table(model, id, model.latest(self.name, data))
         return
 
-    def force_tree_update(self, model: Model):
+    def force_tree_update(self, model: Model) -> None:
         self.update_tree_table(model, getattr(model, model.id_column_name), getattr(model, self.name))
 
     def update_tree_table(self, model: Model, child_id: int | str, direct_parent_id: int | str) -> None:

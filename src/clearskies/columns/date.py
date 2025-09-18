@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 import dateparser
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.columns.datetime import Datetime
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Date(Datetime):
@@ -216,10 +216,10 @@ class Date(Datetime):
 
         if type(value_1) == str:
             value_1 = dateparser.parse(value_1)
-            value_1 = datetime.date(value_1.year, value_1.month, value_1.day)
+            value_1 = datetime.date(value_1.year, value_1.month, value_1.day) if value_1 else None
         if type(value_2) == str:
             value_2 = dateparser.parse(value_2)
-            value_2 = datetime.date(value_2.year, value_2.month, value_2.day)
+            value_2 = datetime.date(value_2.year, value_2.month, value_2.day) if value_2 else None
 
         # two times can be the same but if one is datetime-aware and one is not, python will treat them as not equal.
         # we want to treat such times as being the same.  Therefore, check for equality but ignore the timezone.

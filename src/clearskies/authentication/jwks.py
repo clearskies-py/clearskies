@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import datetime
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from clearskies import configs, decorators, di
 from clearskies.authentication.authentication import Authentication
 from clearskies.exceptions import ClientError
 from clearskies.security_headers.cors import Cors
+
+if TYPE_CHECKING:
+    from clearskies.input_outputs.input_output import InputOutput
 
 
 class Jwks(Authentication, di.InjectableProperties):
@@ -89,8 +94,8 @@ class Jwks(Authentication, di.InjectableProperties):
     ):
         self.finalize_and_validate_configuration()
 
-    def authenticate(self, input_output) -> bool:
-        auth_header = input_output.get_request_header("authorization", True)
+    def authenticate(self, input_output: InputOutput) -> bool:
+        auth_header = input_output.request_headers.get("authorization", None)
         if not auth_header:
             raise ClientError("Missing 'Authorization' header in request")
         if auth_header[:7].lower() != "bearer ":

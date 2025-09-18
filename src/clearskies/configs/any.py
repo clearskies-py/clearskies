@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any as AnyType
 
 from clearskies.configs import config

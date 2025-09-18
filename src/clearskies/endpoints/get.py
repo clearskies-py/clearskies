@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, schema, typing
-from clearskies.authentication import Authentication, Authorization
+from clearskies import autodoc, configs, decorators, exceptions
+from clearskies.authentication import Authentication, Authorization, Public
 from clearskies.endpoint import Endpoint
 from clearskies.functional import routing, string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, Schema, SecurityHeader
+    from clearskies import Column, Schema, SecurityHeader, typing
+    from clearskies.input_outputs import InputOutput
     from clearskies.model import Model
 
 
@@ -175,8 +173,8 @@ class Get(Endpoint):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
-        authentication: Authentication = authentication.Public(),
-        authorization: Authorization = authentication.Authorization(),
+        authentication: Authentication = Public(),
+        authorization: Authorization = Authorization(),
     ):
         try:
             # we will set the value for this if it isn't already set, and the easiest way is to just fetch it and see if it blows up

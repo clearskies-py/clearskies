@@ -1,10 +1,15 @@
-from typing import Any, Callable
+from __future__ import annotations
 
-from clearskies import model, query
+from typing import TYPE_CHECKING, Any, Callable
+
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+from clearskies.query import Condition, Query
+
+if TYPE_CHECKING:
+    from clearskies import Model
 
 
 class CursorBackend(Backend, InjectableProperties):
@@ -132,7 +137,7 @@ class CursorBackend(Backend, InjectableProperties):
             + self.table_escape_character
         )
 
-    def update(self, id: int | str, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
         query_parts = []
         parameters = []
         escape = self.column_escape_character
@@ -148,11 +153,9 @@ class CursorBackend(Backend, InjectableProperties):
         )
 
         # and now query again to fetch the updated record.
-        return self.records(query.Query(model.__class__, conditions=[query.Condition(f"{model.id_column_name}={id}")]))[
-            0
-        ]
+        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))[0]
 
-    def create(self, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         escape = self.column_escape_character
         columns = escape + f"{escape}, {escape}".join(data.keys()) + escape
         placeholders = ", ".join(["%s" for i in range(len(data))])
@@ -165,23 +168,21 @@ class CursorBackend(Backend, InjectableProperties):
         if not new_id:
             raise ValueError("I can't figure out what the id is for a newly created record :(")
 
-        return self.records(
-            query.Query(model.__class__, conditions=[query.Condition(f"{model.id_column_name}={new_id}")])
-        )[0]
+        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={new_id}")]))[0]
 
-    def delete(self, id: int | str, model: model.Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> bool:
         table_name = self._finalize_table_name(model.destination_name())
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {model.id_column_name}=%s", (id,))
         return True
 
-    def count(self, query: query.Query) -> int:
+    def count(self, query: Query) -> int:
         (sql, parameters) = self.as_count_sql(query)
         self.cursor.execute(sql, parameters)
         for row in self.cursor:
             return row[0] if type(row) == tuple else row["count"]
         return 0
 
-    def records(self, query: query.Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         # I was going to get fancy and have this return an iterator, but since I'm going to load up
         # everything into a list anyway, I may as well just return the list, right?
         (sql, parameters) = self.as_sql(query)
@@ -194,7 +195,7 @@ class CursorBackend(Backend, InjectableProperties):
                 next_page_data["start"] = int(start) + int(limit)
         return records
 
-    def as_sql(self, query: query.Query) -> tuple[str, tuple[Any]]:
+    def as_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.column_escape_character
         table_name = query.model_class.destination_name()
         (wheres, parameters) = self.conditions_as_wheres_and_parameters(
@@ -236,7 +237,7 @@ class CursorBackend(Backend, InjectableProperties):
             parameters,
         )
 
-    def as_count_sql(self, query: query.Query) -> tuple[str, tuple[Any]]:
+    def as_count_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.column_escape_character
         # note that this won't work if we start including a HAVING clause
         (wheres, parameters) = self.conditions_as_wheres_and_parameters(
@@ -260,7 +261,7 @@ class CursorBackend(Backend, InjectableProperties):
         return (query_string, parameters)
 
     def conditions_as_wheres_and_parameters(
-        self, conditions: list[query.Condition], default_table_name: str
+        self, conditions: list[Condition], default_table_name: str
     ) -> tuple[str, tuple[Any]]:
         if not conditions:
             return ("", ())  # type: ignore

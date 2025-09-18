@@ -1,22 +1,21 @@
 from __future__ import annotations
 
 import datetime
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 
 import dateparser
 
-from clearskies import configs, decorators, di
+from clearskies.di import InjectableProperties, inject
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
-class InTheFuture(Validator, di.InjectableProperties):
-    utcnow = di.inject.Utcnow()
+class InTheFuture(Validator, InjectableProperties):
+    utcnow = inject.Utcnow()
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         if not data.get(column_name):
             return ""
 

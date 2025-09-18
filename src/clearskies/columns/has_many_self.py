@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from clearskies import decorators, typing
+from typing import TYPE_CHECKING
+
+from clearskies import decorators
 from clearskies.columns.has_many import HasMany
+
+if TYPE_CHECKING:
+    from clearskies import typing
 
 
 class HasManySelf(HasMany):

@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, typing
-from clearskies.authentication import Authentication, Authorization
+from clearskies import authentication, autodoc, configs, decorators
 from clearskies.endpoint import Endpoint
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, SecurityHeader
-    from clearskies.model import Model
+    from clearskies import SecurityHeader
+    from clearskies.authentication import Authentication
+    from clearskies.input_outputs import InputOutput
 
 
 class Schema(Endpoint):

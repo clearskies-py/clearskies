@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, typing
+from clearskies import authentication, autodoc, decorators, exceptions
 from clearskies.endpoints.list import List
 
 if TYPE_CHECKING:
-    from clearskies import Column, Schema, SecurityHeader
-    from clearskies.model import Model
+    from clearskies import Column, Model, Schema, SecurityHeader, typing
 
 
 class SimpleSearch(List):

@@ -7,7 +7,7 @@ from clearskies import configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
 class MaximumValue(Validator):
@@ -17,7 +17,7 @@ class MaximumValue(Validator):
         self.maximum_value = maximum_value
         self.finalize_and_validate_configuration()
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         if column_name not in data:
             return ""
         try:

@@ -81,3 +81,8 @@ testpaths = [
 pythonpath = [
   "app"
 ]
+
+# Add a specific rule for wrapt
+[[tool.mypy.overrides]]
+module = "wrapt"
+ignore_missing_imports = true

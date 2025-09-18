@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Any
 
 import dateparser
 
-from clearskies import configs, decorators, model
+from clearskies import configs, decorators
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    from clearskies import model
+    from clearskies import Model
 
 
 class AfterColumn(Validator):
@@ -28,7 +28,7 @@ class AfterColumn(Validator):
         self.allow_equal = allow_equal
         self.finalize_and_validate_configuration()
 
-    def check(self, model: model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         # we won't check anything for missing values (columns should be required if that is an issue)
         if not data.get(column_name):
             return ""

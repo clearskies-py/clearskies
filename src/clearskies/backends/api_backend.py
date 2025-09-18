@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import requests
 
-from clearskies import authentication, column, columns, configs, configurable, decorators, model, query
+from clearskies import columns, configs, configurable, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -14,7 +14,9 @@ from clearskies.di import InjectableProperties, inject
 from clearskies.functional import routing, string
 
 if TYPE_CHECKING:
+    from clearskies import Column, Model
     from clearskies.authentication import Authentication
+    from clearskies.query import Query
 
 
 class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
@@ -652,7 +654,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.finalize_url(url, data, operation)
 
-    def finalize_url_from_query(self, query: query.Query, operation: str) -> tuple[str, list[str]]:
+    def finalize_url_from_query(self, query: Query, operation: str) -> tuple[str, list[str]]:
         """
         Create the URL using a query to fill in any URL parameters.
 
@@ -665,7 +667,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             available_routing_data[condition.column_name] = condition.values[0]
         return self.finalize_url(query.model_class.destination_name(), available_routing_data, operation)
 
-    def create_url(self, data: dict[str, Any], model: model.Model) -> tuple[str, list[str]]:
+    def create_url(self, data: dict[str, Any], model: Model) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for a create requst.  Also, return the list of ay data parameters used to construct the URL.
 
@@ -673,11 +675,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.finalize_url_from_data(model.destination_name(), data, "create")
 
-    def create_method(self, data: dict[str, Any], model: model.Model) -> str:
+    def create_method(self, data: dict[str, Any], model: Model) -> str:
         """Return the request method to use with a create request."""
         return "POST"
 
-    def records_url(self, query: query.Query) -> tuple[str, list[str]]:
+    def records_url(self, query: Query) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for a records request.  Also, return the list of any query parameters used to construct the URL.
 
@@ -685,11 +687,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.finalize_url_from_query(query, "records")
 
-    def records_method(self, query: query.Query) -> str:
+    def records_method(self, query: Query) -> str:
         """Return the request method to use when fetching records from the API."""
         return "GET"
 
-    def count_url(self, query: query.Query) -> tuple[str, list[str]]:
+    def count_url(self, query: Query) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for a request to get a record count..  Also, return the list of any query parameters used to construct the URL.
 
@@ -697,11 +699,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.records_url(query)
 
-    def count_method(self, query: query.Query) -> str:
+    def count_method(self, query: Query) -> str:
         """Return the request method to use when making a request for a record count."""
         return self.records_method(query)
 
-    def delete_url(self, id: int | str, model: model.Model) -> tuple[str, list[str]]:
+    def delete_url(self, id: int | str, model: Model) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for a delete request.  Also, return the list of any query parameters used to construct the URL.
 
@@ -710,11 +712,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         model_base_url = model.destination_name().strip("/") + "/" if model.destination_name() else ""
         return self.finalize_url_from_data(f"{model_base_url}{id}", model.get_raw_data(), "delete")
 
-    def delete_method(self, id: int | str, model: model.Model) -> str:
+    def delete_method(self, id: int | str, model: Model) -> str:
         """Return the request method to use when deleting records via the API."""
         return "DELETE"
 
-    def update_url(self, id: int | str, data: dict[str, Any], model: model.Model) -> tuple[str, list[str]]:
+    def update_url(self, id: int | str, data: dict[str, Any], model: Model) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for an update request.  Also, return the list of any query parameters used to construct the URL.
 
@@ -723,11 +725,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         model_base_url = model.destination_name().strip("/") + "/" if model.destination_name() else ""
         return self.finalize_url_from_data(f"{model_base_url}{id}", {**model.get_raw_data(), **data}, "update")
 
-    def update_method(self, id: int | str, data: dict[str, Any], model: model.Model) -> str:
+    def update_method(self, id: int | str, data: dict[str, Any], model: Model) -> str:
         """Return the request method to use for an update request."""
         return "PATCH"
 
-    def update(self, id: int | str, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
         """Update a record."""
         data = {**data}
         (url, used_routing_parameters) = self.update_url(id, data, model)
@@ -742,7 +744,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             new_record = {**new_record, **self.map_update_response(response.json(), model)}
         return new_record
 
-    def map_update_response(self, response_data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def map_update_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         """
         Take the response from the API endpoint for an update request and figure out where the data lives/return it to build a new model.
 
@@ -750,7 +752,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.map_record_response(response_data, model.get_columns(), "update")
 
-    def create(self, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         """Create a record."""
         data = {**data}
         (url, used_routing_parameters) = self.create_url(data, model)
@@ -764,17 +766,17 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             return self.map_create_response(response.json(), model)
         return {}
 
-    def map_create_response(self, response_data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def map_create_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         return self.map_record_response(response_data, model.get_columns(), "create")
 
-    def delete(self, id: int | str, model: model.Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> bool:
         (url, used_routing_parameters) = self.delete_url(id, model)
         request_method = self.delete_method(id, model)
 
         response = self.execute_request(url, request_method)
         return True
 
-    def records(self, query: query.Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         self.check_query(query)
         (url, method, body, headers) = self.build_records_request(query)
         response = self.execute_request(url, method, json=body, headers=headers)
@@ -783,7 +785,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             self.set_next_page_data_from_response(next_page_data, query, response)
         return records
 
-    def build_records_request(self, query: query.Query) -> tuple[str, str, dict[str, Any], dict[str, str]]:
+    def build_records_request(self, query: Query) -> tuple[str, str, dict[str, Any], dict[str, str]]:
         (url, used_routing_parameters) = self.records_url(query)
 
         (condition_route_id, condition_url_parameters, condition_body_parameters) = (
@@ -817,7 +819,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         )
 
     def conditions_to_request_parameters(
-        self, query: query.Query, used_routing_parameters: list[str]
+        self, query: Query, used_routing_parameters: list[str]
     ) -> tuple[str, dict[str, str], dict[str, Any]]:
         route_id = ""
 
@@ -836,7 +838,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return (route_id, url_parameters, {})
 
-    def pagination_to_request_parameters(self, query: query.Query) -> tuple[dict[str, str], dict[str, Any]]:
+    def pagination_to_request_parameters(self, query: Query) -> tuple[dict[str, str], dict[str, Any]]:
         url_parameters = {}
         if query.limit:
             if not self.limit_parameter_name:
@@ -850,7 +852,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return (url_parameters, {})
 
-    def sorts_to_request_parameters(self, query: query.Query) -> tuple[dict[str, str], dict[str, Any]]:
+    def sorts_to_request_parameters(self, query: Query) -> tuple[dict[str, str], dict[str, Any]]:
         if not query.sorts:
             return ({}, {})
 
@@ -865,7 +867,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         )
 
     def map_records_response(
-        self, response_data: Any, query: query.Query, query_data: dict[str, Any] | None = None
+        self, response_data: Any, query: Query, query_data: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         """Take the response from an API endpoint that returns a list of records and find the actual list of records."""
         columns = query.model_class.get_columns()
@@ -910,7 +912,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         )
 
     def map_record_response(
-        self, response_data: dict[str, Any], columns: dict[str, column.Column], operation: str
+        self, response_data: dict[str, Any], columns: dict[str, Column], operation: str
     ) -> dict[str, Any]:
         """
         Take the response from an API endpoint that returns a single record (typically update and create requests) and return the data for a new model.
@@ -940,7 +942,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def check_dict_and_map_to_model(
         self,
         response_data: dict[str, Any],
-        columns: dict[str, column.Column],
+        columns: dict[str, Column],
         query_data: dict[str, Any] = {},
     ) -> dict[str, Any] | None:
         """
@@ -979,7 +981,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return {**query_data, **mapped}
 
-    def build_response_to_model_map(self, columns: dict[str, column.Column]) -> dict[str, str]:
+    def build_response_to_model_map(self, columns: dict[str, Column]) -> dict[str, str]:
         if self._response_to_model_map is not None:
             return self._response_to_model_map
 
@@ -995,7 +997,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def set_next_page_data_from_response(
         self,
         next_page_data: dict[str, Any],
-        query: query.Query,
+        query: Query,
         response: requests.Response,  # type: ignore
     ) -> None:
         """
@@ -1034,7 +1036,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             )
         next_page_data[self.pagination_parameter_name] = query_parameters[self.pagination_parameter_name][0]
 
-    def count(self, query: query.Query) -> int:
+    def count(self, query: Query) -> int:
         raise NotImplementedError(
             f"The {self.__class__.__name__} backend does not support count operations, so you can't use the `len` or `bool` function for any models using it."
         )
@@ -1096,7 +1098,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return response
 
-    def check_query(self, query: query.Query) -> None:
+    def check_query(self, query: Query) -> None:
         for key in ["joins", "group_by", "selects"]:
             if getattr(query, key):
                 raise ValueError(f"{self.__class__.__name__} does not support queries with {key}")
@@ -1147,14 +1149,14 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             )
         ]
 
-    def column_from_backend(self, column: column.Column, value: Any) -> Any:
+    def column_from_backend(self, column: Column, value: Any) -> Any:
         """We have a couple columns we want to override transformations for."""
         # most importantly, there's no need to transform a JSON column in either direction
         if isinstance(column, columns.json.Json):
             return value
         return super().column_from_backend(column, value)
 
-    def column_to_backend(self, column: column.Column, backend_data: dict[str, Any]) -> dict[str, Any]:
+    def column_to_backend(self, column: Column, backend_data: dict[str, Any]) -> dict[str, Any]:
         """We have a couple columns we want to override transformations for."""
         # most importantly, there's no need to transform a JSON column in either direction
         if isinstance(column, columns.json.Json):

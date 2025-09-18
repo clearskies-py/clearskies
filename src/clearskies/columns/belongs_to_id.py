@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import configs, decorators, typing
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -12,7 +11,7 @@ from clearskies.di.inject import InputOutput
 from clearskies.functional import validations
 
 if TYPE_CHECKING:
-    from clearskies import Column, Model
+    from clearskies import Model, typing
 
 
 class BelongsToId(String):

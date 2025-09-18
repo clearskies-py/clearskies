@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from clearskies import configs, decorators, di, typing
+from clearskies import configs, decorators, di
 from clearskies.columns.string import String
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class Uuid(String):

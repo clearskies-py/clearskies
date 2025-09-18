@@ -4,7 +4,6 @@ import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Self
 
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import string
 from clearskies.query import Condition, Join, Query, Sort
@@ -12,6 +11,7 @@ from clearskies.schema import Schema
 
 if TYPE_CHECKING:
     from clearskies import Column
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
     from clearskies.backends import Backend
 
 

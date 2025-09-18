@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, configs, decorators, exceptions, typing
+from clearskies import authentication, autodoc, configs, decorators, exceptions
 from clearskies.endpoint import Endpoint
 from clearskies.functional import string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Schema, SecurityHeader
-    from clearskies.column import Column
-    from clearskies.model import Model
+    from clearskies import Column, Model, Schema, SecurityHeader, typing
+    from clearskies.input_outputs import InputOutput
 
 
 class List(Endpoint):
@@ -375,7 +373,7 @@ class List(Endpoint):
                 raise exceptions.ClientError("Invalid request: 'limit' should be an integer")
         if limit:
             if limit > self.maximum_limit:
-                raise exceptions.ClientError(f"Invalid request: 'limit' must be at most {self.max_limit}")
+                raise exceptions.ClientError(f"Invalid request: 'limit' must be at most {self.maximum_limit}")
             if limit < 0:
                 raise exceptions.ClientError(f"Invalid request: 'limit' must be positive")
 

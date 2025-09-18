@@ -6,17 +6,18 @@ from typing import TYPE_CHECKING, Any
 
 import dateparser
 
-from clearskies import configs, decorators, di
+from clearskies import configs, decorators
+from clearskies.di import InjectableProperties, inject
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    from clearskies import model
+    from clearskies import Model
 
 
-class Timedelta(Validator, di.InjectableProperties):
+class Timedelta(Validator, InjectableProperties):
     timedelta = configs.Timedelta(default=None)
 
-    utcnow = di.inject.Utcnow()
+    utcnow = inject.Utcnow()
 
     @decorators.parameters_to_properties
     def __init__(self, timedelta: datetime.timedelta):
@@ -42,7 +43,7 @@ class Timedelta(Validator, di.InjectableProperties):
             parts.append(f"{amount} {name}" + ("s" if amount != 1 else ""))
         return ", ".join(parts)
 
-    def check(self, model: model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         if not data.get(column_name):
             return ""
 

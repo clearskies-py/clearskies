@@ -1,4 +1,4 @@
-from clearskies import autodoc, configs, decorators, di
+from clearskies import configs, decorators, di
 
 from .authentication import Authentication
 
@@ -455,8 +455,8 @@ class SecretBearer(Authentication, di.InjectableProperties):
     """
     documentation_security_name = configs.String(default="ApiKey")
 
-    _secret: str = None  #  type: ignore
-    _alternate_secret: str = None  # type: ignore
+    _secret: str | None = None
+    _alternate_secret: str | None = None
 
     @decorators.parameters_to_properties
     def __init__(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, Type, overload
+from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.columns import CategoryTreeChildren
 

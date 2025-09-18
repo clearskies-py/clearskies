@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 from typing import Any
 
 from clearskies.input_outputs.input_output import InputOutput
-
-from .headers import Headers
 
 
 class Programmatic(InputOutput):

@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, decorators, exceptions, schema
+from clearskies import authentication, autodoc, decorators, exceptions
 from clearskies.endpoint import Endpoint
 from clearskies.functional import string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, SecurityHeader
+    from clearskies import Column, Schema, SecurityHeader
+    from clearskies.input_outputs import InputOutput
     from clearskies.model import Model
 
 
@@ -112,7 +110,7 @@ class Create(Endpoint):
         request_methods: list[str] = ["POST"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
-        output_schema: schema.Schema | None = None,
+        output_schema: Schema | None = None,
         column_overrides: dict[str, Column] = {},
         internal_casing: str = "snake_case",
         external_casing: str = "snake_case",

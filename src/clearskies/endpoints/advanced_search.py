@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from clearskies import autodoc, exceptions
+from clearskies import exceptions
 from clearskies.endpoints.simple_search import SimpleSearch
 
 if TYPE_CHECKING:
-    from clearskies.model import Model
+    from clearskies import Model, autodoc
 
 
 class AdvancedSearch(SimpleSearch):

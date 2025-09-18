@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from clearskies import configs, decorators, typing
+from typing import TYPE_CHECKING
+
+from clearskies import configs, decorators
 from clearskies.columns.string import String
+
+if TYPE_CHECKING:
+    from clearskies import typing
 
 
 class CreatedByRoutingData(String):

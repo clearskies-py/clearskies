@@ -1,12 +1,17 @@
-import inspect
-from functools import cmp_to_key
-from typing import Any, Callable
+from __future__ import annotations
 
-from clearskies import functional, model, query
+from functools import cmp_to_key
+from typing import TYPE_CHECKING, Any, Callable
+
+from clearskies import functional
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+
+if TYPE_CHECKING:
+    from clearskies import Model
+    from clearskies.query import Condition, Join, Query, Sort
 
 
 class Null:
@@ -29,7 +34,7 @@ def gentle_float_conversion(value):
         return value
 
 
-def _sort(row_a: Any, row_b: Any, sorts: list[query.Sort], default_table_name: str) -> int:
+def _sort(row_a: Any, row_b: Any, sorts: list[Sort], default_table_name: str) -> int:
     for sort in sorts:
         # so, if we've done a join then the rows will have data from all joined tables via a dict of dicts.
         # if there wasn't a join then we'll just have the data
@@ -90,7 +95,7 @@ class MemoryTable:
     _id_index: dict[int | str, int] = {}
     id_column_name: str = ""
     _next_id: int = 1
-    _model_class: type[model.Model] = None  # type:  ignore
+    _model_class: type[Model] = None  # type:  ignore
 
     # here be dragons.  This is not a 100% drop-in replacement for the equivalent SQL operators
     # https://codereview.stackexchange.com/questions/259198/in-memory-table-filtering-in-python
@@ -122,7 +127,7 @@ class MemoryTable:
         "in": lambda column, values, null: lambda row: row.get(column, null) in values,
     }
 
-    def __init__(self, model_class: type[model.Model]) -> None:
+    def __init__(self, model_class: type[Model]) -> None:
         self._rows = []
         self._id_index = {}
         self.id_column_name = model_class.id_column_name
@@ -191,13 +196,13 @@ class MemoryTable:
         self._rows[index] = None
         return True
 
-    def count(self, query: query.Query):
+    def count(self, query: Query):
         return len(self.rows(query, query.conditions, filter_only=True))
 
     def rows(
         self,
-        query: query.Query,
-        conditions: list[query.Condition],
+        query: Query,
+        conditions: list[Condition],
         filter_only: bool = False,
         next_page_data: dict[str, Any] | None = None,
     ):
@@ -230,7 +235,7 @@ class MemoryTable:
         return rows
 
     @classmethod
-    def _condition_as_filter(cls, condition: query.Condition) -> Callable:
+    def _condition_as_filter(cls, condition: Condition) -> Callable:
         column = condition.column_name
         values = condition.values
         return cls._operator_lambda_builders[condition.operator.lower()](column, values, cls.null)
@@ -467,19 +472,19 @@ class MemoryBackend(Backend, InjectableProperties):
     def silent_on_missing_tables(self, silent=True):
         self._silent_on_missing_tables = silent
 
-    def create_table(self, model_class: type[model.Model]):
+    def create_table(self, model_class: type[Model]):
         self.load_default_data()
         table_name = model_class.destination_name()
         if table_name in self.__class__._tables:
             return
         self.__class__._tables[table_name] = MemoryTable(model_class)
 
-    def has_table(self, model_class: type[model.Model]) -> bool:
+    def has_table(self, model_class: type[Model]) -> bool:
         self.load_default_data()
         table_name = model_class.destination_name()
         return table_name in self.__class__._tables
 
-    def get_table(self, model_class: type[model.Model], create_if_missing=False) -> MemoryTable:
+    def get_table(self, model_class: type[Model], create_if_missing=False) -> MemoryTable:
         table_name = model_class.destination_name()
         if table_name not in self.__class__._tables:
             if create_if_missing:
@@ -490,23 +495,23 @@ class MemoryBackend(Backend, InjectableProperties):
                 )
         return self.__class__._tables[table_name]
 
-    def create_with_model_class(self, data: dict[str, Any], model_class: type[model.Model]) -> dict[str, Any]:
+    def create_with_model_class(self, data: dict[str, Any], model_class: type[Model]) -> dict[str, Any]:
         self.create_table(model_class)
         return self.get_table(model_class).create(data)
 
-    def update(self, id: int | str, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
         self.create_table(model.__class__)
         return self.get_table(model.__class__).update(id, data)
 
-    def create(self, data: dict[str, Any], model: model.Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         self.create_table(model.__class__)
         return self.get_table(model.__class__).create(data)
 
-    def delete(self, id: int | str, model: model.Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> bool:
         self.create_table(model.__class__)
         return self.get_table(model.__class__).delete(id)
 
-    def count(self, query: query.Query) -> int:
+    def count(self, query: Query) -> int:
         self.check_query(query)
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
@@ -524,7 +529,7 @@ class MemoryBackend(Backend, InjectableProperties):
         query.joins = [join for join in query.joins if join.join_type != "LEFT"]
         return len(self.rows_with_joins(query))
 
-    def records(self, query: query.Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         self.check_query(query)
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
@@ -562,7 +567,7 @@ class MemoryBackend(Backend, InjectableProperties):
                 next_page_data["start"] = start + query.limit
         return rows
 
-    def rows_with_joins(self, query: query.Query) -> list[dict[str, Any]]:
+    def rows_with_joins(self, query: Query) -> list[dict[str, Any]]:
         joins = [*query.joins]
         conditions = [*query.conditions]
         # quick sanity check
@@ -636,15 +641,13 @@ class MemoryBackend(Backend, InjectableProperties):
             raise ValueError(f"Cannot return rows for unknown table '{table_name}'")
         return list(filter(None, self.__class__._tables[table_name]._rows))
 
-    def check_query(self, query: query.Query) -> None:
+    def check_query(self, query: Query) -> None:
         if query.group_by:
             raise KeyError(
                 f"MemoryBackend does not support group_by clauses in queries. You may be using the wrong backend."
             )
 
-    def conditions_for_table(
-        self, table_name: str, conditions: list[query.Condition], is_left=False
-    ) -> list[query.Condition]:
+    def conditions_for_table(self, table_name: str, conditions: list[Condition], is_left=False) -> list[Condition]:
         """
         Return only the conditions for the given table.
 
@@ -661,7 +664,7 @@ class MemoryBackend(Backend, InjectableProperties):
         self,
         rows: list[dict[str, Any]],
         join_rows: list[dict[str, Any]],
-        join: query.Join,
+        join: Join,
         joined_tables: list[str],
     ) -> list[dict[str, Any]]:
         """

@@ -965,9 +965,6 @@ class Endpoint(
         )
         return self.authorization.filter_model(model, input_output.authorization_data, input_output)
 
-    def handle(self, input_output: InputOutput) -> Any:
-        raise NotImplementedError()
-
     def matches_request(self, input_output: InputOutput, allow_partial=False) -> bool:
         """Whether or not we can handle an incoming request based on URL and request method."""
         # soo..... this excessively duplicates the logic in __call__, but I'm being lazy right now
@@ -1004,14 +1001,6 @@ class Endpoint(
 
     def failure(self, input_output: InputOutput) -> Any:
         return self.respond_json(input_output, {"status": "failure"}, 500)
-
-    def input_errors(self, input_output: InputOutput, errors: dict[str, str], status_code: int = 200) -> Any:
-        """Return input errors to the client."""
-        return self.respond_json(input_output, {"status": "input_errors", "input_errors": errors}, status_code)
-
-    def error(self, input_output: InputOutput, message: str, status_code: int) -> Any:
-        """Return a client-side error (e.g. 400)."""
-        return self.respond_json(input_output, {"status": "client_error", "error": message}, status_code)
 
     def redirect(self, input_output: InputOutput, location: str, status_code: int) -> Any:
         """Return a redirect."""
