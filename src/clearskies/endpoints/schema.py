@@ -1,25 +1,19 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.autodoc
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
-from clearskies.authentication import Authentication, Authorization
+from clearskies import authentication, autodoc, configs, decorators
 from clearskies.endpoint import Endpoint
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, SecurityHeader
-    from clearskies.model import Model
+    from clearskies import SecurityHeader
+    from clearskies.authentication import Authentication
+    from clearskies.input_outputs import InputOutput
 
 
 class Schema(Endpoint):
     """
-    An endpoint that automatically creates a swagger doc for the application
+    An endpoint that automatically creates a swagger doc for the application.
 
     The schema endpoint must always be attached to an endpoint group.  It will document all endpoints
     attached to its parent endpoint group.
@@ -74,10 +68,11 @@ class Schema(Endpoint):
                 sortable_column_names=readable_column_names,
                 searchable_column_names=readable_column_names,
                 default_sort_column_name="name",
-            )
+            ),
         ],
         url="/users",
     )
+
 
     class SomeThing(clearskies.Model):
         id_column_name = "id"
@@ -86,6 +81,7 @@ class Schema(Endpoint):
         id = clearskies.columns.Uuid()
         thing_1 = clearskies.columns.String(validators=[Required()])
         thing_2 = clearskies.columns.String(validators=[Unique()])
+
 
     more_endpoints = clearskies.EndpointGroup(
         [
@@ -130,7 +126,7 @@ class Schema(Endpoint):
     """
     The doc builder class/format to use
     """
-    schema_format = clearskies.configs.Any(default=clearskies.autodoc.formats.oai3_json.Oai3Json)
+    schema_format = configs.Any(default=autodoc.formats.oai3_json.Oai3Json)
 
     """
     Addiional data to inject into the schema doc.
@@ -138,13 +134,13 @@ class Schema(Endpoint):
     This is typically used for setting info/server settings in the resultant swagger doc.  Anything
     in this dictionary is injected into the "root" of the generated documentation file.
     """
-    schema_configuration = clearskies.configs.AnyDict(default={})
+    schema_configuration = configs.AnyDict(default={})
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         url: str,
-        schema_format=clearskies.autodoc.formats.oai3_json.Oai3Json,
+        schema_format=autodoc.formats.oai3_json.Oai3Json,
         request_methods: list[str] = ["GET"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         security_headers: list[SecurityHeader] = [],

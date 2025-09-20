@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from clearskies.columns.string import String
@@ -65,7 +67,7 @@ class Email(String):
     """
 
     def input_error_for_value(self, value: str, operator: str | None = None) -> str:
-        if type(value) != str:
+        if not isinstance(value, str):
             return f"Value must be a string for {self.name}"
         if operator and operator.lower() == "like":
             # don't check for an email if doing a fuzzy search, since we may be searching

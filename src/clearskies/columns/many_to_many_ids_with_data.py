@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.columns.many_to_many_ids import ManyToManyIds
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
 
 
 class ManyToManyIdsWithData(ManyToManyIds):
@@ -64,13 +62,15 @@ class ManyToManyIdsWithData(ManyToManyIds):
         thing_1 = thingies.create({"name": "Thing 1"})
         thing_2 = thingies.create({"name": "Thing 2"})
         thing_3 = thingies.create({"name": "Thing 3"})
-        widget = widgets.create({
-            "name": "Widget 1",
-            "thingy_ids": [
-                {"thingy_id": thing_1.id, "name": "Widget Thing 1", "kind": "Special"},
-                {"thingy_id": thing_2.id, "name": "Widget Thing 2", "kind": "Also Special"},
-            ],
-        })
+        widget = widgets.create(
+            {
+                "name": "Widget 1",
+                "thingy_ids": [
+                    {"thingy_id": thing_1.id, "name": "Widget Thing 1", "kind": "Special"},
+                    {"thingy_id": thing_2.id, "name": "Widget Thing 2", "kind": "Also Special"},
+                ],
+            }
+        )
 
         return widget
 
@@ -149,7 +149,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
     setable = configs.ListAnyDictOrCallable(default=None)  #  type: ignore
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         related_model_class,
@@ -165,10 +165,10 @@ class ManyToManyIdsWithData(ManyToManyIds):
         is_readable: bool = True,
         is_writeable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,

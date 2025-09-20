@@ -4,20 +4,19 @@ import datetime
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.endpoint
-import clearskies.endpoint_group
+from clearskies import exceptions
 from clearskies.di import Di
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.input_outputs import Programmatic
 
 if TYPE_CHECKING:
+    from clearskies.endpoint import Endpoint
+    from clearskies.endpoint_group import EndpointGroup
     from clearskies.input_outputs import InputOutput
 
 
 class Context:
-    """
-    Context: a flexible way to connect applications to hosting strategies.
-    """
+    """Context: a flexible way to connect applications to hosting strategies."""
 
     di: Di = None  # type: ignore
 
@@ -26,13 +25,13 @@ class Context:
 
     This can be a callable, an endpoint, or an endpoint group.  If passed a callable, the callable can request any
     standard or defined dependencies and should return the desired response.  It can also raise any exception from
-    clearskies.exceptions.
+    exceptions.
     """
-    application: Callable | clearskies.endpoint.Endpoint | clearskies.endpoint_group.EndpointGroup = None  # type: ignore
+    application: Callable | Endpoint | EndpointGroup = None  # type: ignore
 
     def __init__(
         self,
-        application: Callable | clearskies.endpoint.Endpoint | clearskies.endpoint_group.EndpointGroup,
+        application: Callable | Endpoint | EndpointGroup,
         classes: type | list[type] = [],
         modules: ModuleType | list[ModuleType] = [],
         bindings: dict[str, Any] = {},
@@ -63,17 +62,17 @@ class Context:
                 return input_output.respond(
                     self.di.call_function(self.application, **input_output.get_context_for_callables())
                 )
-            except clearskies.exceptions.ClientError as e:
+            except exceptions.ClientError as e:
                 return input_output.respond(str(e), 400)
-            except clearskies.exceptions.Authentication as e:
+            except exceptions.Authentication as e:
                 return input_output.respond(str(e), 401)
-            except clearskies.exceptions.Authorization as e:
+            except exceptions.Authorization as e:
                 return input_output.respond(str(e), 403)
-            except clearskies.exceptions.NotFound as e:
+            except exceptions.NotFound as e:
                 return input_output.respond(str(e), 404)
-            except clearskies.exceptions.MovedPermanently as e:
+            except exceptions.MovedPermanently as e:
                 return input_output.respond(str(e), 302)
-            except clearskies.exceptions.MovedTemporarily as e:
+            except exceptions.MovedTemporarily as e:
                 return input_output.respond(str(e), 307)
 
     def __call__(

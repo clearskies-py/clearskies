@@ -1,14 +1,11 @@
-import datetime
-from types import ModuleType
-from typing import Any, Callable
-from wsgiref.simple_server import make_server
-from wsgiref.util import setup_testing_defaults
+from __future__ import annotations
 
-import clearskies.endpoint
-import clearskies.endpoint_group
+from typing import TYPE_CHECKING
+
 from clearskies.contexts.context import Context
-from clearskies.di import AdditionalConfig
-from clearskies.input_outputs import Wsgi as WsgiInputOutput
+
+if TYPE_CHECKING:
+    from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class Wsgi(Context):
@@ -24,10 +21,13 @@ class Wsgi(Context):
     ```
     import clearskies
 
+
     def hello_world():
         return "Hello World!"
 
+
     wsgi = clearskies.contexts.Wsgi(hello_world)
+
 
     def application(environment, start_response):
         return wsgi(environment, start_response)
@@ -52,8 +52,10 @@ class Wsgi(Context):
     ```
     import clearskies
 
+
     def hello_world():
         return "Hello World!"
+
 
     def application(environment, start_response):
         wsgi = clearskies.contexts.Wsgi(hello_world)

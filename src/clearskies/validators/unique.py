@@ -3,17 +3,16 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
 class Unique(Validator):
     is_unique = True
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         # Unique is mildly tricky.  We obviously want to search the backend for the new value,
         # but we need to first skip this if our column is not being set, or if we're editing
         # the model and nothing is changing.

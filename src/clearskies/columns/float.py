@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, overload
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Number as AutoDocNumber
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Float(Column):
@@ -75,7 +73,7 @@ class Float(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocNumber
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         default: float | None = None,
@@ -84,10 +82,10 @@ class Float(Column):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,
@@ -147,7 +145,5 @@ class Float(Column):
 
     def input_error_for_value(self, value, operator=None):
         return (
-            "value should be an integer or float"
-            if (type(value) != int and type(value) != float and value is not None)
-            else ""
+            "value should be an integer or float" if not isinstance(value, (int, float)) and value is not None else ""
         )

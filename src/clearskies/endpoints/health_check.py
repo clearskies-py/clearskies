@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import inspect
-from typing import Any, Callable, Type
+from typing import TYPE_CHECKING, Any, Callable
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import autodoc, typing
+from clearskies import autodoc, configs, decorators
 from clearskies.endpoint import Endpoint
-from clearskies.functional import routing, string
-from clearskies.input_outputs import InputOutput
+
+if TYPE_CHECKING:
+    from clearskies.input_outputs import InputOutput
 
 
 class HealthCheck(Endpoint):
@@ -80,7 +78,7 @@ class HealthCheck(Endpoint):
     If any exceptions are raised when building the dependency injection parameters, the health check will return
     failure.
     """
-    dependency_injection_names = clearskies.configs.StringList(default=[])
+    dependency_injection_names = configs.StringList(default=[])
 
     """
     A list of classes to build with the dependency injection system.
@@ -104,7 +102,7 @@ class HealthCheck(Endpoint):
     wsgi()
     ```
     """
-    classes_to_build = clearskies.configs.Any(default=[])
+    classes_to_build = configs.Any(default=[])
 
     """
     A list of callables to invoke.
@@ -128,9 +126,9 @@ class HealthCheck(Endpoint):
     wsgi()
     ```
     """
-    callables = clearskies.configs.Any(default=[])
+    callables = configs.Any(default=[])
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         dependency_injection_names: list[str] = [],

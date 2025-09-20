@@ -5,16 +5,14 @@ from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 import dateparser  # type: ignore
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
-from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.column import Column
-from clearskies.query import Condition
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.query import Condition
 
 
 class Datetime(Column):
@@ -127,7 +125,7 @@ class Datetime(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         date_format: str = "%Y-%m-%d %H:%M:%S",
@@ -140,10 +138,10 @@ class Datetime(Column):
         is_writeable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        validators: clearskies.typing.validator | list[clearskies.typing.validator] = [],
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        validators: typing.validator | list[typing.validator] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
         created_by_source_type: str = "",
         created_by_source_key: str = "",
         created_by_source_strict: bool = True,
@@ -184,7 +182,7 @@ class Datetime(Column):
             self.name: value.strftime(self.date_format),
         }
 
-    def to_json(self, model: clearskies.model.Model) -> dict[str, Any]:
+    def to_json(self, model: Model) -> dict[str, Any]:
         """Grabs the column out of the model and converts it into a representation that can be turned into JSON."""
         value = self.__get__(model, model.__class__)
         if value and (isinstance(value, datetime.datetime) or isinstance(value, datetime.date)):
@@ -242,13 +240,13 @@ class Datetime(Column):
             return "date is missing timezone information"
         return ""
 
-    def values_match(self, value_1, value_2):
+    def values_match(self, value_1: None | str | datetime.datetime, value_2: None | str | datetime.datetime) -> bool:
         """Compare two values to see if they are the same."""
         # in this function we deal with data directly out of the backend, so our date is likely
         # to be string-ified and we want to look for default (e.g. null) values in string form.
-        if type(value_1) == str and ("0000-00-00" in value_1 or value_1 == self.backend_default):
+        if isinstance(value_1, str) and ("0000-00-00" in value_1 or value_1 == self.backend_default):
             value_1 = None
-        if type(value_2) == str and ("0000-00-00" in value_2 or value_2 == self.backend_default):
+        if isinstance(value_2, str) and ("0000-00-00" in value_2 or value_2 == self.backend_default):
             value_2 = None
         number_values = 0
         if value_1:
@@ -260,10 +258,14 @@ class Datetime(Column):
         if number_values == 1:
             return False
 
-        if type(value_1) == str:
+        if isinstance(value_1, str):
             value_1 = dateparser.parse(value_1)
-        if type(value_2) == str:
+        if isinstance(value_2, str):
             value_2 = dateparser.parse(value_2)
+
+        # If neither value is a datetime, we can't compare them so they don't match.
+        if not isinstance(value_1, datetime.datetime) or not isinstance(value_2, datetime.datetime):
+            return False
 
         # we need to make sure we're comparing in the same timezones.  For our purposes, a difference in timezone
         # is fine as long as they represent the same time (e.g. 16:00EST == 20:00UTC).  For python, same time in different

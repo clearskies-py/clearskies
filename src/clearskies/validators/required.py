@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import datetime
 from typing import TYPE_CHECKING, Any
 
-import clearskies.configs
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
 class Required(Validator):
     is_required = True
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         # you'd think that "required" is straight forward and we want an input error if it isn't found.
         # this isn't strictly true though.  If the model already exists, the column has a value in the model already,
         # and the column is completely missing from the input data, then it is actually perfectly fine (because

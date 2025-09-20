@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self, overload
 
-import clearskies.decorators
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.column import Column
 from clearskies.columns import CategoryTree
 
@@ -36,7 +35,7 @@ class CategoryTreeChildren(Column):
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         category_tree_column_name: str,

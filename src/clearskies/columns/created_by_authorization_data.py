@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-import clearskies.decorators
-import clearskies.typing
-from clearskies import configs
+from clearskies import configs, decorators
 from clearskies.columns.string import String
 
 if TYPE_CHECKING:
-    from clearskies import Model
+    from clearskies import typing
 
 
 class CreatedByAuthorizationData(String):
@@ -100,7 +98,7 @@ class CreatedByAuthorizationData(String):
 
     _allowed_search_operators = ["=", "in", "is not null", "is null", "like"]
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         authorization_data_key_name: str,
@@ -108,9 +106,9 @@ class CreatedByAuthorizationData(String):
         is_readable: bool = True,
         is_searchable: bool = True,
         is_temporary: bool = False,
-        on_change_pre_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_post_save: clearskies.typing.action | list[clearskies.typing.action] = [],
-        on_change_save_finished: clearskies.typing.action | list[clearskies.typing.action] = [],
+        on_change_pre_save: typing.action | list[typing.action] = [],
+        on_change_post_save: typing.action | list[typing.action] = [],
+        on_change_save_finished: typing.action | list[typing.action] = [],
     ):
         self.created_by_source_key = authorization_data_key_name
         self.created_by_source_type = "authorization_data"

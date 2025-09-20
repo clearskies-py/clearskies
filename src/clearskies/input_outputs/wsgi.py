@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 import json
-import urllib
-import urllib.parse
 from typing import Callable
 
 from .input_output import InputOutput

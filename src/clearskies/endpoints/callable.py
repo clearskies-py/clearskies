@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-import inspect
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any
 from typing import Callable as CallableType
 
-import clearskies.configs
-import clearskies.exceptions
-from clearskies import authentication, autodoc, typing
+from clearskies import authentication, autodoc, configs, decorators, exceptions
 from clearskies.endpoint import Endpoint
 from clearskies.functional import string
-from clearskies.input_outputs import InputOutput
 
 if TYPE_CHECKING:
-    from clearskies import Column, SecurityHeader
+    from clearskies import Column, Model, Schema, SecurityHeader
     from clearskies.authentication import Authentication, Authorization
-    from clearskies.model import Model
-    from clearskies.schema import Schema
+    from clearskies.input_outputs import InputOutput
 
 
 class Callable(Endpoint):
@@ -114,7 +108,7 @@ class Callable(Endpoint):
     """
     The callable to execute when the endpoint is invoked
     """
-    to_call = clearskies.configs.Callable(default=None)
+    to_call = configs.Callable(default=None)
 
     """
     A schema that describes the expected input from the client.
@@ -172,7 +166,7 @@ class Callable(Endpoint):
     ```
 
     """
-    input_schema = clearskies.configs.Schema(default=None)
+    input_schema = configs.Schema(default=None)
 
     """
     Whether or not the return value is meant to be wrapped up in the standard clearskies response schema.
@@ -232,20 +226,20 @@ class Callable(Endpoint):
     Note that you can also return strings this way instead of objects/JSON.
 
     """
-    return_standard_response = clearskies.configs.Boolean(default=True)
+    return_standard_response = configs.Boolean(default=True)
 
     """
     Set to true if the callable will be returning multiple records (used when building the auto-documentation)
     """
-    return_records = clearskies.configs.Boolean(default=False)
+    return_records = configs.Boolean(default=False)
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(
         self,
         to_call: CallableType,
         url: str = "",
         request_methods: list[str] = ["GET"],
-        model_class: type[clearskies.model.Model] | None = None,
+        model_class: type[Model] | None = None,
         readable_column_names: list[str] = [],
         writeable_column_names: list[str] = [],
         input_schema: type[Schema] | None = None,
@@ -281,7 +275,7 @@ class Callable(Endpoint):
         else:
             input_errors = self.find_input_errors_from_callable(input_output.request_data, input_output)
             if input_errors:
-                raise clearskies.exceptions.InputErrors(input_errors)
+                raise exceptions.InputErrors(input_errors)
         response = self.di.call_function(self.to_call, **input_output.get_context_for_callables())
 
         if not self.return_standard_response:

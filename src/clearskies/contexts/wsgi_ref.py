@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import datetime
 from types import ModuleType
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 from wsgiref.simple_server import make_server
 from wsgiref.util import setup_testing_defaults
 
-import clearskies.endpoint
-import clearskies.endpoint_group
 from clearskies.contexts.context import Context
-from clearskies.di import AdditionalConfig
-from clearskies.input_outputs import Wsgi as WsgiInputOutput
+
+if TYPE_CHECKING:
+    from clearskies.di import AdditionalConfig
+    from clearskies.endpoint import Endpoint
+    from clearskies.endpoint_group import EndpointGroup
+    from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class WsgiRef(Context):
@@ -26,8 +30,10 @@ class WsgiRef(Context):
     #!/usr/bin/env python
     import clearskies
 
+
     def hello_world(name):
         return f"Hello {name}!"
+
 
     wsgi = clearskies.contexts.WsgiRef(
         clearskies.endpoints.Callable(
@@ -49,7 +55,7 @@ class WsgiRef(Context):
 
     def __init__(
         self,
-        application: Callable | clearskies.endpoint.Endpoint | clearskies.endpoint_group.EndpointGroup,
+        application: Callable | Endpoint | EndpointGroup,
         port: int = 8080,
         classes: type | list[type] = [],
         modules: ModuleType | list[ModuleType] = [],

@@ -5,31 +5,30 @@ from typing import TYPE_CHECKING, Any
 
 import dateparser
 
-import clearskies.configs
-import clearskies.decorators
+from clearskies import configs, decorators
 from clearskies.validator import Validator
 
 if TYPE_CHECKING:
-    import clearskies.model
+    from clearskies import Model
 
 
 class AfterColumn(Validator):
     """The name of the other date column for comparison."""
 
-    other_column_name = clearskies.configs.String(default="", required=True)
+    other_column_name = configs.String(default="", required=True)
 
     """
     If true, then this column is allowed to be eqaul to the other column.
     """
-    allow_equal = clearskies.configs.Boolean(default=False)
+    allow_equal = configs.Boolean(default=False)
 
-    @clearskies.decorators.parameters_to_properties
+    @decorators.parameters_to_properties
     def __init__(self, other_column_name: str, allow_equal: bool = False):
         self.other_column_name = other_column_name
         self.allow_equal = allow_equal
         self.finalize_and_validate_configuration()
 
-    def check(self, model: clearskies.model.Model, column_name: str, data: dict[str, Any]) -> str:
+    def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
         # we won't check anything for missing values (columns should be required if that is an issue)
         if not data.get(column_name):
             return ""

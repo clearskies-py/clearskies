@@ -7,7 +7,7 @@ show-fixes = true
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
-preview = true
+preview = false
 skip-magic-trailing-comma = false
 docstring-code-line-length = 100
 line-ending = "lf"
@@ -27,3 +27,5 @@ ignore = [
 
 [lint.pydocstyle]
 convention = "pep257"
+[lint.per-file-ignores]
+"**/__init__.py" = ["I001"]
