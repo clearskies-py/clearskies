@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from clearskies.configs import config
 
 
@@ -16,8 +18,6 @@ class String(config.Config):
                 f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to a parameter that requires a string."
             )
         if self.regexp:
-            import re
-
             if not re.match(self.regexp, value):
                 error_prefix = self._error_prefix(instance)
                 raise ValueError(
