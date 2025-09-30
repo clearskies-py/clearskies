@@ -138,6 +138,7 @@ class Akeyless(secrets.Secrets):
         return res.token
 
     def auth_saml(self):
+        import json
         import os
         from pathlib import Path
 
@@ -145,7 +146,9 @@ class Akeyless(secrets.Secrets):
         home = str(Path.home())
         with open(f"{home}/.akeyless/.tmp_creds/{self.profile}-{self.access_id}", "r") as creds_file:
             credentials = creds_file.read()
-
+            credentials_json = json.loads(credentials)
+        if "token" in credentials_json:
+            return credentials_json["token"]
         # and now we can turn that into a token
         response = self.requests.post(
             "https://rest.akeyless.io/",
