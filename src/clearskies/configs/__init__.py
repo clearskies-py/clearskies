@@ -79,6 +79,10 @@ from .conditions import Conditions
 from .config import Config
 from .datetime import Datetime
 from .datetime_or_callable import DatetimeOrCallable
+from .email import Email
+from .email_list import EmailList
+from .email_list_or_callable import EmailListOrCallable
+from .email_or_email_list_or_callable import EmailOrEmailListOrCallable
 from .endpoint import Endpoint
 from .endpoint_list import EndpointList
 from .float import Float
@@ -127,6 +131,10 @@ __all__ = [
     "Config",
     "Datetime",
     "DatetimeOrCallable",
+    "Email",
+    "EmailList",
+    "EmailListOrCallable",
+    "EmailOrEmailListOrCallable",
     "Endpoint",
     "EndpointList",
     "Float",
