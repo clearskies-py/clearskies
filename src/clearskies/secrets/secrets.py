@@ -4,9 +4,10 @@ from abc import ABC
 from typing import Any
 
 import clearskies.configurable
+from clearskies.di.injectable_properties import InjectableProperties
 
 
-class Secrets(ABC, clearskies.configurable.Configurable):
+class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties):
     def create(self, path: str, value: str) -> bool:
         raise NotImplementedError(
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
