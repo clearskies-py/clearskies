@@ -535,8 +535,7 @@ class Di:
         override = self._class_overrides_by_class[object_to_override.__class__]
         if inspect.isclass(override):
             return self.build_class(override)
-        if hasattr(override, "injectable_properties"):
-            override.injectable_properties(self)
+        self.inject_properties(override.__class__)
         return override
 
     def add_override(self, name: str, replacement_class: type) -> None:
@@ -670,8 +669,7 @@ class Di:
         # ignore the first argument because that is just `self`
         build_arguments = init_args.args[1:]
         if not build_arguments:
-            if hasattr(class_to_build, "injectable_properties"):
-                class_to_build.injectable_properties(self)
+            self.inject_properties(class_to_build)
             built_value = class_to_build()
             if cache:
                 self._prepared[class_to_build] = built_value  # type: ignore
@@ -703,9 +701,8 @@ class Di:
 
         del self._building[class_id]
 
+        self.inject_properties(class_to_build)
         built_value = class_to_build(*args)
-        if hasattr(built_value, "injectable_properties"):
-            built_value.injectable_properties(self)
         if cache:
             self._prepared[class_to_build] = built_value  # type: ignore
         return built_value
@@ -843,6 +840,23 @@ class Di:
         if name == "now" or name == "utcnow":
             return False
         return True
+
+    def inject_properties(self, cls):
+        if hasattr(cls, "injectable_properties"):
+            cls.injectable_properties(self)
+            return
+
+        if not hasattr(cls, "__injectable_properties_sanity_check"):
+            return
+
+        for attribute_name in dir(cls):
+            attribute = getattr(cls, attribute_name)
+            if hasattr(attribute, "initiated_guard") and hasattr(attribute, "set_di"):
+                raise ValueError(
+                    f"Class '{cls.__name__}' has an injectable property attached, but does not include clearskies.di.injectable_properties.InjectableProperties in it's parent classes.  You must include this as a parent class."
+                )
+        cls.__injectable_properties_sanity_check = True
+        return
 
     def provide_di(self):
         return self
