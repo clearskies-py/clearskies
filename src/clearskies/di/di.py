@@ -852,7 +852,9 @@ class Di:
         for attribute_name in dir(cls):
             attribute = getattr(cls, attribute_name)
             if hasattr(attribute, "initiated_guard") and hasattr(attribute, "set_di"):
-                raise ValueError(f"Class '{cls.__name__}' has an injectable property attached, but does not include clearskies.di.injectable_properties.InjectableProperties in it's parent classes.  You must include this as a parent class.")
+                raise ValueError(
+                    f"Class '{cls.__name__}' has an injectable property attached, but does not include clearskies.di.injectable_properties.InjectableProperties in it's parent classes.  You must include this as a parent class."
+                )
         cls.__injectable_properties_sanity_check = True
         return
 
