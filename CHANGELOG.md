@@ -5,9 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.11] - 2025-10-09
+
+### Changed
+- Typos by @cmancone in [#24](https://github.com/clearskies-py/clearskies/pull/24)
+- Input Output reorg by @cmancone
+
 ## [2.0.10] - 2025-10-06
 
 ### Changed
+- Bump version to v2.0.10 by @github-actions[bot]
 - Include injectable props for base secret class, and detection of… by @cmancone in [#22](https://github.com/clearskies-py/clearskies/pull/22)
 - Black by @cmancone
 - Include injectable props for base secret class, and detection of missing class by @cmancone
@@ -799,6 +806,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.11]: https://github.com/clearskies-py/clearskies/compare/v2.0.10..v2.0.11
 [2.0.10]: https://github.com/clearskies-py/clearskies/compare/v2.0.9..v2.0.10
 [2.0.9]: https://github.com/clearskies-py/clearskies/compare/v2.0.8..v2.0.9
 [2.0.8]: https://github.com/clearskies-py/clearskies/compare/v2.0.7..v2.0.8
