@@ -155,7 +155,7 @@ class Audit(HasMany):
             },
         )
 
-    def post_delete(self, model):
+    def post_delete(self, model: Model) -> None:
         super().post_delete(model)
         exclude_columns = self.exclude_columns
         model_columns = self.get_model_columns()
@@ -167,7 +167,7 @@ class Audit(HasMany):
                 continue
             final_data = {
                 **final_data,
-                **(model_columns[key].to_json(model) if key in model_columns else {key: model.data.get(key)}),
+                **(model_columns[key].to_json(model) if key in model_columns else {key: model.get_raw_data().get(key)}),
             }
 
         for key in mask_columns:
@@ -178,7 +178,7 @@ class Audit(HasMany):
         self.child_model.create(
             {
                 "class": self.model_class.__name__,
-                "resource_id": model.get(self.model_class.id_column_name),
+                "resource_id": getattr(model, self.model_class.id_column_name),
                 "action": "delete",
                 "data": final_data,
             }

@@ -72,6 +72,11 @@ class Wsgi(Context):
     by and large it's normal and expected that you'll persist the cache between requests by creating the context outside
     of any handler functions.
 
+    ### Context for Callables
+
+    When using htis context, one additional named property becomes available to any callables invoked by clearskies:
+    `wsgi_environment`.  This contains the environment object passed in by the WSGI server to clearskies.
+
     """
 
     def __call__(self, env, start_response):  # type: ignore

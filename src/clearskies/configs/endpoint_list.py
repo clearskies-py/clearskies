@@ -19,7 +19,7 @@ class EndpointList(config.Config):
             if not hasattr(item, "top_level_authentication_and_authorization"):
                 error_prefix = self._error_prefix(instance)
                 raise TypeError(
-                    f"{error_prefix} attempt to set a value of type '{item.__class__.__name__}' for item #{index+1} when all items in the list should be instances of clearskies.End."
+                    f"{error_prefix} attempt to set a value of type '{item.__class__.__name__}' for item #{index + 1} when all items in the list should be instances of clearskies.End."
                 )
         instance._set_config(self, value)
 

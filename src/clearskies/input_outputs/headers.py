@@ -5,6 +5,7 @@ import re
 
 class Headers:
     _headers: dict[str, str] = {}
+    _duck_cheat = "headers"
 
     def __init__(self, headers: dict[str, str] = {}):
         self.__dict__["_headers"] = (

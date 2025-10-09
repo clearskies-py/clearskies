@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, Any, Callable
 from clearskies import exceptions
 from clearskies.di import Di
 from clearskies.di.additional_config import AdditionalConfig
+from clearskies.input_outputs import InputOutput
 from clearskies.input_outputs import Programmatic
 
 if TYPE_CHECKING:
     from clearskies.endpoint import Endpoint
     from clearskies.endpoint_group import EndpointGroup
-    from clearskies.input_outputs import InputOutput
 
 
 class Context:
@@ -54,6 +54,9 @@ class Context:
         self.application = application
 
     def execute_application(self, input_output: InputOutput):
+        self.di.add_binding("input_output", input_output)
+        self.di.add_class_override(InputOutput, input_output)
+
         if hasattr(self.application, "injectable_properties"):
             self.application.injectable_properties(self.di)
             return self.application(input_output)

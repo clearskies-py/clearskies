@@ -87,6 +87,7 @@ from .endpoint import Endpoint
 from .endpoint_list import EndpointList
 from .float import Float
 from .float_or_callable import FloatOrCallable
+from .headers import Headers
 from .integer import Integer
 from .integer_or_callable import IntegerOrCallable
 from .joins import Joins
@@ -139,6 +140,7 @@ __all__ = [
     "EndpointList",
     "Float",
     "FloatOrCallable",
+    "Headers",
     "Joins",
     "Integer",
     "IntegerOrCallable",

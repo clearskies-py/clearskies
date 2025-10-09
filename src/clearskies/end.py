@@ -88,8 +88,6 @@ class End(
         if response:
             return response
 
-        self.di.add_binding("input_output", input_output)
-
         # catch everything when we do an AuthN/AuthZ check because we allow custom-defined classes,
         # and this gives more flexibility (or possibly forgiveness) for how they raise exceptions.
         try:

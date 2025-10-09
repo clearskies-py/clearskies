@@ -969,7 +969,7 @@ class Endpoint(
         """Whether or not we can handle an incoming request based on URL and request method."""
         # soo..... this excessively duplicates the logic in __call__, but I'm being lazy right now
         # and not fixing it.
-        request_method = input_output.get_request_method().upper()
+        request_method = input_output.request_method.upper()
         if request_method == "OPTIONS":
             return True
         if request_method not in self.request_methods:
@@ -986,7 +986,7 @@ class Endpoint(
         # matches_request is only checked by the endpoint group, not by the context.  As a result, we need to check our
         # route.  However we always have to check our route anyway because the full routing data can only be figured
         # out at the endpoint level, so calling out to routing.mattch_route is unavoidable.
-        request_method = input_output.get_request_method().upper()
+        request_method = input_output.request_method.upper()
         if request_method == "OPTIONS":
             return self.cors(input_output)
         if request_method not in self.request_methods:
