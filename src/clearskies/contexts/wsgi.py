@@ -74,7 +74,7 @@ class Wsgi(Context):
 
     ### Context for Callables
 
-    When using htis context, one additional named property becomes available to any callables invoked by clearskies:
+    When using this context, one additional named property becomes available to any callables invoked by clearskies:
     `wsgi_environment`.  This contains the environment object passed in by the WSGI server to clearskies.
 
     """
