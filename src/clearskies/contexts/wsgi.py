@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from clearskies.contexts.context import Context
-
-if TYPE_CHECKING:
-    from clearskies.input_outputs import Wsgi as WsgiInputOutput
+from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class Wsgi(Context):

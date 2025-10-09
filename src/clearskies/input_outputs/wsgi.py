@@ -1,4 +1,5 @@
 from __future__ import annotations
+from urllib.parse import parse_qs
 
 import json
 from typing import Callable
