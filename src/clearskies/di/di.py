@@ -658,9 +658,6 @@ class Di:
 
         The class constructor cannot accept any kwargs.   See self._disallow_kwargs for more details
         """
-        print(class_to_build)
-        print(self._prepared)
-        print(cache)
         if class_to_build in self._prepared and cache:
             return self._prepared[class_to_build]  # type: ignore
         my_class_name = class_to_build.__name__

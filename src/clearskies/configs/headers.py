@@ -20,7 +20,7 @@ class Headers(config.Config):
         if not hasattr(value, "_duck_cheat") or value._duck_cheat != "headers":
             error_prefix = self._error_prefix(instance)
             raise TypeError(
-                f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to a propert that expets an instance of clearskies.input_outputs.Headers"
+                f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to a property that expets an instance of clearskies.input_outputs.Headers"
             )
         instance._set_config(self, value)
 
