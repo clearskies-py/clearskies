@@ -7,12 +7,12 @@ from wsgiref.simple_server import make_server
 from wsgiref.util import setup_testing_defaults
 
 from clearskies.contexts.context import Context
+from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 if TYPE_CHECKING:
     from clearskies.di import AdditionalConfig
     from clearskies.endpoint import Endpoint
     from clearskies.endpoint_group import EndpointGroup
-    from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
 
 class WsgiRef(Context):
