@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from clearskies.input_outputs.headers import Headers
 from clearskies.input_outputs.input_output import InputOutput
 
 
 class Programmatic(InputOutput):
     _body: str | dict[str, Any] | list[Any] = ""
-    _request_method: str = ""
-    _request_headers: dict[str, Any] = {}
     url: str = ""
+    ip_address: str = "127.0.0.1"
+    protocol: str = "https"
 
     def __init__(
         self,
@@ -18,34 +19,29 @@ class Programmatic(InputOutput):
         body: str | dict[str, Any] | list[Any] = "",
         query_parameters: dict[str, Any] = {},
         request_headers: dict[str, str] = {},
+        ip_address: str = "127.0.0.1",
+        protocol: str = "https",
     ):
         self.url = url
-        self._request_headers = {**request_headers}
+        self.request_headers = Headers(request_headers)
+        self.query_parameters = query_parameters
+        self.ip_address = ip_address
+        self.protocol = protocol
         self._body_loaded_as_json = True
         self._body_as_json = None
-        self._request_method = request_method
+        self.request_method = request_method
         if body:
             self._body = body
             if isinstance(body, dict) or isinstance(body, list):
                 self._body_as_json = body
 
         super().__init__()
-        self.query_parameters = {**query_parameters}
 
     def respond(self, response, status_code=200):
         return (status_code, response, self.response_headers)
 
-    def get_script_name(self):
-        return self.url
-
-    def get_path_info(self):
-        return self.url
-
     def get_full_path(self):
         return self.url
-
-    def get_request_method(self):
-        return self._request_method
 
     def has_body(self):
         return bool(self._body)
@@ -60,10 +56,7 @@ class Programmatic(InputOutput):
         return {}
 
     def get_client_ip(self):
-        return "127.0.0.1"
+        return self.ip_address
 
-    def get_query_string(self):
-        return ""
-
-    def get_request_headers(self):
-        return self._request_headers
+    def get_protocol(self):
+        return self.protocol

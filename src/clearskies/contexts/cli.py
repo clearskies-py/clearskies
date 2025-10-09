@@ -119,6 +119,11 @@ class Cli(Context):
     Although note that the first two are going to be preferred over the third, simply because with the
     third there's simply no way to specify the type of a variable.  As a result, you may run into issues
     with strict type checking on endpoints.
+
+    ### Context Callables
+
+    When using the Cli context, an additional named argument is made available to any callables invoked by clearskies:
+    `sys_argv`.  This contains `sys.argv`.
     """
 
     def __call__(self):  # type: ignore

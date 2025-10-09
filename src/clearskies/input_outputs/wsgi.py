@@ -3,22 +3,29 @@ from __future__ import annotations
 import json
 from typing import Callable
 
-from .input_output import InputOutput
+from clearskies.input_outputs.headers import Headers
+from clearskies.input_outputs.input_output import InputOutput
 
 
 class Wsgi(InputOutput):
     _environment: dict[str, str] = {}
-    _start_response: Callable = None  # type: ignore
-    _request_headers: dict[str, str] = {}
+    _start_response: Callable
     _cached_body: str | None = None
 
     def __init__(self, environment, start_response):
         self._environment = environment
         self._start_response = start_response
-        self._request_headers = {}
+        request_headers = {}
         for key, value in self._environment.items():
             if key.upper()[0:5] == "HTTP_":
-                self._request_headers[key[5:].lower()] = value
+                request_headers[key[5:].lower()] = value
+
+        self.request_headers = Headers(request_headers)
+        self.query_parameters = {
+            key: val[0] for (key, val) in parse_qs(self._environment.get("QUERY_STRING", "")).items()
+        }
+        self.request_method = self._environment.get("REQUEST_METHOD").upper()
+
         super().__init__()
 
     def _from_environment(self, key):
@@ -49,20 +56,18 @@ class Wsgi(InputOutput):
             )
         return self._cached_body
 
-    def get_request_method(self):
-        return self._from_environment("REQUEST_METHOD").upper()
-
     def get_script_name(self):
         return self._from_environment("SCRIPT_NAME")
 
     def get_path_info(self):
         return self._from_environment("PATH_INFO")
 
-    def get_query_string(self):
-        return self._from_environment("QUERY_STRING")
-
-    def get_content_type(self):
-        return self._from_environment("CONTENT_TYPE")
+    def get_full_path(self):
+        path_info = self.get_path_info()
+        script_name = self.get_script_name()
+        if not path_info or path_info[0] != "/":
+            path_info = f"/{path_info}"
+        return f"{path_info}{script_name}".replace("//", "/")
 
     def get_protocol(self):
         return self._from_environment("wsgi.url_scheme").lower()
@@ -72,6 +77,3 @@ class Wsgi(InputOutput):
 
     def get_client_ip(self):
         return self._environment.get("REMOTE_ADDR")
-
-    def get_request_headers(self):
-        return self._request_headers

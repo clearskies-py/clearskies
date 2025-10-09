@@ -520,7 +520,7 @@ class Di:
         """
         if not inspect.isclass(class_to_override):
             raise ValueError(
-                "Invalid value passed to add_class_override for 'class_or_name' parameter: it was neither a name nor a class"
+                "Invalid value passed to add_class_override for 'class_to_override' parameter: it was not a class."
             )
 
         self._class_overrides_by_class[class_to_override] = replacement
@@ -658,6 +658,9 @@ class Di:
 
         The class constructor cannot accept any kwargs.   See self._disallow_kwargs for more details
         """
+        print(class_to_build)
+        print(self._prepared)
+        print(cache)
         if class_to_build in self._prepared and cache:
             return self._prepared[class_to_build]  # type: ignore
         my_class_name = class_to_build.__name__
@@ -723,12 +726,18 @@ class Di:
             return None
         if not callable(class_to_build):
             return None
+
+        # check our class overrides
+        if class_to_build in self._class_overrides_by_class:
+            replacement = self._class_overrides_by_class[class_to_build]
+            if not inspect.isclass(replacement):
+                return replacement
+            return self.build_class(replacement, context=context, cache=cache)
+
+        # generally we can't build abstract classes, so if the class is abstract then we should pass.
+        # However, this is not the case if it has an override - then the developer has given us specific guidance
         if inspect.isabstract(class_to_build):
             return None
-
-        # then first things first: check our class overrides
-        if class_to_build in self._class_overrides_by_class:
-            return self.build_class(self._class_overrides_by_class[class_to_build], context=context, cache=cache)
 
         # next check our additional config classes
         built_value = None

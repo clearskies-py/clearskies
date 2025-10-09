@@ -5,19 +5,16 @@ import sys
 from os import isatty
 from sys import stdin
 
+from clearskies.input_outputs.headers import Headers
 from clearskies.input_outputs.input_output import InputOutput
 
 
 class Cli(InputOutput):
-    _args: list[str] = []
+    path: str
     _has_body: bool = False
     _body: str = ""
-    _request_method: str = ""
-    _request_headers: dict[str, str] = {}
 
     def __init__(self):
-        self._request_headers = {}
-        self._args = []
         self._parse_args(sys.argv)
         super().__init__()
 
@@ -30,16 +27,13 @@ class Cli(InputOutput):
             sys.exit(final)
         print(final)
 
-    def get_arguments(self):
-        return sys.argv
-
     def _parse_args(self, argv):
         tty_data = None
         if not isatty(stdin.fileno()):
             tty_data = sys.stdin.read().strip()
 
         request_headers = {}
-        self._args = []
+        args = []
         kwargs = {}
         index = 0
         # In general we will use positional arguments for routing, and kwargs for request data.
@@ -49,10 +43,10 @@ class Cli(InputOutput):
         while index < len(argv) - 1:
             index += 1
 
-            # if we don't start with a dash then we are a positional argument
+            # if we don't start with a dash then we are a positional argument which are used for building the URL-equivalent
             arg = argv[index]
             if arg[0] != "-":
-                self._args.append(arg)
+                args.append(arg)
                 continue
 
             # otherwise a kwarg
@@ -83,8 +77,8 @@ class Cli(InputOutput):
 
             kwargs[key] = value
 
-        self._request_headers = request_headers
-        self._request_method = "GET"
+        self.request_headers = Headers(request_headers)
+        self.request_method = "GET"
         request_method_source = ""
         for key in ["x", "X", "request_method"]:
             if key not in kwargs:
@@ -94,7 +88,7 @@ class Cli(InputOutput):
                 raise ValueError(
                     f"Invalid clearskies cli calling sequence: the request method was specified via both the -{key} parameter and the -{request_method_source} parameter. To avoid ambiguity, it should only be set once."
                 )
-            self._request_method = kwargs[key]
+            self.request_method = kwargs[key].upper()
             del kwargs[key]
             request_method_source = key
 
@@ -127,6 +121,8 @@ class Cli(InputOutput):
             final_data = kwargs
             data_source = "kwargs"
 
+        self.path = "/".join(args)
+
         # Most of the above inputs result in a string for our final data, in which case we'll leave it as the "raw body"
         # so that it can optionally be interpreted as JSON.  If we received a bunch of kwargs though, we'll allow those to
         # only be "read" as JSON.
@@ -139,17 +135,8 @@ class Cli(InputOutput):
             self._has_body = True
             self._body = final_data
 
-    def get_script_name(self):
-        return sys.argv[0]
-
-    def get_path_info(self):
-        return "/".join(self._args)
-
     def get_full_path(self):
-        return self.get_path_info()
-
-    def get_request_method(self):
-        return self._request_method
+        return self.path
 
     def has_body(self):
         return self._has_body
@@ -160,14 +147,11 @@ class Cli(InputOutput):
 
         return self._body
 
+    def get_protocol(self):
+        return "cli"
+
     def context_specifics(self):
-        return {}
+        return {"sys_argv": sys.argv}
 
     def get_client_ip(self):
         return "127.0.0.1"
-
-    def get_query_string(self):
-        return ""
-
-    def get_request_headers(self):
-        return self._request_headers

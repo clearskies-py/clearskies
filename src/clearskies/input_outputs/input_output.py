@@ -5,7 +5,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs
 
-from clearskies import configs, configurable, input_outputs
+from clearskies import configs, configurable
+
+from .headers import Headers
 
 if TYPE_CHECKING:
     from clearskies import typing
@@ -14,21 +16,18 @@ if TYPE_CHECKING:
 class InputOutput(ABC, configurable.Configurable):
     """Manage the request and response to the client."""
 
-    response_headers: input_outputs.Headers = None  # type: ignore
-    request_headers: input_outputs.Headers = None  # type: ignore
+    response_headers = configs.Headers(default=Headers())
+    request_headers = configs.Headers(default=Headers())
     query_parameters = configs.AnyDict(default={})
     routing_data = configs.StringDict(default={})
     authorization_data = configs.AnyDict(default={})
+    request_method = configs.Select(["GET", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
 
     _body_as_json: dict[str, Any] | list[Any] | None = {}
     _body_loaded_as_json = False
 
     def __init__(self):
-        self.response_headers = input_outputs.Headers()
-        self.request_headers = input_outputs.Headers(self.get_request_headers())
-        self.query_parameters = {key: val[0] for (key, val) in parse_qs(self.get_query_string()).items()}
-        self.authorization_data = {}
-        self.routing_data = {}
+        self.response_headers = Headers()
         self.finalize_and_validate_configuration()
 
     @abstractmethod
@@ -66,40 +65,16 @@ class InputOutput(ABC, configurable.Configurable):
         return self._body_as_json
 
     @abstractmethod
-    def get_request_method(self) -> str:
-        """Return the request method set by the client."""
-        pass
-
-    @abstractmethod
-    def get_script_name(self) -> str:
-        """Return the script name, e.g. the path requested."""
-        pass
-
-    @abstractmethod
-    def get_path_info(self) -> str:
-        """Return the path info for the request."""
-        pass
-
-    @abstractmethod
-    def get_query_string(self) -> str:
-        """Return the full query string for the request (everything after the first question mark in the document URL)."""
-        pass
-
-    @abstractmethod
     def get_client_ip(self):
         pass
 
     @abstractmethod
-    def get_request_headers(self) -> dict[str, str]:
+    def get_protocol(self):
         pass
 
+    @abstractmethod
     def get_full_path(self) -> str:
-        """Return the full path requested by the client."""
-        path_info = self.get_path_info()
-        script_name = self.get_script_name()
-        if not path_info or path_info[0] != "/":
-            path_info = f"/{path_info}"
-        return f"{path_info}{script_name}".replace("//", "/")
+        pass
 
     def context_specifics(self):
         return {}
@@ -117,17 +92,19 @@ class InputOutput(ABC, configurable.Configurable):
 
         And this function returns a dictionary with the following values:
 
-        | Key                | Type                             | Ref                             | Value                                                                           |
-        |--------------------|----------------------------------|---------------------------------|---------------------------------------------------------------------------------|
-        | routing_data       | dict[str, str]                   | input_output.routing_data       | A dictionary of data extracted from URL path parameters.                        |
-        | authorization_data | dict[str, Any]                   | input_output.authorization_data | A dictionary containing the authorization data set by the authentication method |
-        | request_data       | dict[str, Any] | None            | input_output.request_data       | The data sent along with the request (assuming a JSON request body)             |
-        | query_parameters   | dict[str, Any]                   | input_output.query_parameters   | The query parameters                                                            |
-        | request_headers    | clearskies.input_outputs.Headers | input_output.request_headers    | The request headers sent by the client                                          |
-        | **routing_data     | string                           | **input_output.routing_data     | The routing data is unpacked so keys can be fetched directly                    |
+        | Key                | Type                             | Ref                                | Value                                                                           |
+        |--------------------|----------------------------------|------------------------------------|---------------------------------------------------------------------------------|
+        | routing_data       | dict[str, str]                   | input_output.routing_data          | A dictionary of data extracted from URL path parameters.                        |
+        | authorization_data | dict[str, Any]                   | input_output.authorization_data    | A dictionary containing the authorization data set by the authentication method |
+        | request_data       | dict[str, Any] | None            | input_output.request_data          | The data sent along with the request (assuming a JSON request body)             |
+        | query_parameters   | dict[str, Any]                   | input_output.query_parameters      | The query parameters                                                            |
+        | request_headers    | clearskies.input_outputs.Headers | input_output.request_headers       | The request headers sent by the client                                          |
+        | **routing_data     | string                           | **input_output.routing_data        | The routing data is unpacked so keys can be fetched directly                    |
+        | **[varies]         | varies                           | **input_output.context_specifics() | Any additional properties added on by the context (see your context docs)       |
         """
         return {
             **self.routing_data,
+            **self.context_specifics(),
             **{
                 "routing_data": self.routing_data,
                 "authorization_data": self.authorization_data,
