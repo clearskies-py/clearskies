@@ -985,7 +985,7 @@ class Di:
     def provide_global_table_prefix(self):
         return ""
 
-    def provide_akeyles_sdk(self):
+    def provide_akeyless_sdk(self):
         import akeyless  # type: ignore[import-untyped]
 
         return akeyless
