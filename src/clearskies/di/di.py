@@ -591,6 +591,7 @@ class Di:
           4. The Di class itself if it has a matching `provide_[name]` function (aka the builtins)
         """
         if name in self._prepared and cache:
+            self.inject_properties(self._prepared[name].__class__)
             return self._prepared[name]
 
         if name in self._bindings:
