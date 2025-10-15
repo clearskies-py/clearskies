@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import datetime
+from types import ModuleType
 from typing import Any
 
 from clearskies import configs, secrets
+from clearskies.decorators import parameters_to_properties
 from clearskies.di import inject
+from clearskies.secrets.exceptions import PermissionsError
 
 
 class Akeyless(secrets.Secrets):
@@ -15,47 +18,54 @@ class Akeyless(secrets.Secrets):
     access_id = configs.String(required=True, regexp=r"^p-[\d\w]+$")
     access_type = configs.Select(["aws_iam", "saml", "jwt"], required=True)
     api_host = configs.String(default="https://api.akeyless.io")
+    jwt_env_key = configs.String(required=False)
     profile = configs.String(regexp=r"^[\d\w\-]+$")
     auto_guess_type = configs.Boolean(default=False)
 
-    _token_refresh: datetime.datetime = None  # type: ignore
-    _token: str = ""
-    _api: Any = None
+    _token_refresh: datetime.datetime  # type: ignore
+    _token: str
+    _api: ModuleType
 
+    @parameters_to_properties
     def __init__(
         self,
         access_id: str,
         access_type: str,
-        jwt_env_key: str = "",
-        api_host: str = "",
-        profile: str = "",
+        jwt_env_key: str | None = None,
+        api_host: str | None = None,
+        profile: str | None = None,
         auto_guess_type: bool = False,
     ):
-        self.access_id = access_id
-        self.access_type = access_type
-        self.jwt_env_key = jwt_env_key
-        self.api_host = api_host
-        self.profile = profile
-        self.auto_guess_type = auto_guess_type
+        self.finalize_and_validate_configuration()
+
+    def configure(self) -> None:
         if self.access_type == "jwt" and not self.jwt_env_key:
             raise ValueError("When using the JWT access type for Akeyless you must provide jwt_env_key")
 
-        self.finalize_and_validate_configuration()
-
     @property
     def api(self) -> Any:
-        if self._api is None:
+        if not hasattr(self, "_api"):
             configuration = self.akeyless.Configuration(host=self.api_host)
             self._api = self.akeyless.V2Api(self.akeyless.ApiClient(configuration))
         return self._api
 
     def create(self, path: str, value: Any) -> bool:
+        if not "write" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
         res = self.api.create_secret(self.akeyless.CreateSecret(name=path, value=str(value), token=self._get_token()))
         return True
 
     def get(self, path: str, silent_if_not_found: bool = False, args: dict[str, Any] | None = None) -> str:
+        """Get the secret at the given path."""
         if self.auto_guess_type:
-            secret = self.list_secrets(path)[0]
+            try:
+                secret = self.describe_secret(path)
+            except Exception as e:
+                if e.status == 404:  # type: ignore
+                    secret = None
+                else:
+                    raise e
             if secret:
                 match secret.item_type.lower():
                     case "static_secret":
@@ -74,6 +84,9 @@ class Akeyless(secrets.Secrets):
             return self.get_static_secret(path, silent_if_not_found=silent_if_not_found)
 
     def get_static_secret(self, path: str, silent_if_not_found: bool = False) -> str:
+        if not "read" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
         try:
             res = self.api.get_secret_value(self.akeyless.GetSecretValue(names=[path], token=self._get_token()))
         except Exception as e:
@@ -85,6 +98,9 @@ class Akeyless(secrets.Secrets):
         return res[path]
 
     def get_dynamic_secret(self, path: str, args: dict[str, Any] | None = None) -> Any:
+        if not "read" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
         kwargs = {
             "name": path,
             "token": self._get_token(),
@@ -95,6 +111,9 @@ class Akeyless(secrets.Secrets):
         return self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))
 
     def get_rotated_secret(self, path: str, args: dict[str, Any] | None = None) -> Any:
+        if not "read" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
         kwargs = {
             "names": path,
             "token": self._get_token(),
@@ -105,14 +124,31 @@ class Akeyless(secrets.Secrets):
         res = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))
         return res
 
+    def describe_secret(self, path: str) -> Any:
+        if not "read" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
+        return self.api.describe_item(self.akeyless.DescribeItem(name=path, token=self._get_token()))
+
     def list_secrets(self, path: str) -> list[Any]:
-        res = self.api.list_items(self.akeyless.ListItems(path=path, token=self._get_token()))
+        if not "list" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secrets in '{path}'")
+
+        res = self.api.list_items(
+            self.akeyless.ListItems(
+                path=path,
+                token=self._get_token(),
+            )
+        )
         if not res.items:
             return []
 
         return [item.item_name for item in res.items]
 
     def update(self, path: str, value: Any) -> None:
+        if not "write" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission the secret '{path}'")
+
         res = self.api.update_secret_val(
             self.akeyless.UpdateSecretVal(name=path, value=str(value), token=self._get_token())
         )
@@ -124,6 +160,8 @@ class Akeyless(secrets.Secrets):
             self.create(path, value)
 
     def list_sub_folders(self, main_folder: str) -> list[str]:
+        if not "list" in self.describe_permissions(main_folder):
+            raise PermissionsError(f"You do not have permission to list sub folders in '{main_folder}'")
         """Return the list of secrets/sub folders in the given folder."""
         items = self.api.list_items(self.akeyless.ListItems(path=main_folder, token=self._get_token()))
 
@@ -148,7 +186,11 @@ class Akeyless(secrets.Secrets):
 
     def _get_token(self) -> str:
         # AKeyless tokens live for an hour
-        if self._token is not None and (self._token_refresh - datetime.datetime.now()).total_seconds() > 10:
+        if (
+            hasattr(self, "_token_refresh")
+            and hasattr(self, "_token")
+            and (self._token_refresh - datetime.datetime.now()).total_seconds() > 10
+        ):
             return self._token
 
         auth_method_name = f"auth_{self.access_type}"
@@ -200,6 +242,11 @@ class Akeyless(secrets.Secrets):
             self.akeyless.Auth(access_id=self.access_id, access_type="jwt", jwt=self.environment.get(self.jwt_env_key))
         )
         return res.token
+
+    def describe_permissions(self, path: str, type: str = "item") -> list[str]:
+        return self.api.describe_permissions(
+            self.akeyless.DescribePermissions(token=self._get_token(), path=path, type=type)
+        ).client_permissions
 
 
 class AkeylessSaml(Akeyless):
