@@ -168,37 +168,37 @@ class Akeyless(secrets.Secrets):
         True, returns an empty string when the secret is not found. If json_attribute is provided,
         treats the secret as JSON and returns the specified attribute.
         """
-        if self.auto_guess_type:
-            try:
-                secret = self.describe_secret(path)
-            except Exception as e:
-                if e.status == 404:  # type: ignore
-                    secret = None
-                else:
-                    raise e
-            if secret:
-                self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
-                match secret.item_type.lower():
-                    case "dynamic_secret":
-                        return str(
-                            self.get_dynamic_secret(
-                                path,
-                                json_attribute=json_attribute,
-                                args=args,
-                            )
-                        )
-                    case "rotated_secret":
-                        return str(self.get_rotated_secret(path, json_attribute=json_attribute, args=args))
-                    case _:
-                        return self.get_static_secret(
-                            path, json_attribute=json_attribute, silent_if_not_found=silent_if_not_found
-                        )
-            else:
+        if not self.auto_guess_type:
+            return self.get_static_secret(path, silent_if_not_found=silent_if_not_found, json_attribute=json_attribute)
+
+        try:
+            secret = self.describe_secret(path)
+        except Exception as e:
+            if e.status == 404:  # type: ignore
                 if silent_if_not_found:
                     return ""
-                raise KeyError(f"Secret '{path}' not found")
-        else:
-            return self.get_static_secret(path, silent_if_not_found=silent_if_not_found, json_attribute=json_attribute)
+                raise e
+            else:
+                raise ValueError(f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}")
+
+        self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
+        match secret.item_type.lower():
+            case "dynamic_secret":
+                return str(
+                    self.get_dynamic_secret(
+                        path,
+                        json_attribute=json_attribute,
+                        args=args,
+                    )
+                )
+            case "rotated_secret":
+                return str(self.get_rotated_secret(path, json_attribute=json_attribute, args=args))
+            case "static_secret":
+                return self.get_static_secret(
+                    path, json_attribute=json_attribute, silent_if_not_found=silent_if_not_found
+                )
+            case _:
+                raise ValueError(f"Unsupported secret type for auto-detection: '{secret.item_type}'")
 
     def get_static_secret(self, path: str, silent_if_not_found: bool = False, json_attribute: str | None = None) -> str:
         """
