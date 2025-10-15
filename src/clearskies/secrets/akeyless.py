@@ -179,7 +179,9 @@ class Akeyless(secrets.Secrets):
                     return ""
                 raise e
             else:
-                raise ValueError(f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}")
+                raise ValueError(
+                    f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}"
+                )
 
         self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
         match secret.item_type.lower():
