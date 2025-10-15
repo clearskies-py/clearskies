@@ -18,11 +18,6 @@ class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties):
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
         )
 
-    def get_dynamic_secret(self, path: str, args: dict[str, Any] | None = None) -> Any:
-        raise NotImplementedError(
-            "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
-        )
-
     def list_secrets(self, path: str) -> list[Any]:
         raise NotImplementedError(
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
