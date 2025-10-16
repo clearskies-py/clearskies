@@ -959,35 +959,37 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         map_keys = set(response_to_model_map.keys())
         matching = response_keys.intersection(map_keys)
 
-        # if nothing matches then clearly this isn't what we're looking for: repeat on all the children
-        if not matching:
-            for key, value in response_data.items():
-                if not isinstance(value, dict):
-                    continue
-                mapped = self.check_dict_and_map_to_model(value, columns)
-                if mapped:
-                    return {**query_data, **mapped}
-
-            # no match anywhere :(
-            return None
-
         # we may need to be smarter about whether or not we think we found a match, but for now let's
         # ignore that possibility.  If any columns match between the keys in our response dictionary and
         # the keys that we are expecting to find data in, then just assume that we have found a record.
         mapped = {response_to_model_map[key]: response_data[key] for key in matching}
 
         for api_key, column_name in self.api_to_model_map.items():
-            if "." in api_key:
-                value = json_functional.get_nested_attribute(response_data, api_key)
-                if value is not None:
-                    if isinstance(column_name, list):
-                        for column in column_name:
-                            mapped[column] = value
-                    else:
-                        mapped[column_name] = value
+            if not "." in api_key:
+                continue
+            value = json_functional.get_nested_attribute(response_data, api_key)
+            if value is None:
+                continue
+            if isinstance(column_name, list):
+                for column in column_name:
+                    mapped[column] = value
+            else:
+                mapped[column_name] = value
         # finally, move over anything not mentioned in the map
         for key in response_keys.difference(map_keys):
             mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
+
+            # if nothing matches then clearly this isn't what we're looking for: repeat on all the children
+        if not mapped:
+            for key, value in response_data.items():
+                if not isinstance(value, dict):
+                    continue
+                remapped = self.check_dict_and_map_to_model(value, columns)
+                if remapped:
+                    return {**query_data, **remapped}
+
+            # no match anywhere :(
+            return None
 
         return {**query_data, **mapped}
 
