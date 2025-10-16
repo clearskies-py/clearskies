@@ -4,3 +4,6 @@ from .module_class import ModuleClass
 
 class Hi:
     pass
+
+
+__all__ = ["another_module", "ModuleClass", "Hi"]

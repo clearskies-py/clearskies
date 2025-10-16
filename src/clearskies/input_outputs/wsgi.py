@@ -1,8 +1,8 @@
 from __future__ import annotations
-from urllib.parse import parse_qs
 
 import json
 from typing import Callable
+from urllib.parse import parse_qs
 
 from clearskies.input_outputs.headers import Headers
 from clearskies.input_outputs.input_output import InputOutput

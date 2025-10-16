@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from clearskies import exceptions
 from clearskies.di import Di
 from clearskies.di.additional_config import AdditionalConfig
-from clearskies.input_outputs import InputOutput
-from clearskies.input_outputs import Programmatic
+from clearskies.input_outputs import InputOutput, Programmatic
 
 if TYPE_CHECKING:
     from clearskies.endpoint import Endpoint

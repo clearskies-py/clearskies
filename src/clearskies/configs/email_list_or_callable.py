@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Callable
-
 from clearskies.configs import string_list_or_callable
 
 

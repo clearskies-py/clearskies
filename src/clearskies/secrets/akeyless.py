@@ -6,8 +6,6 @@ import logging
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
-from typing_extensions import override
-
 from clearskies import configs, secrets
 from clearskies.decorators import parameters_to_properties
 from clearskies.di import inject

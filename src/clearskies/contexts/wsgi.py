@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from clearskies.contexts.context import Context
 from clearskies.input_outputs import Wsgi as WsgiInputOutput
 
