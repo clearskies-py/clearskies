@@ -65,7 +65,7 @@ class BelongsToModel(Column):
         parent_class = belongs_to_column.parent_model_class
         parent_model = self.di.build(parent_class, cache=False)
         if not parent_id:
-            return parent_model.empty_model()
+            return parent_model.empty()
 
         parent_id_column_name = parent_model.id_column_name
         join_alias = belongs_to_column.join_table_alias()
