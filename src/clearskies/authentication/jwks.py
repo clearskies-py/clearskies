@@ -106,7 +106,7 @@ class Jwks(Authentication, di.InjectableProperties):
 
     def validate_jwt(self, raw_jwt):
         try:
-            from jwcrypto import jwk, jws, jwt  # type: ignore
+            from jwcrypto import jwk, jwt  # type: ignore
             from jwcrypto.common import JWException  # type: ignore
         except:
             raise ValueError(

@@ -4,7 +4,6 @@ import datetime
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable
 from wsgiref.simple_server import make_server
-from wsgiref.util import setup_testing_defaults
 
 from clearskies.contexts.context import Context
 from clearskies.input_outputs import Wsgi as WsgiInputOutput

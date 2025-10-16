@@ -7,7 +7,6 @@ from clearskies.query import Condition, Query
 
 if TYPE_CHECKING:
     from clearskies import Model
-    from clearskies.authentication import Authentication
 
 
 class SecretsBackend(Backend):

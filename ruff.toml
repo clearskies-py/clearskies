@@ -14,7 +14,7 @@ line-ending = "lf"
 
 [lint]
 # D - Enable all `pydocstyle` rules, limiting to those that adhere to the Pep257 convention enabled via `convention = "pep257"` below
-select = ["I", "D"]
+select = ["I", "D", "F401"]
 ignore = [
     "D100",  # pydocstyle: Missing docstring in public module.
     "D101",  # pydocstyle: Missing docstring in public class.

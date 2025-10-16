@@ -63,8 +63,6 @@ class MyConfigurableClass(configs.Configurable):
 
 """
 
-import inspect
-
 from .actions import Actions
 from .any import Any
 from .any_dict import AnyDict

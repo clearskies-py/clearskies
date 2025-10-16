@@ -9,9 +9,7 @@ if TYPE_CHECKING:
 
 
 class Headers(config.Config):
-    """
-    This is for a configuration that should be an instance of type clearskies.input_outputs.Headers.
-    """
+    """This is for a configuration that should be an instance of type clearskies.input_outputs.Headers."""
 
     def __set__(self, instance, value: headers.Headers):
         if value is None:

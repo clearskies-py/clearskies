@@ -1,6 +1,6 @@
 from typing import Any
 
-from ...schema import Array, Object
+from ...schema import Object
 from .parameter import Parameter
 from .response import Response
 
