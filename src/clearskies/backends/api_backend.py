@@ -11,6 +11,7 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+from clearskies.functional import json as json_functional
 from clearskies.functional import routing, string
 
 if TYPE_CHECKING:
@@ -550,7 +551,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     }
     ```
     """
-    api_to_model_map = configs.StringDict(default={})
+    api_to_model_map = configs.AnyDict(default={})
 
     """
     The name of the pagination parameter
@@ -589,7 +590,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         authentication: Authentication | None = None,
         model_casing: str = "snake_case",
         api_casing: str = "snake_case",
-        api_to_model_map: dict[str, str] = {},
+        api_to_model_map: dict[str, str | list[str]] = {},
         pagination_parameter_name: str = "start",
         pagination_parameter_type: str = "str",
         limit_parameter_name: str = "limit",
@@ -897,15 +898,15 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
                 f"The response from a records request returned a variable of type {response_data.__class__.__name__}, which is just confusing.  To do automatic introspection, I need a list or a dictionary.  I'm afraid you'll have to extend the API backend and override the map_record_response method to deal with this."
             )
 
-        for key, value in response_data.items():
-            if not isinstance(value, list):
-                continue
-            return self.map_records_response(value, query, query_data)
-
         # a records request may only return a single record, so before we fail, let's check for that
         record = self.check_dict_and_map_to_model(response_data, columns, query_data)
         if record is not None:
             return [record]
+
+        for key, value in response_data.items():
+            if not isinstance(value, list):
+                continue
+            return self.map_records_response(value, query, query_data)
 
         raise ValueError(
             "The response from a records request returned a dictionary, but none of the items in the dictionary was a list, so I don't know where to find the records.  I only ever check one level deep in dictionaries.  I'm afraid you'll have to extend the API backend and override the map_records_response method to deal with this."
@@ -958,26 +959,37 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         map_keys = set(response_to_model_map.keys())
         matching = response_keys.intersection(map_keys)
 
-        # if nothing matches then clearly this isn't what we're looking for: repeat on all the children
-        if not matching:
-            for key, value in response_data.items():
-                if not isinstance(value, dict):
-                    continue
-                mapped = self.check_dict_and_map_to_model(value, columns)
-                if mapped:
-                    return {**query_data, **mapped}
-
-            # no match anywhere :(
-            return None
-
         # we may need to be smarter about whether or not we think we found a match, but for now let's
         # ignore that possibility.  If any columns match between the keys in our response dictionary and
         # the keys that we are expecting to find data in, then just assume that we have found a record.
         mapped = {response_to_model_map[key]: response_data[key] for key in matching}
 
+        for api_key, column_name in self.api_to_model_map.items():
+            if not "." in api_key:
+                continue
+            value = json_functional.get_nested_attribute(response_data, api_key)
+            if value is None:
+                continue
+            if isinstance(column_name, list):
+                for column in column_name:
+                    mapped[column] = value
+            else:
+                mapped[column_name] = value
         # finally, move over anything not mentioned in the map
         for key in response_keys.difference(map_keys):
             mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
+
+            # if nothing matches then clearly this isn't what we're looking for: repeat on all the children
+        if not mapped:
+            for key, value in response_data.items():
+                if not isinstance(value, dict):
+                    continue
+                remapped = self.check_dict_and_map_to_model(value, columns)
+                if remapped:
+                    return {**query_data, **remapped}
+
+            # no match anywhere :(
+            return None
 
         return {**query_data, **mapped}
 

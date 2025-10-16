@@ -242,7 +242,62 @@ class ApiBackendTest(unittest.TestCase):
             },
         ]
 
-    def test_map(self):
+    def test_nested_map(self):
+        class User(clearskies.Model):
+            id_column_name = "login"
+            backend = clearskies.backends.ApiBackend(
+                base_url="https://api.github.com",
+                limit_parameter_name="per_page",
+                pagination_parameter_name="since",
+                api_to_model_map={"profile.url": "profile_url"},
+            )
+
+            id = clearskies.columns.Integer()
+            login = clearskies.columns.String()
+            profile_url = clearskies.columns.String()
+
+        requests = MagicMock()
+        response = MagicMock()
+        response.ok = True
+        response.headers = {
+            "link": (
+                ' <https://api.github.com/users?per_page=5&since=5>; rel="next", <https://api.github.com/users{?since}>; rel="first"'
+            )
+        }
+        response.json = MagicMock(
+            return_value=[
+                {
+                    "id": "4",
+                    "login": "eijerei",
+                    "avatar_url": "https://avatar.com",
+                    "profile": {
+                        "url": "https://github.com/eijerei",
+                    },
+                    "repos_url": "https://repos.com",
+                },
+            ]
+        )
+        requests.request = MagicMock(return_value=response)
+
+        context = Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["login", "profile_url"],
+                sortable_column_names=["id"],
+                default_sort_column_name=None,
+                default_limit=2,
+            ),
+            classes=[User],
+            bindings={"requests": requests},
+        )
+
+        (status_code, response, response_headers) = context()
+        assert status_code == 200
+        assert response["status"] == "success"
+        assert response["data"] == [
+            {"login": "eijerei", "profile_url": "https://github.com/eijerei"},
+        ]
+
         class User(clearskies.Model):
             id_column_name = "login"
             backend = clearskies.backends.ApiBackend(
