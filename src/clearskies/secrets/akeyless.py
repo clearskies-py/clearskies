@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import json
 import logging
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
@@ -9,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from clearskies import configs, secrets
 from clearskies.decorators import parameters_to_properties
 from clearskies.di import inject
+from clearskies.functional.json import get_nested_attribute
 from clearskies.secrets.exceptions import PermissionsError
 
 if TYPE_CHECKING:
@@ -224,7 +224,7 @@ class Akeyless(secrets.Secrets):
                 raise KeyError(f"Secret '{path}' not found")
             raise e
         if json_attribute:
-            return self._get_nested_attribute(res[path], json_attribute)  # type: ignore
+            return get_nested_attribute(res[path], json_attribute)  # type: ignore
         return str(res[path])
 
     def get_dynamic_secret(
@@ -249,7 +249,7 @@ class Akeyless(secrets.Secrets):
             kwargs["args"] = args  # type: ignore
         res: dict[str, Any] = self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))  # type: ignore
         if json_attribute:
-            return self._get_nested_attribute(res, json_attribute)
+            return get_nested_attribute(res, json_attribute)
         return res
 
     def get_rotated_secret(
@@ -276,7 +276,7 @@ class Akeyless(secrets.Secrets):
 
         res: dict[str, str] = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))["value"]  # type: ignore
         if json_attribute:
-            return self._get_nested_attribute(res, json_attribute)
+            return get_nested_attribute(res, json_attribute)
         return res
 
     def describe_secret(self, path: str) -> Any:
@@ -469,26 +469,6 @@ class Akeyless(secrets.Secrets):
         return self.api.describe_permissions(
             self.akeyless.DescribePermissions(token=self._get_token(), path=path, type=type)
         ).client_permissions  # type: ignore
-
-    def _get_nested_attribute(self, data: dict[str, Any] | str, attr_path: str) -> Any:
-        """
-        Extract a nested attribute from JSON data.
-
-        Parses the provided data as JSON if it's a string. Traverses the nested structure using
-        the dot-separated path (e.g., "database.username"). Raises ValueError if the data cannot
-        be parsed as JSON, or KeyError if the attribute path doesn't exist in the data.
-        """
-        keys = attr_path.split(".", 1)
-        if not isinstance(data, dict):
-            try:
-                data = json.loads(data)
-            except Exception:
-                raise ValueError(f"Could not parse secret as JSON to get attribute '{attr_path}'")
-        if len(keys) == 1:
-            if not isinstance(data, dict) or keys[0] not in data:
-                raise KeyError(f"Secret does not contain attribute '{attr_path}'")
-            return data[keys[0]]  # type: ignore
-        return self._get_nested_attribute(data[keys[0]], keys[1])  # type: ignore
 
 
 class AkeylessSaml(Akeyless):

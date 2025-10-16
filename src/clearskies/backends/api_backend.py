@@ -11,6 +11,7 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+from clearskies.functional import json as json_functional
 from clearskies.functional import routing, string
 
 if TYPE_CHECKING:
@@ -550,7 +551,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     }
     ```
     """
-    api_to_model_map = configs.StringDict(default={})
+    api_to_model_map = configs.AnyDict(default={})
 
     """
     The name of the pagination parameter
@@ -589,7 +590,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         authentication: Authentication | None = None,
         model_casing: str = "snake_case",
         api_casing: str = "snake_case",
-        api_to_model_map: dict[str, str] = {},
+        api_to_model_map: dict[str, str | list[str]] = {},
         pagination_parameter_name: str = "start",
         pagination_parameter_type: str = "str",
         limit_parameter_name: str = "limit",
@@ -975,6 +976,15 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         # the keys that we are expecting to find data in, then just assume that we have found a record.
         mapped = {response_to_model_map[key]: response_data[key] for key in matching}
 
+        for api_key, column_name in self.api_to_model_map.items():
+            if "." in api_key:
+                value = json_functional.get_nested_attribute(response_data, api_key)
+                if value is not None:
+                    if isinstance(column_name, list):
+                        for column in column_name:
+                            mapped[column] = value
+                    else:
+                        mapped[column_name] = value
         # finally, move over anything not mentioned in the map
         for key in response_keys.difference(map_keys):
             mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
