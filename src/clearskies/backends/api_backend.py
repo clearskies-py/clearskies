@@ -898,15 +898,15 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
                 f"The response from a records request returned a variable of type {response_data.__class__.__name__}, which is just confusing.  To do automatic introspection, I need a list or a dictionary.  I'm afraid you'll have to extend the API backend and override the map_record_response method to deal with this."
             )
 
-        for key, value in response_data.items():
-            if not isinstance(value, list):
-                continue
-            return self.map_records_response(value, query, query_data)
-
         # a records request may only return a single record, so before we fail, let's check for that
         record = self.check_dict_and_map_to_model(response_data, columns, query_data)
         if record is not None:
             return [record]
+
+        for key, value in response_data.items():
+            if not isinstance(value, list):
+                continue
+            return self.map_records_response(value, query, query_data)
 
         raise ValueError(
             "The response from a records request returned a dictionary, but none of the items in the dictionary was a list, so I don't know where to find the records.  I only ever check one level deep in dictionaries.  I'm afraid you'll have to extend the API backend and override the map_records_response method to deal with this."
