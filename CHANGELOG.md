@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.16] - 2025-10-16
+
+### Added
+- Add json attribute to api backend by @cmancone in [#30](https://github.com/clearskies-py/clearskies/pull/30)
+- Add json attribute to api backend
+
+### Fixed
+- Reorder map_records_response
+- Reorder mapping steps
+- Use empty instead of empty_model
+
 ## [2.0.15] - 2025-10-16
+
+### Changed
+- Bump version to v2.0.15 by @github-actions[bot]
 
 ### Removed
 - Remove unused imports by @tnijboer in [#29](https://github.com/clearskies-py/clearskies/pull/29)
@@ -838,6 +852,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.16]: https://github.com/clearskies-py/clearskies/compare/v2.0.15..v2.0.16
 [2.0.15]: https://github.com/clearskies-py/clearskies/compare/v2.0.14..v2.0.15
 [2.0.14]: https://github.com/clearskies-py/clearskies/compare/v2.0.13..v2.0.14
 [2.0.13]: https://github.com/clearskies-py/clearskies/compare/v2.0.12..v2.0.13
