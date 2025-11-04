@@ -6,10 +6,10 @@ if TYPE_CHECKING:
 
     from clearskies import Environment
 
-from clearskies.di import AdditionalConfigAutoImport
+from clearskies.di import AdditionalConfig
 
 
-class MysqlConfig(AdditionalConfigAutoImport):
+class MysqlConfig(AdditionalConfig):
     """Configuration for MySQL cursor backend."""
 
     def provide_cursor_backend_type(self):

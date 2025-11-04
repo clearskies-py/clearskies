@@ -60,7 +60,7 @@ class SqliteConfig(AdditionalConfig):
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the SQLite database."""
         return {
-            "database": environment.get("db_database") if environment.get("db_database", True) else ":memory:",
+            "database": environment.get("database_name") if environment.get("database_name", True) else ":memory:",
         }
 
     def provide_cursor(self, connection: "Connection") -> "Cursor":

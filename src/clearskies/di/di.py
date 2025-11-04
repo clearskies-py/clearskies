@@ -887,6 +887,35 @@ class Di:
     def provide_environment(self):
         return Environment(os.getcwd() + "/.env", os.environ, {})
 
+    def provide_cursor_backend_type(self):
+        return "mysql"
+
+    def provide_cursor(self, cursor_backend_type):
+        from clearskies import cursors
+
+        match cursor_backend_type:
+            case "postgresql":
+                return cursors.Postgresql()
+            case "sqlite":
+                return cursors.Sqlite()
+            case _:  # default to mysql
+                return cursors.Mysql()
+
+    def provide_mysql_cursor(self, cursor_backend_type):
+        from clearskies import cursors
+
+        return cursors.Mysql()
+
+    def provide_postgresql_cursor(self, cursor_backend_type):
+        from clearskies import cursors
+
+        return cursors.Postgresql()
+
+    def provide_sqlite_cursor(self, cursor_backend_type):
+        from clearskies import cursors
+
+        return cursors.Sqlite()
+
     def provide_now(self):
         return datetime.datetime.now() if self._now is None else self._now
 

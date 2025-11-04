@@ -25,12 +25,12 @@ class PostgresqlConfig(AdditionalConfig):
                 "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
             )
         return psycopg.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 5432),
-            sslcert=connection_details.get("sslcert", None),
+            user=connection_details["database_username"],
+            password=connection_details["database_password"],
+            host=connection_details["database_host"],
+            dbname=connection_details["database_name"],
+            port=connection_details.get("database_port", 5432),
+            sslcert=connection_details.get("database_sslcert", None),
             connect_timeout=2,
             autocommit=False,
             row_factory=dict_row,
@@ -47,12 +47,12 @@ class PostgresqlConfig(AdditionalConfig):
             )
 
         return psycopg.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 5432),
-            ssl_ca=connection_details.get("ssl_ca", None),
+            user=connection_details["database_username"],
+            password=connection_details["database_password"],
+            host=connection_details["database_host"],
+            dbname=connection_details["database_name"],
+            port=connection_details.get("database_port", 5432),
+            ssl_ca=connection_details.get("database_sslcert", None),
             autocommit=True,
             connect_timeout=2,
             row_factory=dict_row,
@@ -61,22 +61,37 @@ class PostgresqlConfig(AdditionalConfig):
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the PostgreSQL database."""
         try:
-            port = environment.get("db_port")
+            username = environment.get("database_username")
+        except:
+            username = "root"
+
+        try:
+            password = environment.get("database_password")
+        except:
+            password = None
+
+        try:
+            host = environment.get("database_host")
+        except:
+            host = "localhost"
+
+        try:
+            port = environment.get("database_port")
         except:
             port = 5432
 
         try:
-            sslcert = environment.get("db_sslcert")
+            sslcert = environment.get("database_sslcert")
         except:
             sslcert = None
 
         return {
-            "username": environment.get("db_username"),
-            "password": environment.get("db_password"),
-            "host": environment.get("db_host"),
-            "database": environment.get("db_database"),
-            "port": port,
-            "sslcert": sslcert,
+            "database_username": username,
+            "database_password": password,
+            "database_host": host,
+            "database_name": environment.get("database_name"),
+            "database_port": port,
+            "database_sslcert": sslcert,
         }
 
     def provide_cursor(self, connection: "Connection") -> "Cursor":

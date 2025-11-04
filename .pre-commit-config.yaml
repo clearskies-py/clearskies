@@ -1,5 +1,5 @@
 # Pre-commit configuration for Gitlab Akeyless Custom Producer
-fail_fast: true
+fail_fast: false
 
 ci:
     autofix_commit_msg: "chore(pre-commit): autofix run"

@@ -78,6 +78,7 @@ addopts = "-ra -q --ignore=src/clearskies/contexts/test.py --cache-clear"
 testpaths = [
     "tests",
     "integration",
+    "src",
 ]
 pythonpath = [
   "app"
