@@ -17,45 +17,23 @@ class SqliteConfig(AdditionalConfig):
 
     def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection":
         """Provide a SQLite connection with autocommit disabled."""
-        import sqlite3
-        import sys
+        from clearskies.cursors.sqlite_cursor import SqliteCursor
 
-        def dict_factory(cursor, row):
-            fields = [column[0] for column in cursor.description]
-            return {key: value for key, value in zip(fields, row)}
-
-        connection = sqlite3.connect(
-            database=str(connection_details["database"]),
-            timeout=2.0,
+        cursor = SqliteCursor(
+            database_name=connection_details["database_name"],
+            autocommit=False,
         )
-        connection.row_factory = dict_factory
-        if sys.version_info > (3, 12):
-            connection.autocommit = False
-        else:
-            connection.isolation_level = None  # Disable autocommit
-
-        return connection
+        return cursor.connection
 
     def provide_connection(self, connection_details: dict[str, Any]) -> "Connection":
         """Provide a SQLite connection with autocommit enabled."""
-        import sqlite3
-        import sys
+        from clearskies.cursors.sqlite_cursor import SqliteCursor
 
-        def dict_factory(cursor, row):
-            fields = [column[0] for column in cursor.description]
-            return {key: value for key, value in zip(fields, row)}
-
-        connection = sqlite3.connect(
-            database=str(connection_details["database"]),
-            timeout=2.0,
+        cursor = SqliteCursor(
+            database_name=connection_details["database_name"],
+            autocommit=True,
         )
-        connection.row_factory = dict_factory
-        if sys.version_info >= (3, 12):
-            connection.autocommit = True
-        else:
-            connection.isolation_level = None  # Disable autocommit
-
-        return connection
+        return cursor.connection
 
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the SQLite database."""

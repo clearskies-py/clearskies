@@ -17,46 +17,33 @@ class PostgresqlConfig(AdditionalConfig):
 
     def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection":
         """Provide a PostgreSQL connection with autocommit disabled."""
-        try:
-            import psycopg
-            from psycopg.rows import dict_row
-        except:
-            raise ValueError(
-                "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
-            )
-        return psycopg.connect(
-            user=connection_details["database_username"],
+        from clearskies.cursors.postgresql_cursor import PostgresqlCursor
+
+        cursor = PostgresqlCursor(
+            username=connection_details["database_username"],
             password=connection_details["database_password"],
             host=connection_details["database_host"],
-            dbname=connection_details["database_name"],
+            database_name=connection_details["database_name"],
             port=connection_details.get("database_port", 5432),
             sslcert=connection_details.get("database_sslcert", None),
-            connect_timeout=2,
             autocommit=False,
-            row_factory=dict_row,
         )
+        return cursor.connection
 
     def provide_connection(self, connection_details: dict[str, Any]) -> "Connection":
         """Provide a PostgreSQL connection with autocommit enabled."""
-        try:
-            import psycopg
-            from psycopg.rows import dict_row
-        except:
-            raise ValueError(
-                "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
-            )
+        from clearskies.cursors.postgresql_cursor import PostgresqlCursor
 
-        return psycopg.connect(
-            user=connection_details["database_username"],
+        cursor = PostgresqlCursor(
+            username=connection_details["database_username"],
             password=connection_details["database_password"],
             host=connection_details["database_host"],
-            dbname=connection_details["database_name"],
+            database_name=connection_details["database_name"],
             port=connection_details.get("database_port", 5432),
-            ssl_ca=connection_details.get("database_sslcert", None),
+            sslcert=connection_details.get("database_sslcert", None),
             autocommit=True,
-            connect_timeout=2,
-            row_factory=dict_row,
         )
+        return cursor.connection
 
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the PostgreSQL database."""

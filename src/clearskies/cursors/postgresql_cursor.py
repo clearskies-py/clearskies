@@ -1,14 +1,15 @@
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 from clearskies.configs import boolean, integer, string
-from clearskies.cursors import base
+from clearskies.cursors import base_cursor
 from clearskies.decorators import parameters_to_properties
 
 if TYPE_CHECKING:
     from psycopg import Connection
 
 
-class Postgresql(base.Base):
+class PostgresqlCursor(base_cursor.BaseCursor):
     """Configuration for PostgreSQL cursor backend."""
 
     cursor_type: str = "postgresql"
@@ -32,7 +33,7 @@ class Postgresql(base.Base):
         sslcert: str | None = None,
         autocommit: bool | None = None,
     ):
-        self.finalize_and_validate_configuration()
+        self.configure()
 
     def configure(self) -> None:
         """Configure the cursor."""
@@ -51,16 +52,23 @@ class Postgresql(base.Base):
             self.sslcert = self.environment.get("database_sslcert")
 
     @property
+    def factory(self) -> ModuleType:
+        """Return the factory for the cursor."""
+        if not hasattr(self, "_factory"):
+            try:
+                import psycopg
+
+                self._factory = psycopg
+            except ImportError:
+                raise ValueError(
+                    "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
+                )
+        return self._factory
+
+    @property
     def connection(self) -> "Connection":
         """Return the connection for the cursor."""
-        try:
-            import psycopg
-            from psycopg.rows import dict_row
-        except:
-            raise ValueError(
-                "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
-            )
-        return psycopg.connect(
+        return self.factory.connect(
             user=self.username,
             password=self.password,
             host=self.host,
@@ -69,5 +77,5 @@ class Postgresql(base.Base):
             connect_timeout=2,
             autocommit=self.autocommit,
             sslcert=self.sslcert,
-            row_factory=dict_row,
+            row_factory=self.factory.rows.dict_row,
         )

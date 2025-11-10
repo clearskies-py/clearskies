@@ -121,6 +121,7 @@ class CursorBackend(Backend, InjectableProperties):
     table_escape_character = "`"
     column_escape_character = "`"
     table_prefix = ""
+    param_style = "format"
 
     def __init__(self, table_escape_character="`", column_escape_character="`", table_prefix=""):
         self.table_escape_character = table_escape_character

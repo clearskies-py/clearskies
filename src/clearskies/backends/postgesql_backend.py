@@ -114,3 +114,4 @@ class PostgresqlBackend(cursor_backend.CursorBackend):
 
     supports_n_plus_one = True
     cursor = inject.ByName("postgresql_cursor")
+    param_style = "pyformat"

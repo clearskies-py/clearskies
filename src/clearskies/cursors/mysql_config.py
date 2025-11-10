@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pymysql.connections import Connection
-    from pymysql.cursors import Cursor, DictCursor
+    from pymysql.cursors import Cursor
 
     from clearskies import Environment
 
@@ -16,49 +16,35 @@ class MysqlConfig(AdditionalConfig):
         """Return the type of cursor backend this config is for."""
         return "mysql"  # must match the name used in the connection URL, e.g. mysql://user:pass@host/db
 
-    def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection[DictCursor]":
+    def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection[Cursor]":
         """Provide a MySQL connection with autocommit disabled."""
-        try:
-            import pymysql
-        except:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
+        from clearskies.cursors.mysql_cursor import MysqlCursor
 
-        with pymysql.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 3306),
+        cursor = MysqlCursor(
+            username=connection_details["database_username"],
+            password=connection_details["database_password"],
+            host=connection_details["database_host"],
+            database_name=connection_details["database_name"],
+            port=connection_details.get("database_port", 5432),
             ssl_ca=connection_details.get("ssl_ca", None),
             autocommit=False,
-            connect_timeout=2,
-            cursorclass=pymysql.cursors.DictCursor,
-        ) as connect:
-            return connect
+        )
+        return cursor.connection
 
-    def provide_connection(self, connection_details: dict[str, Any]) -> "Connection[DictCursor]":
+    def provide_connection(self, connection_details: dict[str, Any]) -> "Connection[Cursor]":
         """Provide a MySQL connection with autocommit enabled."""
-        try:
-            import pymysql
-        except:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
+        from clearskies.cursors.mysql_cursor import MysqlCursor
 
-        with pymysql.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 3306),
+        cursor = MysqlCursor(
+            username=connection_details["database_username"],
+            password=connection_details["database_password"],
+            host=connection_details["database_host"],
+            database_name=connection_details["database_name"],
+            port=connection_details.get("database_port", 5432),
             ssl_ca=connection_details.get("ssl_ca", None),
             autocommit=True,
-            connect_timeout=2,
-            cursorclass=pymysql.cursors.DictCursor,
-        ) as connect:
-            return connect
+        )
+        return cursor.connection
 
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the MySQL database."""

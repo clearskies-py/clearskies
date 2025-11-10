@@ -43,6 +43,9 @@ dev = [
 docs = [
     "clear-skies-doc-builder>=2.0.4",
 ]
+test = [
+    "pytest-postgresql>=7.0.2",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -79,6 +82,10 @@ testpaths = [
     "tests",
     "integration",
     "src",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "broken: marks tests as broken (deselect with '-m \"not broken\"')",
 ]
 pythonpath = [
   "app"

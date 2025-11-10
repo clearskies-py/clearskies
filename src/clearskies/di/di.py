@@ -890,31 +890,33 @@ class Di:
     def provide_cursor_backend_type(self):
         return "mysql"
 
-    def provide_cursor(self, cursor_backend_type):
+    def provide_cursor(self, cursor_backend_type: str):
         from clearskies import cursors
 
         match cursor_backend_type:
             case "postgresql":
-                return cursors.Postgresql()
+                self.add_additional_configs(cursors.PostgresqlConfig())
             case "sqlite":
-                return cursors.Sqlite()
-            case _:  # default to mysql
-                return cursors.Mysql()
+                self.add_additional_configs(cursors.SqliteConfig())
+            case _:
+                self.add_additional_configs(cursors.MysqlConfig())
+        return self.build_from_name("cursor")
 
-    def provide_mysql_cursor(self, cursor_backend_type):
+    def provide_mysql_cursor(self):
         from clearskies import cursors
 
-        return cursors.Mysql()
+        return self.build_class(cursors.Mysql)
 
-    def provide_postgresql_cursor(self, cursor_backend_type):
+    def provide_postgresql_cursor(self):
         from clearskies import cursors
 
-        return cursors.Postgresql()
+        cursor = cursors.Postgresql()
+        return self.inject_properties(cursor)
 
-    def provide_sqlite_cursor(self, cursor_backend_type):
+    def provide_sqlite_cursor(self):
         from clearskies import cursors
 
-        return cursors.Sqlite()
+        return self.build_class(cursors.Sqlite)
 
     def provide_now(self):
         return datetime.datetime.now() if self._now is None else self._now

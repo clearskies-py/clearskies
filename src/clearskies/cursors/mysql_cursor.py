@@ -1,3 +1,4 @@
+from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -5,11 +6,11 @@ if TYPE_CHECKING:
 
 
 from clearskies.configs import integer, string
-from clearskies.cursors import base
+from clearskies.cursors import base_cursor
 from clearskies.decorators import parameters_to_properties
 
 
-class Mysql(base.Base):
+class MysqlCursor(base_cursor.BaseCursor):
     """Configuration for MySQL cursor backend."""
 
     cursor_type: str = "mysql"
@@ -30,8 +31,9 @@ class Mysql(base.Base):
         username: str | None = None,
         password: str | None = None,
         autocommit: bool | None = None,
+        ssl_ca: str | None = None,
     ):
-        self.finalize_and_validate_configuration()
+        pass
 
     def configure(self) -> None:
         """Configure the cursor."""
@@ -50,22 +52,29 @@ class Mysql(base.Base):
             self.ssl_ca = self.environment.get("database_ssl_ca")
 
     @property
+    def factory(self) -> ModuleType:
+        """Return the factory for the cursor."""
+        if not hasattr(self, "_factory"):
+            try:
+                import pymysql
+
+                self._factory = pymysql
+            except:
+                raise ValueError(
+                    "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
+                )
+        return self._factory
+
+    @property
     def connection(self) -> "Connection":
         """Return the connection for the cursor."""
-        try:
-            import pymysql
-        except:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
-
-        return pymysql.connect(
+        return self.factory.connect(
             user=self.username,
             password=self.password,
             host=self.host,
             database=self.database_name,
             port=self.port,
-            cursorclass=pymysql.cursors.DictCursor,
+            cursorclass=self.factory.cursors.DictCursor,
             autocommit=self.autocommit,
             ssl_ca=self.ssl_ca if self.ssl_ca else None,
         )
