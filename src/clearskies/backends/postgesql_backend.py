@@ -26,14 +26,14 @@ class PostgresqlBackend(cursor_backend.CursorBackend):
 
     By default, database credentials are expected in environment variables:
 
-    | Name            | Default | Value                                                         |
-    |------------------|---------|---------------------------------------------------------------|
-    | database_host     |         | The hostname where the database can be found                  |
-    | database_username |         | The username to connect as                                    |
-    | database_password |         | The password to connect with                                  |
-    | database_name     |         | The name of the database to use                               |
-    | database_port     | 5432    | The network port to connect to                                |
-    | database_sslcert  |         | Path to a certificate to use: enables SSL over the connection |
+    | Name              | Default | Value                                                         |
+    |-------------------|---------|---------------------------------------------------------------|
+    | DATABASE_HOST     |         | The hostname where the database can be found                  |
+    | DATABASE_USERNAME |         | The username to connect as                                    |
+    | DATABASE_PASSWORD |         | The password to connect with                                  |
+    | DATABASE_NAME     |         | The name of the database to use                               |
+    | DATABASE_PORT     | 5432    | The network port to connect to                                |
+    | DATABASE_CERT_PATH |         | Path to a certificate to use: enables SSL over the connection |
 
     However, you can fully control the credential provisioning process by declaring a dependency named `connection_details` and
     setting it to a dictionary with the above keys, minus the `db_` prefix:
@@ -47,7 +47,7 @@ class PostgresqlBackend(cursor_backend.CursorBackend):
                 password=secrets.get("db_password"),
                 database_name=secrets.get("db_database"),
                 port=5432,
-                sslcert="/path/to/ca",
+                cert_path="/path/to/ca",
             )
 
     wsgi = clearskies.contexts.Wsgi(
@@ -114,4 +114,3 @@ class PostgresqlBackend(cursor_backend.CursorBackend):
 
     supports_n_plus_one = True
     cursor = inject.ByName("postgresql_cursor")
-    param_style = "pyformat"

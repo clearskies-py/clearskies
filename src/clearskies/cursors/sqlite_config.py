@@ -18,7 +18,7 @@ class SqliteConfig(AdditionalConfig):
     def provide_cursor(self, connection_details: dict[str, Any]) -> "CursorProxy":
         """Provide a SQLite cursor proxy with autocommit enabled."""
         cursor_config = SqliteCursor(
-            database_name=connection_details["database_name"],
+            database_name=connection_details["database"],
             autocommit=True,
         )
         # Return the actual cursor proxy, not the config
@@ -27,5 +27,5 @@ class SqliteConfig(AdditionalConfig):
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the SQLite database."""
         return {
-            "database_name": environment.get("DATABASE_NAME") if environment.get("DATABASE_NAME", True) else ":memory:",
+            "database": environment.get("DATABASE_NAME") if environment.get("DATABASE_NAME", True) else ":memory:",
         }

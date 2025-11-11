@@ -48,6 +48,9 @@ from clearskies.backends.api_backend import ApiBackend
 from clearskies.backends.backend import Backend
 from clearskies.backends.cursor_backend import CursorBackend
 from clearskies.backends.memory_backend import MemoryBackend
+from clearskies.backends.postgesql_backend import PostgresqlBackend
+from clearskies.backends.mysql_backend import MysqlBackend
+from clearskies.backends.sqlite_backend import SqliteBackend
 
 # from .memory_backend import MemoryBackend
 # from .restful_api_advanced_search_backend import RestfulApiAdvancedSearchBackend
@@ -60,6 +63,9 @@ __all__ = [
     "Backend",
     "CursorBackend",
     "MemoryBackend",
+    "PostgresqlBackend",
+    "MysqlBackend",
+    "SqliteBackend",
     # "RestfulApiAdvancedSearchBackend",
     # "SecretsBackend",
 ]

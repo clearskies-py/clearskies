@@ -20,7 +20,7 @@ class MysqlCursor(base_cursor.BaseCursor):
     database_name = string.String(default="mysql")
     username = string.String(default="root")
     password = string.String(default=None)
-    ssl_ca = string.String(default=None)
+    cert_path = string.String(default=None)
 
     @parameters_to_properties
     def __init__(
@@ -31,7 +31,7 @@ class MysqlCursor(base_cursor.BaseCursor):
         username: str | None = None,
         password: str | None = None,
         autocommit: bool | None = None,
-        ssl_ca: str | None = None,
+        cert_path: str | None = None,
         parameter_style: str | None = None,
     ):
         self.finalize_and_validate_configuration()
@@ -47,18 +47,18 @@ class MysqlCursor(base_cursor.BaseCursor):
             # Environment not injected, skip configuration from environment
             return
 
-        if environment.get("database_host", True):
-            self.host = environment.get("database_host")
-        if environment.get("database_port", True):
-            self.port = environment.get("database_port")
-        if environment.get("database_username", True):
-            self.username = environment.get("database_username")
-        if environment.get("database_password", True):
-            self.password = environment.get("database_password")
-        if environment.get("database_autocommit", True):
-            self.autocommit = environment.get("database_autocommit")
-        if environment.get("database_ssl_ca", True):
-            self.ssl_ca = environment.get("database_ssl_ca")
+        if environment.get("DATABASE_HOST", True):
+            self.host = environment.get("DATABASE_HOST")
+        if environment.get("DATABASE_PORT", True):
+            self.port = environment.get("DATABASE_PORT")
+        if environment.get("DATABASE_USERNAME", True):
+            self.username = environment.get("DATABASE_USERNAME")
+        if environment.get("DATABASE_PASSWORD", True):
+            self.password = environment.get("DATABASE_PASSWORD")
+        if environment.get("DATABASE_AUTOCOMMIT", True):
+            self.autocommit = environment.get("DATABASE_AUTOCOMMIT")
+        if environment.get("DATABASE_CERT_PATH", True):
+            self.cert_path = environment.get("DATABASE_CERT_PATH")
 
     @property
     def factory(self) -> ModuleType:
@@ -88,7 +88,7 @@ class MysqlCursor(base_cursor.BaseCursor):
             port=self.port,
             cursorclass=self.factory.cursors.DictCursor,
             autocommit=self.autocommit,
-            ssl_ca=self.ssl_ca if self.ssl_ca else None,
+            ssl_ca=self.cert_path if self.cert_path else None,
         )
 
     def provide_connection_details(self) -> dict[str, Any]:
@@ -99,6 +99,6 @@ class MysqlCursor(base_cursor.BaseCursor):
             "host": self.host,
             "database": self.database_name,
             "port": self.port,
-            "ssl_ca": self.ssl_ca,
+            "cert_path": self.cert_path,
             "autocommit": self.autocommit,
         }

@@ -20,7 +20,7 @@ class PostgresqlCursor(base_cursor.BaseCursor):
     username = string.String(default="postgres")
     password = string.String(default="")
     autocommit = boolean.Boolean(default=True)
-    sslcert = string.String(default=None)
+    cert_path = string.String(default=None)
 
     @parameters_to_properties
     def __init__(
@@ -30,7 +30,7 @@ class PostgresqlCursor(base_cursor.BaseCursor):
         database_name: str | None = None,
         username: str | None = None,
         password: str | None = None,
-        sslcert: str | None = None,
+        cert_path: str | None = None,
         autocommit: bool | None = None,
         parameter_style: str | None = None,
     ):
@@ -47,18 +47,18 @@ class PostgresqlCursor(base_cursor.BaseCursor):
             # Environment not injected, skip configuration from environment
             return
 
-        if environment.get("database_host", True):
-            self.host = environment.get("database_host")
-        if environment.get("database_port", True):
-            self.port = environment.get("database_port")
-        if environment.get("database_username", True):
-            self.username = environment.get("database_username")
-        if environment.get("database_password", True):
-            self.password = environment.get("database_password")
-        if environment.get("database_autocommit", True):
-            self.autocommit = environment.get("database_autocommit")
-        if environment.get("database_sslcert", True):
-            self.sslcert = environment.get("database_sslcert")
+        if environment.get("DATABASE_HOST", True):
+            self.host = environment.get("DATABASE_HOST")
+        if environment.get("DATABASE_PORT", True):
+            self.port = environment.get("DATABASE_PORT")
+        if environment.get("DATABASE_USERNAME", True):
+            self.username = environment.get("DATABASE_USERNAME")
+        if environment.get("DATABASE_PASSWORD", True):
+            self.password = environment.get("DATABASE_PASSWORD")
+        if environment.get("DATABASE_AUTOCOMMIT", True):
+            self.autocommit = environment.get("DATABASE_AUTOCOMMIT")
+        if environment.get("DATABASE_CERT_PATH", True):
+            self.cert_path = environment.get("DATABASE_CERT_PATH")
 
     @property
     def factory(self) -> ModuleType:
@@ -88,6 +88,6 @@ class PostgresqlCursor(base_cursor.BaseCursor):
             port=self.port,
             connect_timeout=2,
             autocommit=self.autocommit,
-            sslcert=self.sslcert,
+            sslcert=self.cert_path,
             row_factory=self.factory.rows.dict_row,
         )

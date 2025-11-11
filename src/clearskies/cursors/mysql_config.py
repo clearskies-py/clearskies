@@ -22,12 +22,12 @@ class MysqlConfig(AdditionalConfig):
         from clearskies.cursors.mysql_cursor import MysqlCursor
 
         cursor = MysqlCursor(
-            username=connection_details["database_username"],
-            password=connection_details["database_password"],
-            host=connection_details["database_host"],
-            database_name=connection_details["database_name"],
-            port=connection_details.get("database_port", 5432),
-            ssl_ca=connection_details.get("ssl_ca", None),
+            username=connection_details["username"],
+            password=connection_details["password"],
+            host=connection_details["host"],
+            database_name=connection_details["database"],
+            port=connection_details.get("port", 3306),
+            cert_path=connection_details.get("cert_path", None),
             autocommit=False,
         )
         return cursor()
@@ -37,12 +37,12 @@ class MysqlConfig(AdditionalConfig):
         from clearskies.cursors.mysql_cursor import MysqlCursor
 
         cursor = MysqlCursor(
-            username=connection_details["database_username"],
-            password=connection_details["database_password"],
-            host=connection_details["database_host"],
-            database_name=connection_details["database_name"],
-            port=connection_details.get("database_port", 5432),
-            ssl_ca=connection_details.get("ssl_ca", None),
+            username=connection_details["username"],
+            password=connection_details["password"],
+            host=connection_details["host"],
+            database_name=connection_details["database"],
+            port=connection_details.get("port", 3306),
+            cert_path=connection_details.get("cert_path", None),
             autocommit=True,
         )
         return cursor.connection

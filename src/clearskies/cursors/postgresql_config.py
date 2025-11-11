@@ -19,12 +19,12 @@ class PostgresqlConfig(AdditionalConfig):
         from clearskies.cursors.postgresql_cursor import PostgresqlCursor
 
         cursor = PostgresqlCursor(
-            username=connection_details["database_username"],
-            password=connection_details["database_password"],
-            host=connection_details["database_host"],
-            database_name=connection_details["database_name"],
-            port=connection_details.get("database_port", 5432),
-            sslcert=connection_details.get("database_sslcert", None),
+            username=connection_details["username"],
+            password=connection_details["password"],
+            host=connection_details["host"],
+            database_name=connection_details["database"],
+            port=connection_details.get("port", 5432),
+            cert_path=connection_details.get("cert_path", None),
             autocommit=False,
         )
         return cursor()
@@ -32,35 +32,35 @@ class PostgresqlConfig(AdditionalConfig):
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the PostgreSQL database."""
         try:
-            username = environment.get("database_username")
+            username = environment.get("DATABASE_USERNAME")
         except:
-            username = "root"
+            username = "postgres"
 
         try:
-            password = environment.get("database_password")
+            password = environment.get("DATABASE_PASSWORD")
         except:
             password = ""
 
         try:
-            host = environment.get("database_host")
+            host = environment.get("DATABASE_HOST")
         except:
             host = "localhost"
 
         try:
-            port = environment.get("database_port")
+            port = environment.get("DATABASE_PORT")
         except:
             port = 5432
 
         try:
-            sslcert = environment.get("database_sslcert")
+            cert_path = environment.get("DATABASE_CERT_PATH")
         except:
-            sslcert = ""
+            cert_path = ""
 
         return {
-            "database_username": username,
-            "database_password": password,
-            "database_host": host,
-            "database_name": environment.get("database_name"),
-            "database_port": port,
-            "database_sslcert": sslcert,
+            "username": username,
+            "password": password,
+            "host": host,
+            "database": environment.get("DATABASE_NAME"),
+            "port": port,
+            "cert_path": cert_path,
         }

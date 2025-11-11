@@ -10,9 +10,9 @@ class PostgresqlConfigTest(unittest.TestCase):
     """Tests for the PostgresqlConfig AdditionalConfig class."""
 
     def get_environment(self, key):
-        if key == "database_password":
+        if key == "DATABASE_PASSWORD":
             return "secret"
-        if key == "database_name":
+        if key == "DATABASE_NAME":
             return "test"
         raise KeyError("Oops")
 

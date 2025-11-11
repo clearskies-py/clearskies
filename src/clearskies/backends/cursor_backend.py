@@ -14,56 +14,33 @@ if TYPE_CHECKING:
 
 class CursorBackend(Backend, InjectableProperties):
     """
-    The cursor backend connects your models to a MySQL or MariaDB database.
+    The base cursor backend connects your models to SQL databases.
+
+    This is the base class for database-specific backends like MysqlBackend, PostgresqlBackend, and SqliteBackend.
+    Use the specific backend classes for your database instead of using CursorBackend directly.
 
     ## Installing Dependencies
 
-    clearskies uses PyMySQL to manage the database connection and make queries.  This is not installed by default,
-    but is a named extra that you can install when needed via:
-
-    ```bash
-    pip install clear-skies[mysql]
-    ```
+    The dependencies vary by database. See the specific backend documentation:
+    - MysqlBackend: `pip install clear-skies[mysql]`
+    - PostgresqlBackend: `pip install clear-skies[postgresql]`
+    - SqliteBackend: Included with Python
 
     ## Connecting to your server
 
-    By default, database credentials are expected in environment variables:
+    By default, database credentials are expected in environment variables (the exact variables depend on your
+    database backend):
 
-    | Name        | Default | Value                                                         |
-    |-------------|---------|---------------------------------------------------------------|
-    | db_host     |         | The hostname where the database can be found                  |
-    | db_username |         | The username to connect as                                    |
-    | db_password |         | The password to connect with                                  |
-    | db_database |         | The name of the database to use                               |
-    | db_port     | 3306    | The network port to connect to                                |
-    | db_ssl_ca   |         | Path to a certificate to use: enables SSL over the connection |
+    | Name               | Typical Default | Value                                                         |
+    |--------------------|-----------------|---------------------------------------------------------------|
+    | DATABASE_HOST      |                 | The hostname where the database can be found                  |
+    | DATABASE_USERNAME  |                 | The username to connect as                                    |
+    | DATABASE_PASSWORD  |                 | The password to connect with                                  |
+    | DATABASE_NAME      |                 | The name of the database to use                               |
+    | DATABASE_PORT      | (varies)        | The network port to connect to                                |
+    | DATABASE_CERT_PATH |                 | Path to a certificate to use: enables SSL over the connection |
 
-    However, you can fully control the credential provisioning process by declaring a dependency named `connection_details` and
-    setting it to a dictionary with the above keys, minus the `db_` prefix:
-
-    ```python
-    class ConnectionDetails(clearskies.di.AdditionalConfig):
-        provide_connection_details(self, secrets):
-            return {
-                "host": secrets.get("database_host"),
-                "username": secrets.get("db_username"),
-                "password": secrets.get("db_password"),
-                "database": secrets.get("db_database"),
-                "port": 3306,
-                "ssl_ca": "/path/to/ca",
-            }
-
-    wsgi = clearskies.contexts.Wsgi(
-        some_application,
-        additional_configs=[ConnectionDetails()],
-        bindings={
-            "secrets": "" # some configuration here to point to your secret manager
-        }
-    )
-    ```
-
-    Similarly, some alternate credential provisioning schemes are built into clearskies.  See the
-    clearskies.secrets.additional_configs module for those options.
+    See the documentation for your specific backend (MysqlBackend, PostgresqlBackend, SqliteBackend) for exact details.
 
     ## Connecting models to tables
 
@@ -121,7 +98,6 @@ class CursorBackend(Backend, InjectableProperties):
     table_escape_character = "`"
     column_escape_character = "`"
     table_prefix = ""
-    param_style = "format"
 
     def __init__(self, table_escape_character="`", column_escape_character="`", table_prefix=""):
         self.table_escape_character = table_escape_character
