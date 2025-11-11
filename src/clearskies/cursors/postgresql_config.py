@@ -1,10 +1,9 @@
 from typing import TYPE_CHECKING, Any
 
+from clearskies.cursors.base_cursor import CursorProxy
 from clearskies.di import AdditionalConfig
 
 if TYPE_CHECKING:
-    from psycopg import Connection, Cursor
-
     from clearskies import Environment
 
 
@@ -15,7 +14,7 @@ class PostgresqlConfig(AdditionalConfig):
         """Return the type of cursor backend this config is for."""
         return "postgresql"
 
-    def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection":
+    def provide_cursor(self, connection_details: dict[str, Any]) -> "CursorProxy":
         """Provide a PostgreSQL connection with autocommit disabled."""
         from clearskies.cursors.postgresql_cursor import PostgresqlCursor
 
@@ -28,22 +27,7 @@ class PostgresqlConfig(AdditionalConfig):
             sslcert=connection_details.get("database_sslcert", None),
             autocommit=False,
         )
-        return cursor.connection
-
-    def provide_connection(self, connection_details: dict[str, Any]) -> "Connection":
-        """Provide a PostgreSQL connection with autocommit enabled."""
-        from clearskies.cursors.postgresql_cursor import PostgresqlCursor
-
-        cursor = PostgresqlCursor(
-            username=connection_details["database_username"],
-            password=connection_details["database_password"],
-            host=connection_details["database_host"],
-            database_name=connection_details["database_name"],
-            port=connection_details.get("database_port", 5432),
-            sslcert=connection_details.get("database_sslcert", None),
-            autocommit=True,
-        )
-        return cursor.connection
+        return cursor()
 
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the PostgreSQL database."""
@@ -55,7 +39,7 @@ class PostgresqlConfig(AdditionalConfig):
         try:
             password = environment.get("database_password")
         except:
-            password = None
+            password = ""
 
         try:
             host = environment.get("database_host")
@@ -70,7 +54,7 @@ class PostgresqlConfig(AdditionalConfig):
         try:
             sslcert = environment.get("database_sslcert")
         except:
-            sslcert = None
+            sslcert = ""
 
         return {
             "database_username": username,
@@ -80,8 +64,3 @@ class PostgresqlConfig(AdditionalConfig):
             "database_port": port,
             "database_sslcert": sslcert,
         }
-
-    def provide_cursor(self, connection: "Connection") -> "Cursor":
-        """Provide a PostgreSQL cursor from the given connection."""
-        with connection.cursor() as cursor:
-            return cursor

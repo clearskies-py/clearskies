@@ -32,42 +32,54 @@ class PostgresqlCursor(base_cursor.BaseCursor):
         password: str | None = None,
         sslcert: str | None = None,
         autocommit: bool | None = None,
+        parameter_style: str | None = None,
     ):
-        self.configure()
+        self.finalize_and_validate_configuration()
 
     def configure(self) -> None:
         """Configure the cursor."""
         super().configure()
-        if self.environment.get("database_host", True):
-            self.host = self.environment.get("database_host")
-        if self.environment.get("database_port", True):
-            self.port = self.environment.get("database_port")
-        if self.environment.get("database_username", True):
-            self.username = self.environment.get("database_username")
-        if self.environment.get("database_password", True):
-            self.password = self.environment.get("database_password")
-        if self.environment.get("database_autocommit", True):
-            self.autocommit = self.environment.get("database_autocommit")
-        if self.environment.get("database_sslcert", True):
-            self.sslcert = self.environment.get("database_sslcert")
+
+        # Check if environment has been injected
+        try:
+            environment = object.__getattribute__(self, "environment")
+        except AttributeError:
+            # Environment not injected, skip configuration from environment
+            return
+
+        if environment.get("database_host", True):
+            self.host = environment.get("database_host")
+        if environment.get("database_port", True):
+            self.port = environment.get("database_port")
+        if environment.get("database_username", True):
+            self.username = environment.get("database_username")
+        if environment.get("database_password", True):
+            self.password = environment.get("database_password")
+        if environment.get("database_autocommit", True):
+            self.autocommit = environment.get("database_autocommit")
+        if environment.get("database_sslcert", True):
+            self.sslcert = environment.get("database_sslcert")
 
     @property
     def factory(self) -> ModuleType:
         """Return the factory for the cursor."""
-        if not hasattr(self, "_factory"):
+        try:
+            return object.__getattribute__(self, "_factory")
+        except AttributeError:
             try:
                 import psycopg
 
-                self._factory = psycopg
+                object.__setattr__(self, "_factory", psycopg)
+                return psycopg
             except ImportError:
                 raise ValueError(
                     "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
                 )
-        return self._factory
 
     @property
     def connection(self) -> "Connection":
         """Return the connection for the cursor."""
+        self.configure()
         return self.factory.connect(
             user=self.username,
             password=self.password,

@@ -4,7 +4,8 @@ if TYPE_CHECKING:
     from pymysql.connections import Connection
     from pymysql.cursors import Cursor
 
-    from clearskies import Environment
+    from clearskies.cursors.base_cursor import CursorProxy
+
 
 from clearskies.di import AdditionalConfig
 
@@ -16,7 +17,7 @@ class MysqlConfig(AdditionalConfig):
         """Return the type of cursor backend this config is for."""
         return "mysql"  # must match the name used in the connection URL, e.g. mysql://user:pass@host/db
 
-    def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection[Cursor]":
+    def provide_cursor(self, connection_details: dict[str, Any]) -> "CursorProxy":
         """Provide a MySQL connection with autocommit disabled."""
         from clearskies.cursors.mysql_cursor import MysqlCursor
 
@@ -29,7 +30,7 @@ class MysqlConfig(AdditionalConfig):
             ssl_ca=connection_details.get("ssl_ca", None),
             autocommit=False,
         )
-        return cursor.connection
+        return cursor()
 
     def provide_connection(self, connection_details: dict[str, Any]) -> "Connection[Cursor]":
         """Provide a MySQL connection with autocommit enabled."""
@@ -45,28 +46,3 @@ class MysqlConfig(AdditionalConfig):
             autocommit=True,
         )
         return cursor.connection
-
-    def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
-        """Provide the connection details for the MySQL database."""
-        try:
-            port = environment.get("db_port")
-        except:
-            port = 3306
-
-        try:
-            ssl_ca = environment.get("db_ssl_ca")
-        except:
-            ssl_ca = None
-
-        return {
-            "username": environment.get("db_username"),
-            "password": environment.get("db_password"),
-            "host": environment.get("db_host"),
-            "database": environment.get("db_database"),
-            "port": port,
-            "ssl_ca": ssl_ca,
-        }
-
-    def provide_cursor(self, connection: "Connection") -> "Cursor":
-        """Provide a MySQL cursor from the given connection."""
-        return connection.cursor()

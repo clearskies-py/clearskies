@@ -32,42 +32,54 @@ class MysqlCursor(base_cursor.BaseCursor):
         password: str | None = None,
         autocommit: bool | None = None,
         ssl_ca: str | None = None,
+        parameter_style: str | None = None,
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     def configure(self) -> None:
         """Configure the cursor."""
         super().configure()
-        if self.environment.get("database_host", True):
-            self.host = self.environment.get("database_host")
-        if self.environment.get("database_port", True):
-            self.port = self.environment.get("database_port")
-        if self.environment.get("database_username", True):
-            self.username = self.environment.get("database_username")
-        if self.environment.get("database_password", True):
-            self.password = self.environment.get("database_password")
-        if self.environment.get("database_autocommit", True):
-            self.autocommit = self.environment.get("database_autocommit")
-        if self.environment.get("database_ssl_ca", True):
-            self.ssl_ca = self.environment.get("database_ssl_ca")
+
+        # Check if environment has been injected
+        try:
+            environment = object.__getattribute__(self, "environment")
+        except AttributeError:
+            # Environment not injected, skip configuration from environment
+            return
+
+        if environment.get("database_host", True):
+            self.host = environment.get("database_host")
+        if environment.get("database_port", True):
+            self.port = environment.get("database_port")
+        if environment.get("database_username", True):
+            self.username = environment.get("database_username")
+        if environment.get("database_password", True):
+            self.password = environment.get("database_password")
+        if environment.get("database_autocommit", True):
+            self.autocommit = environment.get("database_autocommit")
+        if environment.get("database_ssl_ca", True):
+            self.ssl_ca = environment.get("database_ssl_ca")
 
     @property
     def factory(self) -> ModuleType:
         """Return the factory for the cursor."""
-        if not hasattr(self, "_factory"):
+        try:
+            return object.__getattribute__(self, "_factory")
+        except AttributeError:
             try:
                 import pymysql
 
-                self._factory = pymysql
+                object.__setattr__(self, "_factory", pymysql)
+                return pymysql
             except:
                 raise ValueError(
                     "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
                 )
-        return self._factory
 
     @property
     def connection(self) -> "Connection":
         """Return the connection for the cursor."""
+        self.configure()
         return self.factory.connect(
             user=self.username,
             password=self.password,

@@ -905,18 +905,17 @@ class Di:
     def provide_mysql_cursor(self):
         from clearskies import cursors
 
-        return self.build_class(cursors.Mysql)
+        return cursors.MysqlCursor()
 
     def provide_postgresql_cursor(self):
         from clearskies import cursors
 
-        cursor = cursors.Postgresql()
-        return self.inject_properties(cursor)
+        return cursors.PostgresqlCursor()
 
     def provide_sqlite_cursor(self):
         from clearskies import cursors
 
-        return self.build_class(cursors.Sqlite)
+        return cursors.SqliteCursor()
 
     def provide_now(self):
         return datetime.datetime.now() if self._now is None else self._now

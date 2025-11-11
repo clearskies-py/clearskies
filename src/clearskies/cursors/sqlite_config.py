@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Any
 
+from clearskies.cursors.base_cursor import CursorProxy
+from clearskies.cursors.sqlite_cursor import SqliteCursor
 from clearskies.di import AdditionalConfig
 
 if TYPE_CHECKING:
-    from sqlite3 import Connection, Cursor
-
     from clearskies import Environment
 
 
@@ -15,32 +15,17 @@ class SqliteConfig(AdditionalConfig):
         """Return the type of cursor backend this config is for."""
         return "sqlite"
 
-    def provide_connection_no_autocommit(self, connection_details: dict[str, Any]) -> "Connection":
-        """Provide a SQLite connection with autocommit disabled."""
-        from clearskies.cursors.sqlite_cursor import SqliteCursor
-
-        cursor = SqliteCursor(
-            database_name=connection_details["database_name"],
-            autocommit=False,
-        )
-        return cursor.connection
-
-    def provide_connection(self, connection_details: dict[str, Any]) -> "Connection":
-        """Provide a SQLite connection with autocommit enabled."""
-        from clearskies.cursors.sqlite_cursor import SqliteCursor
-
-        cursor = SqliteCursor(
+    def provide_cursor(self, connection_details: dict[str, Any]) -> "CursorProxy":
+        """Provide a SQLite cursor proxy with autocommit enabled."""
+        cursor_config = SqliteCursor(
             database_name=connection_details["database_name"],
             autocommit=True,
         )
-        return cursor.connection
+        # Return the actual cursor proxy, not the config
+        return cursor_config()
 
     def provide_connection_details(self, environment: "Environment") -> dict[str, Any]:
         """Provide the connection details for the SQLite database."""
         return {
-            "database": environment.get("database_name") if environment.get("database_name", True) else ":memory:",
+            "database_name": environment.get("DATABASE_NAME") if environment.get("DATABASE_NAME", True) else ":memory:",
         }
-
-    def provide_cursor(self, connection: "Connection") -> "Cursor":
-        """Provide a SQLite cursor from the given connection."""
-        return connection.cursor()

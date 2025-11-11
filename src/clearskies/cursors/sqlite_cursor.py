@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
+from clearskies.configs import string
 from clearskies.cursors import base_cursor
 from clearskies.di import inject
 
@@ -13,30 +16,35 @@ class SqliteCursor(base_cursor.BaseCursor):
 
     cursor_type: str = "sqlite"
 
-    sys = inject.ByName("sys")  # type: ignore
+    parameter_style = string.String(required=False, default="qmark")
+
+    sys = inject.ByName("sys")
 
     @property
     def factory(self) -> ModuleType:
         """Return the factory for the cursor."""
-        if not hasattr(self, "_factory"):
+        try:
+            return object.__getattribute__(self, "_factory")
+        except AttributeError:
             try:
                 import sqlite3
 
-                self._factory = sqlite3
-            except:
-                raise ValueError(
-                    "The cursor requires sqlite3 to be available.  sqlite3 is included with the standard library for Python, so this error likely indicates a misconfigured Python installation."
-                )
-        return self._factory
+                object.__setattr__(self, "_factory", sqlite3)
+                return sqlite3
+            except ImportError as e:
+                raise ValueError(  # noqa: TRY003
+                    "The cursor requires sqlite3 to be available. sqlite3 is included with the standard library for Python, "
+                    f"so this error likely indicates a misconfigured Python installation. Error: {e}"
+                ) from e
 
     @property
-    def connection(self) -> "Connection":
+    def connection(self) -> Connection:
         """Provide a SQLite connection with autocommit disabled."""
         import sys
 
         def dict_factory(cursor, row):
             fields = [column[0] for column in cursor.description]
-            return {key: value for key, value in zip(fields, row)}
+            return dict(zip(fields, row))
 
         connection = self.factory.connect(
             database=self.database_name,
@@ -46,7 +54,7 @@ class SqliteCursor(base_cursor.BaseCursor):
         if not self.autocommit:
             """Sqlite autocommit is enabled by default, so only set isolation_level to None
             when autocommit is disabled."""
-            if sys.version_info > (3, 12):
+            if sys.version_info > (3, 12):  # noqa: UP036
                 connection.autocommit = False
             else:
                 connection.isolation_level = None  # Disable autocommit
