@@ -892,70 +892,9 @@ class Di:
     def provide_environment(self):
         return Environment(os.getcwd() + "/.env", os.environ, {})
 
-    def provide_connection_no_autocommit(self, connection_details):
-        # I should probably just switch things so that autocommit is *off* by default
-        # and only have one of these, but for now I'm being lazy.
-        try:
-            import pymysql
-        except:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
-
-        return pymysql.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 3306),
-            ssl_ca=connection_details.get("ssl_ca", None),
-            autocommit=False,
-            connect_timeout=2,
-            cursorclass=pymysql.cursors.DictCursor,
-        )
-
-    def provide_connection(self, connection_details):
-        try:
-            import pymysql
-        except:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
-
-        return pymysql.connect(
-            user=connection_details["username"],
-            password=connection_details["password"],
-            host=connection_details["host"],
-            database=connection_details["database"],
-            port=connection_details.get("port", 3306),
-            ssl_ca=connection_details.get("ssl_ca", None),
-            autocommit=True,
-            connect_timeout=2,
-            cursorclass=pymysql.cursors.DictCursor,
-        )
-
-    def provide_connection_details(self, environment):
-        try:
-            port = environment.get("db_port")
-        except:
-            port = 3306
-
-        try:
-            ssl_ca = environment.get("db_ssl_ca")
-        except:
-            ssl_ca = None
-
-        return {
-            "username": environment.get("db_username"),
-            "password": environment.get("db_password"),
-            "host": environment.get("db_host"),
-            "database": environment.get("db_database"),
-            "port": port,
-            "ssl_ca": ssl_ca,
-        }
-
     def provide_cursor(self, connection):
-        return connection.cursor()
+        from clearskies.secrets.from_environment import MySql
+        return MySql()
 
     def provide_now(self):
         return datetime.datetime.now() if self._now is None else self._now

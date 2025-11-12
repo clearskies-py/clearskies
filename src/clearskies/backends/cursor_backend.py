@@ -116,49 +116,47 @@ class CursorBackend(Backend, InjectableProperties):
     """
 
     supports_n_plus_one = True
-    cursor = inject.ByName("cursor")
     global_table_prefix = inject.ByName("global_table_prefix")
-    table_escape_character = "`"
-    column_escape_character = "`"
-    table_prefix = ""
+    di = inject.Di()
 
-    def __init__(self, table_escape_character="`", column_escape_character="`", table_prefix=""):
-        self.table_escape_character = table_escape_character
+    def __init__(self, cursor_dependency_name="cursor", table_prefix=""):
+        cursor.table_escape_character = table_escape_character
         self.column_escape_character = column_escape_character
         self.table_prefix = table_prefix
+        self.cursor = di.build_from_name(cursor_dependency_name)
 
     def _finalize_table_name(self, table_name):
         table_name = f"{self.global_table_prefix}{self.table_prefix}{table_name}"
         if "." not in table_name:
-            return f"{self.table_escape_character}{table_name}{self.table_escape_character}"
+            return f"{self.cursor.table_escape_character}{table_name}{self.cursor.table_escape_character}"
         return (
-            self.table_escape_character
-            + f"{self.table_escape_character}.{self.table_escape_character}".join(table_name.split("."))
-            + self.table_escape_character
+            self.cursor.table_escape_character
+            + f"{self.cursor.table_escape_character}.{self.cursor.table_escape_character}".join(table_name.split("."))
+            + self.cursor.table_escape_character
         )
 
     def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
         query_parts = []
         parameters = []
-        escape = self.column_escape_character
         for key, val in data.items():
-            query_parts.append(f"{escape}{key}{escape}=%s")
+            query_parts.append(self.cursor.column_equals_with_placeholder(key))
             parameters.append(val)
         updates = ", ".join(query_parts)
 
         # update the record
         table_name = self._finalize_table_name(model.destination_name())
+        id_equals = self.cursor.column_equals_with_placeholder(model.id_column_name)
         self.cursor.execute(
-            f"UPDATE {table_name} SET {updates} WHERE {model.id_column_name}=%s", tuple([*parameters, id])
+            f"UPDATE {table_name} SET {updates} WHERE {id_equals}", tuple([*parameters, id])
         )
 
         # and now query again to fetch the updated record.
         return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))[0]
 
     def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
-        escape = self.column_escape_character
+        escape = self.cursor.column_escape_character
         columns = escape + f"{escape}, {escape}".join(data.keys()) + escape
-        placeholders = ", ".join(["%s" for i in range(len(data))])
+        placeholders = ", ".join([self.cursor.value_placeholder for i in range(len(data))])
 
         table_name = self._finalize_table_name(model.destination_name())
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", tuple(data.values()))
@@ -172,7 +170,8 @@ class CursorBackend(Backend, InjectableProperties):
 
     def delete(self, id: int | str, model: Model) -> bool:
         table_name = self._finalize_table_name(model.destination_name())
-        self.cursor.execute(f"DELETE FROM {table_name} WHERE {model.id_column_name}=%s", (id,))
+        id_equals = self.cursor.column_equals_with_placeholder(model.id_column_name)
+        self.cursor.execute(f"DELETE FROM {table_name} WHERE {id_equals}", (id,))
         return True
 
     def count(self, query: Query) -> int:
@@ -196,7 +195,7 @@ class CursorBackend(Backend, InjectableProperties):
         return records
 
     def as_sql(self, query: Query) -> tuple[str, tuple[Any]]:
-        escape = self.column_escape_character
+        escape = self.query.column_escape_character
         table_name = query.model_class.destination_name()
         (wheres, parameters) = self.conditions_as_wheres_and_parameters(
             query.conditions, query.model_class.destination_name()
@@ -278,6 +277,7 @@ class CursorBackend(Backend, InjectableProperties):
                     condition.operator,
                     condition.values,
                     escape=False,
+                    placeholder=self.cursor.value_placeholder,
                 )
             )
         return (" WHERE " + " AND ".join(where_parts), tuple(parameters))  # type: ignore
@@ -285,7 +285,7 @@ class CursorBackend(Backend, InjectableProperties):
     def group_by_clause(self, group_by: str) -> str:
         if not group_by:
             return ""
-        escape = self.column_escape_character
+        escape = self.cursor.column_escape_character
         if "." not in group_by:
             return f" GROUP BY {escape}{group_by}{escape}"
         parts = group_by.split(".", 1)
