@@ -17,7 +17,7 @@ class HealthCheckTest(unittest.TestCase):
 
     def test_failure(self):
         context = clearskies.contexts.Context(
-            clearskies.endpoints.HealthCheck(dependency_injection_names=["cursor"]),
+            clearskies.endpoints.HealthCheck(dependency_injection_names=["non_existent"]),
         )
         (status_code, response_data, response_headers) = context()
 
@@ -26,7 +26,7 @@ class HealthCheckTest(unittest.TestCase):
 
     def test_classes(self):
         class MyClass:
-            def __init__(self, cursor):
+            def __init__(self, non_existent):
                 pass
 
         context = clearskies.contexts.Context(
@@ -38,7 +38,7 @@ class HealthCheckTest(unittest.TestCase):
         assert response_data["status"] == "failure"
 
     def test_callables(self):
-        def my_function(cursor):
+        def my_function(non_existent):
             pass
 
         context = clearskies.contexts.Context(

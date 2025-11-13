@@ -31,18 +31,16 @@ class Mysql(Cursor):
     @property
     def factory(self) -> ModuleType:
         """Return the factory for the cursor."""
-        if hasattr(self, "_factory"):
-            return self._factory
+        if not hasattr(self, "_factory"):
+            try:
+                import pymysql
 
-        try:
-            import pymysql
-
-            self._factory = pymysql
-            return self._factory
-        except ImportError:
-            raise ValueError(
-                "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
-            )
+                self._factory = pymysql
+            except ImportError:
+                raise ValueError(
+                    "The cursor requires pymysql to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[mysql]'`"
+                )
+        return self._factory
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {

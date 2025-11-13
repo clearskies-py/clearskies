@@ -205,7 +205,7 @@ class Condition:
             return f"{quote}{column}{quote} {upper_case_operator} {placeholder}"
 
         # the only thing left is "in" which has a variable number of placeholders
-        return f"{quote}{column}{quote} IN (" + ", ".join([{placeholder} for i in range(len(values))]) + ")"
+        return f"{quote}{column}{quote} IN ({', '.join([placeholder for i in range(len(values))])})"
 
 
 class ParsedCondition(Condition):

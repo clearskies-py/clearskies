@@ -87,9 +87,20 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
 
             self._cursor = self.factory.connect(
                 **self.build_connection_kwargs(),
-            )
+            ).cursor()
 
         return self._cursor
+
+    def __call__(self, *args: configurable.Any, **kwds: configurable.Any) -> configurable.Any:
+        return self.cursor
+
+    def __iter__(self):
+        """Allow direct iteration over the cursor config."""
+        return iter(self())
+
+    def __next__(self):
+        """Allow direct next() calls on the cursor config."""
+        return next(self())
 
     def port_forwarding_context(self):
         """Context manager for port forwarding (if applicable)."""

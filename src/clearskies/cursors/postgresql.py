@@ -31,18 +31,16 @@ class Postgresql(Cursor):
     @property
     def factory(self) -> ModuleType:
         """Return the factory for the cursor."""
-        try:
-            return object.__getattribute__(self, "_factory")
-        except AttributeError:
+        if not hasattr(self, "_factory"):
             try:
                 import psycopg
 
-                object.__setattr__(self, "_factory", psycopg)
-                return psycopg
+                self._factory = psycopg
             except ImportError:
                 raise ValueError(
                     "The cursor requires psycopg to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[pgsql]'`"
                 )
+        return self._factory
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {
