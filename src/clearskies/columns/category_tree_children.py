@@ -99,7 +99,7 @@ class CategoryTreeChildren(Column):
             search_on = parent_id_column_name
 
         # if we can join then use a join.
-        if category_tree_column.load_relatives_strategy:
+        if category_tree_column.load_relatives_strategy == "join":
             relatives = category_tree_column.parent_model.join(
                 f"JOIN {tree_table_name} as tree on tree.{join_on}={model_table_name}.{id_column_name}"
             )
@@ -116,7 +116,7 @@ class CategoryTreeChildren(Column):
             branches = branches.where(f"{is_parent_column_name}=1")
         if find_parents:
             branches = branches.sort_by(level_column_name, "asc")
-        ids = [str(branch.get(join_on)) for branch in branches]
+        ids = [str(getattr(branch, join_on)) for branch in branches]
 
         # Can we search with a WHERE IN() clause?  If the backend supports it, it is probably faster
         if category_tree_column.load_relatives_strategy == "where_in":
