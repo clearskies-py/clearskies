@@ -892,8 +892,9 @@ class Di:
     def provide_environment(self):
         return Environment(os.getcwd() + "/.env", os.environ, {})
 
-    def provide_cursor(self, connection):
-        from clearskies.secrets.from_environment import MySql
+    def provide_cursor(self):
+        from clearskies.cursors.from_environment import MySql
+
         return MySql()
 
     def provide_now(self):
