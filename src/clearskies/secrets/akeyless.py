@@ -12,7 +12,7 @@ from clearskies.functional.json import get_nested_attribute
 from clearskies.secrets.exceptions import PermissionsError
 
 if TYPE_CHECKING:
-    from akeyless import ListItemsOutput, V2Api
+    from akeyless import ListItemsOutput, V2Api  # type: ignore[import-untyped]
 
 
 class Akeyless(secrets.Secrets):

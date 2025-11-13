@@ -192,20 +192,20 @@ class Condition:
         # note: this is not very smart and will mess things up if there are single quotes/commas in the data
         return list(map(lambda value: value.strip().strip("'"), value[1:-1].split(",")))
 
-    def _with_placeholders(self, column, operator, values, escape=True, escape_character="`"):
+    def _with_placeholders(self, column, operator, values, escape=True, escape_character="`", placeholder="%s"):
         quote = escape_character if escape else ""
         column = column.replace("`", "")
         upper_case_operator = operator.upper()
         lower_case_operator = operator.lower()
         if lower_case_operator in self.operators_with_simple_placeholders:
-            return f"{quote}{column}{quote}{upper_case_operator}%s"
+            return f"{quote}{column}{quote}{upper_case_operator}{placeholder}"
         if lower_case_operator in self.operators_without_placeholders:
             return f"{quote}{column}{quote} {upper_case_operator}"
         if lower_case_operator == "is" or lower_case_operator == "is not" or lower_case_operator == "like":
-            return f"{quote}{column}{quote} {upper_case_operator} %s"
+            return f"{quote}{column}{quote} {upper_case_operator} {placeholder}"
 
         # the only thing left is "in" which has a variable number of placeholders
-        return f"{quote}{column}{quote} IN (" + ", ".join(["%s" for i in range(len(values))]) + ")"
+        return f"{quote}{column}{quote} IN ({', '.join([placeholder for i in range(len(values))])})"
 
 
 class ParsedCondition(Condition):

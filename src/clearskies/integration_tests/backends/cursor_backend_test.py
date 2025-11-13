@@ -20,6 +20,9 @@ class CursorBackendTest(unittest.TestCase):
         cursor.execute = MagicMock()
         cursor.execute.side_effect = [None, None]
         cursor.__iter__ = lambda self: [{"id": "1-2-3-4"}].__iter__()
+        cursor.value_placeholder = "%s"
+        cursor.table_escape_character = "`"
+        cursor.column_escape_character = "`"
 
         uuid = MagicMock()
         uuid.uuid4 = MagicMock(return_value=["1-2-3-4"])

@@ -18,6 +18,7 @@ classifiers = [
 secrets = ['akeyless (>=4.0.0,<5.0.0)', 'akeyless-cloud-id (>=0.2.3,<0.3.0)']
 mysql = ['pymysql (>=1.1.0,<2.0.0)']
 jwcrypto = ['jwcrypto (>=1.5.6,<2.0.0)']
+pgsql = ['psycopg[binary] (>=3.1.10,<4.0.0)']
 
 [project.urls]
 Documentation = "https://clearskies.io/"
@@ -41,6 +42,9 @@ dev = [
 ]
 docs = [
     "clear-skies-doc-builder>=2.0.4",
+]
+test = [
+    "pytest-postgresql>=7.0.2",
 ]
 
 [build-system]
@@ -77,12 +81,12 @@ addopts = "-ra -q --ignore=src/clearskies/contexts/test.py --cache-clear"
 testpaths = [
     "tests",
     "integration",
+    "src",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "broken: marks tests as broken (deselect with '-m \"not broken\"')",
 ]
 pythonpath = [
   "app"
 ]
-
-# Add a specific rule for wrapt
-[[tool.mypy.overrides]]
-module = "wrapt"
-ignore_missing_imports = true
