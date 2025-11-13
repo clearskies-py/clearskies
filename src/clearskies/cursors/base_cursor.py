@@ -228,6 +228,7 @@ class BaseCursor(ABC, configurable.Configurable, injectable_properties.Injectabl
             "close",
             "description",
             "rowcount",
+            "lastrowid",
             "arraysize",
             "callproc",
             "nextset",
