@@ -210,6 +210,7 @@ class Di:
     _added_modules: dict[int, bool] = {}
     _additional_configs: list[AdditionalConfig] = []
     _bindings: dict[str, Any] = {}
+    _from_bindings: dict[str, bool] = {}
     _building: dict[int, str] = {}
     _classes: dict[str, dict[str, int | type]] = {}
     _prepared: dict[str, Any] = {}
@@ -249,6 +250,7 @@ class Di:
         self._added_modules = {}
         self._additional_configs = []
         self._bindings = {}
+        self._from_bindings = {}
         self._building = {}
         self._classes = {}
         self._class_overrides_by_name = {}
@@ -480,6 +482,7 @@ class Di:
             raise KeyError(f"Attempt to set binding for '{key}' while '{key}' was already being built")
 
         # classes are placed in self._bindings, but any other prepared value goes straight into self._prepared
+        self._from_bindings[key] = True
         if inspect.isclass(value):
             self._bindings[key] = value
             if key in self._prepared:
@@ -588,7 +591,7 @@ class Di:
           3. An AdditionalConfig class with a corresponding `provide_[name]` function
           4. The Di class itself if it has a matching `provide_[name]` function (aka the builtins)
         """
-        if name in self._prepared and cache:
+        if name in self._prepared and (cache or name in self._from_bindings):
             self.inject_properties(self._prepared[name].__class__)
             return self._prepared[name]
 
@@ -616,12 +619,14 @@ class Di:
             if not additional_config.can_build(name):
                 continue
             built_value = additional_config.build(name, self, context if context else "")
+            self.inject_properties(built_value.__class__)
             if cache and additional_config.can_cache(name, self, context if context else ""):
                 self._prepared[name] = built_value
             return built_value
 
         if hasattr(self, f"provide_{name}"):
             built_value = self.call_function(getattr(self, f"provide_{name}"))
+            self.inject_properties(built_value.__class__)
             if cache and self.can_cache(name, context if context else ""):
                 self._prepared[name] = built_value
             return built_value
