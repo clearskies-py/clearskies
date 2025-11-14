@@ -59,6 +59,7 @@ exclude = [
     "src/clearskies/*_test.py",
     "src/clearskies/**/*_test.py",
     "src/clearskies/integration_tests/*",
+    "tests/*",
     "docs/**"
 ]
 
@@ -77,16 +78,14 @@ exclude = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q --ignore=src/clearskies/contexts/test.py --cache-clear"
+addopts = "-ra -q --showlocals --tb=long"
 testpaths = [
     "tests",
     "integration",
-    "src",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "broken: marks tests as broken (deselect with '-m \"not broken\"')",
 ]
 pythonpath = [
-  "app"
+  "src"
+]
+markers = [
+    "broken: marks tests as currently broken/failing"
 ]
