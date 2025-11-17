@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.18] - 2025-11-17
+
+### Added
+- Add default profile for Akeyless
+
 ## [2.0.17] - 2025-11-17
 
 ### Changed
+- Bump version to v2.0.17 by @github-actions[bot]
 - Connections take three by @tnijboer in [#33](https://github.com/clearskies-py/clearskies/pull/33)
 - Use bindings with caching off, more injectable properties by @cmancone in [#34](https://github.com/clearskies-py/clearskies/pull/34)
 
@@ -866,6 +872,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.18]: https://github.com/clearskies-py/clearskies/compare/v2.0.17..v2.0.18
 [2.0.17]: https://github.com/clearskies-py/clearskies/compare/v2.0.16..v2.0.17
 [2.0.16]: https://github.com/clearskies-py/clearskies/compare/v2.0.15..v2.0.16
 [2.0.15]: https://github.com/clearskies-py/clearskies/compare/v2.0.14..v2.0.15
