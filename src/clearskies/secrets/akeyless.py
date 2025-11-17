@@ -72,7 +72,7 @@ class Akeyless(secrets.Secrets):
 
     Must match the pattern [0-9a-zA-Z-]+ if provided
     """
-    profile = configs.String(regexp=r"^[\d\w-]+$")
+    profile = configs.String(regexp=r"^[\d\w-]+$", default="default")
 
     """
     Whether to automatically guess the secret type
