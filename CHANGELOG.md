@@ -5,11 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.17] - 2025-11-17
+
+### Changed
+- Connections take three by @tnijboer in [#33](https://github.com/clearskies-py/clearskies/pull/33)
+- Use bindings with caching off, more injectable properties by @cmancone in [#34](https://github.com/clearskies-py/clearskies/pull/34)
+
+### Fixed
+- Move all tests to the tests folder by @cmancone in [#36](https://github.com/clearskies-py/clearskies/pull/36)
+- Move all tests to the tests folder
+- Use getattr instead of .get on model by @tnijboer in [#35](https://github.com/clearskies-py/clearskies/pull/35)
+
 ## [2.0.16] - 2025-10-16
 
 ### Added
 - Add json attribute to api backend by @cmancone in [#30](https://github.com/clearskies-py/clearskies/pull/30)
 - Add json attribute to api backend
+
+### Changed
+- Bump version to v2.0.16 by @github-actions[bot]
 
 ### Fixed
 - Reorder map_records_response
@@ -852,6 +866,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.17]: https://github.com/clearskies-py/clearskies/compare/v2.0.16..v2.0.17
 [2.0.16]: https://github.com/clearskies-py/clearskies/compare/v2.0.15..v2.0.16
 [2.0.15]: https://github.com/clearskies-py/clearskies/compare/v2.0.14..v2.0.15
 [2.0.14]: https://github.com/clearskies-py/clearskies/compare/v2.0.13..v2.0.14
