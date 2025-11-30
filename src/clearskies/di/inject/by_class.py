@@ -18,6 +18,7 @@ class ByClass(Injectable):
         if instance is None:
             return self  # type: ignore
 
+        self.initiated_guard(instance)
         if self.cls in self._di._class_overrides_by_class:
             return self._di.build_class(self._di._class_overrides_by_class[self.cls], cache=self.cache)
         return self._di.build_class(self.cls, cache=self.cache)

@@ -12,4 +12,5 @@ class Di(Injectable):
     def __get__(self, instance, parent) -> Any:
         if instance is None:
             return self  # type: ignore
+        self.initiated_guard(instance)
         return self._di

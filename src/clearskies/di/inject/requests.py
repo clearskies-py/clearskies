@@ -12,4 +12,5 @@ class Requests(Injectable):
     def __get__(self, instance, parent) -> requests.Session:
         if instance is None:
             return self  # type: ignore
+        self.initiated_guard(instance)
         return self._di.build_from_name("requests", cache=self.cache)

@@ -21,6 +21,8 @@ class InputOutput(ABC, configurable.Configurable):
     routing_data = configs.StringDict(default={})
     authorization_data = configs.AnyDict(default={})
     request_method = configs.Select(["GET", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
+    supports_request_method = configs.Boolean(default=True)
+    supports_url = configs.Boolean(default=True)
 
     _body_as_json: dict[str, Any] | list[Any] | None = {}
     _body_loaded_as_json = False

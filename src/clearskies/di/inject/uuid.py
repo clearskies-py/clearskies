@@ -12,4 +12,5 @@ class Uuid(Injectable):
     def __get__(self, instance, parent) -> types.ModuleType:
         if instance is None:
             return self  # type: ignore
+        self.initiated_guard(instance)
         return self._di.build_from_name("uuid", cache=self.cache)  # type: ignore

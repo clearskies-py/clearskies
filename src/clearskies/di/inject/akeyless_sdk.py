@@ -12,4 +12,5 @@ class AkeylessSDK(Injectable):
     def __get__(self, instance, parent) -> ModuleType:
         if instance is None:
             return self  # type: ignore
+        self.initiated_guard(instance)
         return self._di.build_from_name("akeyless_sdk", cache=self.cache)
