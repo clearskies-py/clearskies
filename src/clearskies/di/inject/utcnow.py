@@ -12,4 +12,5 @@ class Utcnow(Injectable):
     def __get__(self, instance, parent) -> datetime.datetime:
         if instance is None:
             return self  # type: ignore
+        self.initiated_guard(instance)
         return self._di.build_from_name("utcnow", cache=self.cache)

@@ -967,37 +967,42 @@ class Endpoint(
 
     def matches_request(self, input_output: InputOutput, allow_partial=False) -> bool:
         """Whether or not we can handle an incoming request based on URL and request method."""
-        # soo..... this excessively duplicates the logic in __call__, but I'm being lazy right now
+        # soo..... this excessively duplicates the logic in populate_routing_data, but I'm being lazy right now
         # and not fixing it.
-        request_method = input_output.request_method.upper()
-        if request_method == "OPTIONS":
-            return True
-        if request_method not in self.request_methods:
-            return False
-        expected_url = self.url.strip("/")
-        incoming_url = input_output.get_full_path().strip("/")
-        if not expected_url and not incoming_url:
-            return True
+        if input_output.supports_request_method:
+            request_method = input_output.request_method.upper()
+            if request_method == "OPTIONS":
+                return True
+            if request_method not in self.request_methods:
+                return False
+        if input_output.supports_url:
+            expected_url = self.url.strip("/")
+            incoming_url = input_output.get_full_path().strip("/")
+            if not expected_url and not incoming_url:
+                return True
 
-        matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
-        return matches
+            matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
+            return matches
+        return True
 
     def populate_routing_data(self, input_output: InputOutput) -> Any:
         # matches_request is only checked by the endpoint group, not by the context.  As a result, we need to check our
         # route.  However we always have to check our route anyway because the full routing data can only be figured
         # out at the endpoint level, so calling out to routing.mattch_route is unavoidable.
-        request_method = input_output.request_method.upper()
-        if request_method == "OPTIONS":
-            return self.cors(input_output)
-        if request_method not in self.request_methods:
-            return self.error(input_output, "Not Found", 404)
-        expected_url = self.url.strip("/")
-        incoming_url = input_output.get_full_path().strip("/")
-        if expected_url or incoming_url:
-            matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=False)
-            if not matches:
+        if input_output.supports_request_method:
+            request_method = input_output.request_method.upper()
+            if request_method == "OPTIONS":
+                return self.cors(input_output)
+            if request_method not in self.request_methods:
                 return self.error(input_output, "Not Found", 404)
-            input_output.routing_data = routing_data
+        if input_output.supports_url:
+            expected_url = self.url.strip("/")
+            incoming_url = input_output.get_full_path().strip("/")
+            if expected_url or incoming_url:
+                matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=False)
+                if not matches:
+                    return self.error(input_output, "Not Found", 404)
+                input_output.routing_data = routing_data
 
     def failure(self, input_output: InputOutput) -> Any:
         return self.respond_json(input_output, {"status": "failure"}, 500)
