@@ -51,12 +51,12 @@ class Sqlite(Cursor):
                 timeout=2.0,
             )
             connection.row_factory = dict_factory
-            if not self.autocommit:
-                """Sqlite autocommit is enabled by default, so only set isolation_level to None
-                when autocommit is disabled."""
+            if self.autocommit:
+                connection.isolation_level = None  # Enable autocommit for sqlite3
+            else:
                 if self.sys.version_info > (3, 12):  # noqa: UP036
                     connection.autocommit = False
                 else:
-                    connection.isolation_level = None  # Disable autocommit
+                    connection.isolation_level = "DEFERRED"  # Disable autocommit
             self._cursor = connection.cursor()
         return self._cursor  # type: ignore[return-value]

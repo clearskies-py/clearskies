@@ -150,3 +150,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
             Result of cursor.execute().
         """
         return self.cursor.execute(sql, parameters)
+
+    @property
+    def lastrowid(self):
+        return getattr(self.cursor, "lastrowid", None)
