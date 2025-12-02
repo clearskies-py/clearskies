@@ -117,7 +117,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
         -------
             SQL string in format: `column`=%s
         """
-        return f"{self.column_escape_character}{column_name}={self.value_placeholder}"
+        return f"{self.column_escape_character}{column_name}{self.column_escape_character}={self.value_placeholder}"
 
     def as_sql_with_placeholders(self, table: str, column: str, operator: str, number_values: int = 1) -> str | None:
         """
@@ -149,4 +149,9 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
         -------
             Result of cursor.execute().
         """
+        print(f"Executing SQL: {sql} with parameters: {parameters}")
         return self.cursor.execute(sql, parameters)
+
+    @property
+    def lastrowid(self):
+        return getattr(self.cursor, "lastrowid", None)
