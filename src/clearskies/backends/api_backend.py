@@ -967,7 +967,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         for api_key, column_name in self.api_to_model_map.items():
             if not "." in api_key:
                 continue
-            value = json_functional.get_nested_attribute(response_data, api_key)
+            try:
+                value = json_functional.get_nested_attribute(response_data, api_key)
+            except KeyError:
+                # If the nested attribute is not found, just continue to the next key
+                continue
             if value is None:
                 continue
             if isinstance(column_name, list):

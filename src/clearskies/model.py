@@ -265,6 +265,17 @@ class Model(Schema, InjectableProperties):
         self.no_queries()
         return self._data
 
+    def get_columns_data(self: Self, overrides: dict[str, Column] = {}, include_all=False) -> dict[str, Any]:
+        self.no_queries()
+        columns = self.get_columns(overrides=overrides).values()
+        if columns is None:
+            return {}
+        return {
+            column.name: getattr(self, column.name)
+            for column in columns
+            if column.is_readable and (column.name in self._data or include_all)
+        }
+
     def set_raw_data(self: Self, data: dict[str, Any]) -> None:
         self.no_queries()
         self._data = {} if data is None else data
