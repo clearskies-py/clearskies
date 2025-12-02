@@ -98,12 +98,12 @@ class Condition:
         "<",
         "=",
         "in",
-        "not in",
         "is not null",
         "is null",
         "is not",
         "is",
         "like",
+        "not in",
     ]
 
     operator_lengths: dict[str, int] = {
@@ -115,12 +115,12 @@ class Condition:
         "<": 1,
         "=": 1,
         "in": 4,
-        "not in": 8,
         "is not null": 12,
         "is null": 8,
         "is not": 8,
         "is": 4,
         "like": 6,
+        "not in": 8,
     }
 
     # some operators require spaces around them
