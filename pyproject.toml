@@ -1,7 +1,7 @@
 [project]
 name = "clear-skies"
 description = "A framework for building backends in the cloud"
-version = "2.0.19"
+version = "2.0.20"
 license = "MIT"
 readme = "./README.md"
 authors = [{name = "Conor Mancone", email = "cmancone@gmail.com"}]
