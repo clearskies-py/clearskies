@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from types import ModuleType
 from typing import Protocol
@@ -61,6 +62,11 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
         connect_timeout=2,
     ):
         pass
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Return the logger for this cursor."""
+        return logging.getLogger(self.__class__.__name__)
 
     @property
     def factory(self) -> ModuleType:
@@ -137,7 +143,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
             return f"{table}.{column} {operator} {self.value_placeholder}"
         return None
 
-    def execute(self, sql: str, parameters: tuple | list):
+    def execute(self, sql: str, parameters: tuple | list = ()):
         """
         Execute a SQL statement with parameters.
 
@@ -149,8 +155,11 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
         -------
             Result of cursor.execute().
         """
-        print(f"Executing SQL: {sql} with parameters: {parameters}")
-        return self.cursor.execute(sql, parameters)
+        try:
+            return self.cursor.execute(sql, parameters)
+        except Exception as e:
+            self.logger.exception(f"Error executing SQL: {sql} with parameters: {parameters}")
+            raise
 
     @property
     def lastrowid(self):

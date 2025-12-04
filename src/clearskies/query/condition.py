@@ -103,6 +103,7 @@ class Condition:
         "is not",
         "is",
         "like",
+        "not in",
     ]
 
     operator_lengths: dict[str, int] = {
@@ -119,12 +120,14 @@ class Condition:
         "is not": 8,
         "is": 4,
         "like": 6,
+        "not in": 8,
     }
 
     # some operators require spaces around them
     operators_for_matching: dict[str, str] = {
         "like": " like ",
         "in": " in ",
+        "not in": " not in ",
         "is not null": " is not null",
         "is null": " is null",
         "is": " is ",
@@ -203,6 +206,8 @@ class Condition:
             return f"{quote}{column}{quote} {upper_case_operator}"
         if lower_case_operator == "is" or lower_case_operator == "is not" or lower_case_operator == "like":
             return f"{quote}{column}{quote} {upper_case_operator} {placeholder}"
+        if lower_case_operator == "not in":
+            return f"{quote}{column}{quote} NOT IN ({', '.join([placeholder for i in range(len(values))])})"
 
         # the only thing left is "in" which has a variable number of placeholders
         return f"{quote}{column}{quote} IN ({', '.join([placeholder for i in range(len(values))])})"
