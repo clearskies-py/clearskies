@@ -294,6 +294,19 @@ class HasMany(Column):
     """
     Additional conditions to add to searches on the child table.
 
+    There are two ways to specify conditions for `where`.  You can provide a static search condition
+    which can come in the form of a string with an sql-like where clause (e.g. `age>5`) or a
+    `clearskies.query.Condition` object, which is typically built using the appropriate method on the
+    model columns (e.g. `User.age.greater_than(5)`.  Finally, you can provide a callable which will
+    be invoked when the query on the child model is being built.  Your callable will be passed the
+    child model, as well as the parent model, and should then add additional conditions as needed
+    and return the modified qurey on the child model.
+
+    ### Example: Providing Conditions
+
+    The below example shows adding conditions with both an sql-like string and a condition object.
+    Note that `where` can be either a list or a single condition.
+
     ```python
     import clearskies
 
@@ -343,8 +356,7 @@ class HasMany(Column):
         cli()
     ```
 
-    The above example shows two different ways of adding conditions.  Note that `where` can be either a list or a single
-    condition.  If you invoked this you would get:
+    If you invoked this you would get:
 
     ```json
     {
@@ -362,9 +374,11 @@ class HasMany(Column):
     }
     ```
 
-    Finally, an individual condition can also be a callable that accepts the child model class, adds any desired conditions,
-    and then returns the modified model class.  Like usual, this callable can request any defined depenency.  So, for
-    instance, the following column definition is equivalent to the example above:
+    ### Example: Providing Callables
+
+    The below example shows how to provide a callable to the where.  In this example we show the use
+    of a lambda function, but of course it could be a more standard function or any other callable.
+    The final conditions are identitical to the example above, so the end result is the same.
 
     ```python
     class User(clearskies.Model):
@@ -375,6 +389,16 @@ class HasMany(Column):
             where=lambda model: model.where("status=Open").where("total>100"),
         )
     ```
+
+    Note that your callable should always accept an argument named `model`.  This will be an instance
+    of your child model class and holds the query being built to find child models.  Before your callable
+    is invoked, the HasMany column will already have added the necessary condition to filter child records
+    down to the ones related to the parent in question.  Therefore, your callable just needs to add
+    in any extra conditions you might want.  You can also accept an argument named `parent` which will
+    be populated by the model instance for the specific parent that clearskies is working with.  This
+    can be helpful if you need to filter on more than one column from the parent model.  Finally, you
+    can request any additional args or kwargs defined in the dependency injection system, including
+    any named values provided by the context.
     """
     where = configs.Conditions()
 
@@ -454,7 +478,9 @@ class HasMany(Column):
 
         for index, where in enumerate(self.where):
             if callable(where):
-                children = self.di.call_function(where, model=children, **self.input_output.get_context_for_callables())
+                children = self.di.call_function(
+                    where, model=children, parent=model, **self.input_output.get_context_for_callables()
+                )
                 if not validations.is_model(children):
                     raise ValueError(
                         f"Configuration error for column '{self.name}' in model '{self.model_class.__name__}': when 'where' is a callable, it must return a models class, but when the callable in where entry #{index + 1} was called, it did not return the models class"

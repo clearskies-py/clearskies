@@ -13,4 +13,9 @@ class HasOne(HasMany):
 
     _descriptor_config_map = None
 
-    pass
+    def __get__(self, model, cls):
+        if model is None:
+            self.model_class = cls
+            return self  # type:  ignore
+
+        return super().__get__(model, cls).first()
