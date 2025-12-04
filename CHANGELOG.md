@@ -5,11 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.21] - 2025-12-04
+
+### Fixed
+- Misc column bugs by @cmancone in [#41](https://github.com/clearskies-py/clearskies/pull/41)
+
 ## [2.0.20] - 2025-12-03
 
 ### Added
 - Add get_columns_data by @cmancone in [#39](https://github.com/clearskies-py/clearskies/pull/39)
 - Add get_columns_data
+
+### Changed
+- Bump version to v2.0.20 by @github-actions[bot]
 
 ### Fixed
 - Key error on api mapping
@@ -893,6 +901,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.21]: https://github.com/clearskies-py/clearskies/compare/v2.0.20..v2.0.21
 [2.0.20]: https://github.com/clearskies-py/clearskies/compare/v2.0.19..v2.0.20
 [2.0.19]: https://github.com/clearskies-py/clearskies/compare/v2.0.18..v2.0.19
 [2.0.18]: https://github.com/clearskies-py/clearskies/compare/v2.0.17..v2.0.18
