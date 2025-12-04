@@ -143,7 +143,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
             return f"{table}.{column} {operator} {self.value_placeholder}"
         return None
 
-    def execute(self, sql: str, parameters: tuple | list):
+    def execute(self, sql: str, parameters: tuple | list = ()):
         """
         Execute a SQL statement with parameters.
 
