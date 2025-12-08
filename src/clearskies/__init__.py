@@ -30,6 +30,10 @@ from .security_header import SecurityHeader
 from .validator import Validator
 from .loggable import Loggable
 
+import logging
+
+logging.getLogger(__name__)
+
 __all__ = [
     "Action",
     "authentication",
