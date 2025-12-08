@@ -936,3 +936,8 @@ class Di:
 
     def provide_endpoint_groups(self):
         return []
+
+    def provide_logger(self):
+        import logging
+
+        return logging.getLogger()
