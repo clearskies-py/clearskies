@@ -1078,6 +1078,10 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         if headers is None:
             headers = {}
 
+        self.logger.debug(
+            f"Executing {method} request to {url} with headers {headers} and json {json} (retry={is_retry})"
+        )
+
         if self.authentication:
             if not self._auth_injected:
                 self._auth_injected = True

@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Self
 
+from clearskies import loggable
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import string
 from clearskies.query import Condition, Join, Query, Sort
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from clearskies.backends import Backend
 
 
-class Model(Schema, InjectableProperties):
+class Model(Schema, InjectableProperties, loggable.Loggable):
     """
     A clearskies model.
 
