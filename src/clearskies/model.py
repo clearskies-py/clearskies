@@ -1729,17 +1729,28 @@ class Model(Schema, InjectableProperties):
     def __len__(self: Self):  # noqa: D105
         self.no_single_model()
         if self._count is None:
-            self._count = self.backend.count(self.get_query())
+            self._count = self.backend.count(self.get_final_query())
         return self._count
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105
         self.no_single_model()
         self._next_page_data = {}
         raw_rows = self.backend.records(
-            self.get_query(),
+            self.get_final_query(),
             next_page_data=self._next_page_data,
         )
         return iter([self.model(row) for row in raw_rows])
+
+    def get_final_query(self) -> Query:
+        """
+        Return the query to be used in a records/count operation.
+
+        Whenever the list of records/count is needed from the backend, this method is called
+        by the model to get the query that is sent to the backend.  As a result, you can extend
+        this method to make any final modifications to the query.  Any changes made here will
+        therefore be applied to all usage of the model.
+        """
+        return self.get_query()
 
     def paginate_all(self: Self) -> list[Self]:
         """
