@@ -3,6 +3,7 @@ from clearskies.di.inject.by_name import ByName
 from clearskies.di.inject.di import Di
 from clearskies.di.inject.environment import Environment
 from clearskies.di.inject.input_output import InputOutput
+from clearskies.di.inject.logger import Logger
 from clearskies.di.inject.now import Now
 from clearskies.di.inject.requests import Requests
 from clearskies.di.inject.secrets import Secrets
@@ -15,6 +16,7 @@ __all__ = [
     "Di",
     "Environment",
     "InputOutput",
+    "Logger",
     "Now",
     "Requests",
     "Secrets",

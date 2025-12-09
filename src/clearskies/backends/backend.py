@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable
 
+from clearskies import loggable
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 if TYPE_CHECKING:
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
     from clearskies.query import Query
 
 
-class Backend(ABC):
+class Backend(ABC, loggable.Loggable):
     """
     Connecting models to their data since 2020!.
 

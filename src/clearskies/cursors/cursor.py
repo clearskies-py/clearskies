@@ -1,10 +1,9 @@
-import logging
 from abc import ABC
 from types import ModuleType
 from typing import Protocol
 
 import clearskies.configs
-from clearskies import configurable, decorators
+from clearskies import configurable, decorators, loggable
 from clearskies.di import InjectableProperties
 
 
@@ -23,7 +22,7 @@ class DBAPICursor(Protocol):
         ...
 
 
-class Cursor(ABC, configurable.Configurable, InjectableProperties):
+class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Loggable):
     """
     Abstract base class for database cursor implementations.
 
@@ -62,11 +61,6 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
         connect_timeout=2,
     ):
         pass
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Return the logger for this cursor."""
-        return logging.getLogger(self.__class__.__name__)
 
     @property
     def factory(self) -> ModuleType:
@@ -156,6 +150,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties):
             Result of cursor.execute().
         """
         try:
+            self.logger.debug(f"Executing SQL: {sql} with parameters: {parameters}")
             return self.cursor.execute(sql, parameters)
         except Exception as e:
             self.logger.exception(f"Error executing SQL: {sql} with parameters: {parameters}")
