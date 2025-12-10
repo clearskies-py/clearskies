@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self
 
+from clearskies import loggable
+
 if TYPE_CHECKING:
     from clearskies import Model
     from clearskies.query import Condition, Join, Sort
 
 
-class Query:
+class Query(loggable.Loggable):
     """
     Track the various aspects of a query.
 

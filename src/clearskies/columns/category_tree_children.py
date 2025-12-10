@@ -97,7 +97,6 @@ class CategoryTreeChildren(Column):
         else:
             join_on = child_id_column_name
             search_on = parent_id_column_name
-
         # if we can join then use a join.
         if category_tree_column.load_relatives_strategy == "join":
             relatives = category_tree_column.parent_model.join(
