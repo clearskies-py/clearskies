@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.25] - 2025-12-10
+
+### Fixed
+- Don't overwrite the table name when there is a sort by @cmancone in [#44](https://github.com/clearskies-py/clearskies/pull/44)
+- Don't overwrite the table name when there is a sort
+
 ## [2.0.24] - 2025-12-09
 
 ### Added
 - Add logger by @tnijboer in [#42](https://github.com/clearskies-py/clearskies/pull/42)
+
+### Changed
+- Bump version to v2.0.24 by @github-actions[bot]
 
 ## [2.0.23] - 2025-12-09
 
@@ -921,6 +930,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.25]: https://github.com/clearskies-py/clearskies/compare/v2.0.24..v2.0.25
 [2.0.24]: https://github.com/clearskies-py/clearskies/compare/v2.0.23..v2.0.24
 [2.0.23]: https://github.com/clearskies-py/clearskies/compare/v2.0.22..v2.0.23
 [2.0.22]: https://github.com/clearskies-py/clearskies/compare/v2.0.21..v2.0.22
