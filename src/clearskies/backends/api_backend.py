@@ -835,7 +835,9 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             if condition.column_name == query.model_class.id_column_name:
                 route_id = condition.values[0]
                 continue
-            url_parameters[condition.column_name] = condition.values[0]
+            url_parameters[string.swap_casing(condition.column_name, self.model_casing, self.api_casing)] = (
+                condition.values[0]
+            )
 
         return (route_id, url_parameters, {})
 
