@@ -139,6 +139,7 @@ class CursorBackend(Backend, InjectableProperties):
         return self._cursor
 
     def _finalize_table_name(self, table_name):
+        self.logger.debug(f"Finalizing table name for: {table_name}")
         table_name = f"{self.global_table_prefix}{self.table_prefix}{table_name}"
         if "." not in table_name:
             return f"{self.cursor.table_escape_character}{table_name}{self.cursor.table_escape_character}"
@@ -208,6 +209,7 @@ class CursorBackend(Backend, InjectableProperties):
     def as_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.cursor.column_escape_character
         table_name = query.model_class.destination_name()
+        self.logger.debug(f"Generating SQL for table: {table_name} from model: {query.model_class.__name__}")
         (wheres, parameters) = self.conditions_as_wheres_and_parameters(
             query.conditions, query.model_class.destination_name()
         )
@@ -224,11 +226,8 @@ class CursorBackend(Backend, InjectableProperties):
         if query.sorts:
             sort_parts = []
             for sort in query.sorts:
-                table_name = sort.table_name
-                column_name = sort.column_name
-                direction = sort.direction
-                prefix = self._finalize_table_name(table_name) + "." if table_name else ""
-                sort_parts.append(f"{prefix}{escape}{column_name}{escape} {direction}")
+                prefix = self._finalize_table_name(sort.table_name) + "." if sort.table_name else ""
+                sort_parts.append(f"{prefix}{escape}{sort.column_name}{escape} {sort.direction}")
             order_by = " ORDER BY " + ", ".join(sort_parts)
         else:
             order_by = ""

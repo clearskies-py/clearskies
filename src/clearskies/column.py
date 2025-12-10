@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-from clearskies import configs, configurable, decorators
+from clearskies import configs, configurable, decorators, loggable
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.di import InjectableProperties, inject
 from clearskies.query.condition import ParsedCondition
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from clearskies.query.condition import Condition
 
 
-class Column(configurable.Configurable, InjectableProperties):
+class Column(configurable.Configurable, InjectableProperties, loggable.Loggable):
     """
     Columns are used to build schemes and enable a variety of levels of automation with.
 
