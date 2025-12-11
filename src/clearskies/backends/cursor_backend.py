@@ -255,7 +255,7 @@ class CursorBackend(Backend, InjectableProperties):
         # we also don't currently support parameters in the join clause - I'll probably need that though
         if query.joins:
             # We can ignore left joins because they don't change the count
-            join_sections = filter(lambda join: join.type != "LEFT", query.joins)  # type: ignore
+            join_sections = filter(lambda join: join.join_type != "LEFT", query.joins)
             joins = " " + " ".join([join._raw_join for join in join_sections])
         else:
             joins = ""
