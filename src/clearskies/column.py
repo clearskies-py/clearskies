@@ -713,7 +713,7 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         This typically means formatting changes - converting DateTime objects to database
         date strings, etc...
         """
-        if self.name not in data:
+        if self.name not in data or data[self.name] is None:
             return data
 
         return {**data, self.name: str(data[self.name])}
