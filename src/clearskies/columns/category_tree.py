@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from clearskies import configs, decorators
 from clearskies.columns.belongs_to_id import BelongsToId
@@ -251,7 +252,7 @@ class CategoryTree(BelongsToId):
                 is_root = True
             else:
                 next_next_parent_id = getattr(next_parent, self.name)
-                next_parent = model.find(f"{id_column_name}={next_next_parent_id}")
+                next_parent = model.as_query().find(f"{id_column_name}={next_next_parent_id}")
 
         tree.reverse()
         for index, parent_id in enumerate(tree):
@@ -267,7 +268,7 @@ class CategoryTree(BelongsToId):
     def _circular(self, max_iterations):
         raise ValueError(
             f"Error for column {self.model_class.__name__}.{self.name}: "
-            + f"I've climbed through {max_iterations} parents and haven't found the root yet."
-            + "You may have accidentally created a circular cateogry tree.  If not, and your category tree "
-            + "really _is_ that deep, then adjust the 'max_iterations' configuration for this column accordingly. "
+            f"I've climbed through {max_iterations} parents and haven't found the root yet."
+            "You may have accidentally created a circular cateogry tree.  If not, and your category tree "
+            "really _is_ that deep, then adjust the 'max_iterations' configuration for this column accordingly. "
         )
