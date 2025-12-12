@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies import configs, decorators
 from clearskies.columns.many_to_many_ids import ManyToManyIds
@@ -218,7 +219,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
             column.name: column.name for column in self.related_columns.values() if column.is_unique
         }
         related_model = self.related_model
-        pivot_model = self.pivot_model
+        pivot_model = self.pivot_model.as_query()
         # minor cheating
         if hasattr(pivot_model.backend, "create_table"):
             pivot_model.backend.create_table(pivot_model)
@@ -226,6 +227,11 @@ class ManyToManyIdsWithData(ManyToManyIds):
         for pivot_record in data[self.name]:
             # first we need to identify which related column this belongs to.
             related_column_id = None
+
+            # if the pivot record is a model, convert to dict
+            if hasattr(pivot_record, related_model.id_column_name):
+                pivot_record = pivot_record.get_columns_data()
+
             # if they provide the related column id in the pivot data then we're good
             if related_column_name_in_pivot in pivot_record:
                 related_column_id = pivot_record[related_column_name_in_pivot]
@@ -254,6 +260,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
             )
             new_ids.add(related_column_id)
             # this will either update or create accordingly
+
             pivot.save(
                 {
                     **pivot_record,
@@ -262,7 +269,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
                 }
             )
 
-        # the above took care of isnerting and updating active records.  Now we need to delete
+        # the above took care of inserting and updating active records. Now we need to delete
         # records that are no longer needed.
         to_delete = old_ids - new_ids
         if to_delete:

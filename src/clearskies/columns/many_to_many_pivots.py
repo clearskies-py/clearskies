@@ -83,8 +83,8 @@ class ManyToManyPivots(Column):
         if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
-        many_to_many_column = self.many_to_many_column  # type: ignore
-        own_column_name_in_pivot = many_to_many_column._config("own_column_name_in_pivot")
+        many_to_many_column: Column = self.many_to_many_column
+        own_column_name_in_pivot = many_to_many_column._config.get("own_column_name_in_pivot")
         my_id = getattr(instance, instance.id_column_name)
         return [model for model in self.pivot_model.where(f"{own_column_name_in_pivot}={my_id}")]
 
