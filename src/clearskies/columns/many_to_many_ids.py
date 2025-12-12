@@ -293,7 +293,7 @@ class ManyToManyIds(Column):
         new_ids = set(data[self.name])
         to_delete = old_ids - new_ids
         to_create = new_ids - old_ids
-        pivot_model = self.pivot_model
+        pivot_model = self.pivot_model.as_query()
         related_column_name_in_pivot = self.related_column_name_in_pivot
         if to_delete:
             for model_to_delete in pivot_model.where(

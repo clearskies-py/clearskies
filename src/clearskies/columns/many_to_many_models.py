@@ -8,6 +8,7 @@ from clearskies.autodoc.schema import Array as AutoDocArray
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.column import Column
 from clearskies.columns.many_to_many_ids import ManyToManyIds
+from clearskies.columns.many_to_many_ids_with_data import ManyToManyIdsWithData
 from clearskies.functional import string
 
 if TYPE_CHECKING:
@@ -44,9 +45,9 @@ class ManyToManyModels(Column):
 
         # finally, make sure we're really pointed at a many-to-many column
         many_to_many_column = getattr(model_class, self.many_to_many_column_name)
-        if not isinstance(many_to_many_column, ManyToManyIds):
+        if not isinstance(many_to_many_column, (ManyToManyIds, ManyToManyIdsWithData)):
             raise ValueError(
-                f"Error with configuration for {model_class.__name__}.{name}, which is a ManyToManyModels column.  It needs to point to a ManyToManyIds column, and it was told to use {model_class.__name__}.{self.many_to_many_column_name}, but this is not a ManyToManyIds column."
+                f"Error with configuration for {model_class.__name__}.{name}, which is a {many_to_many_column.__class__.__name__} column.  It needs to point to a ManyToManyIds column, and it was told to use {model_class.__name__}.{self.many_to_many_column_name}, but this is not a ManyToManyIds column."
             )
 
     @property
