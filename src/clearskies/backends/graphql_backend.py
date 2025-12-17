@@ -42,29 +42,141 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
     # it would fail (e.g., for relationship queries with incompatible filters)
     can_count = True
 
-    # GraphQL connection client instance
+    """
+    The GraphQL client instance used to execute queries.
+
+    An instance of clearskies.clients.GraphqlClient that handles the connection to your GraphQL API.
+    This is required for the backend to function. Example:
+
+    ```python
+    import clearskies
+
+    class Project(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.GraphqlBackend(
+            graphql_client=clearskies.clients.GraphqlClient(
+                endpoint="https://api.example.com/graphql",
+                authentication=clearskies.authentication.SecretBearer(
+                    environment_key="API_TOKEN"
+                )
+            ),
+            root_field="projects"
+        )
+        id = clearskies.columns.String()
+        name = clearskies.columns.String()
+    ```
+    """
     graphql_client = configs.Any(default=None)
 
-    # GraphQL client by name from DI container (if graphql_client not provided)
+    """
+    The name of the GraphQL client in the DI container.
+
+    If you don't provide a graphql_client directly, the backend will look for a client
+    registered in the dependency injection container with this name. Defaults to "graphql_client".
+    """
     graphql_client_name = configs.String(default="graphql_client")
 
-    # Optional: override root field name (defaults to model.destination_name())
+    """
+    Override the root field name used in GraphQL queries.
+
+    By default, the backend uses model.destination_name() converted to the API's case convention.
+    Use this to explicitly set a different root field name. Example:
+
+    ```python
+    backend = clearskies.backends.GraphqlBackend(
+        graphql_client=my_client,
+        root_field="allProjects"  # Override default "projects"
+    )
+    ```
+    """
     root_field = configs.String(default="")
 
-    # Pagination strategy: "cursor" (Relay-style) or "offset"
+    """
+    The pagination strategy used by the GraphQL API.
+
+    Supported values:
+    - "cursor": Relay-style cursor pagination with pageInfo { endCursor, hasNextPage }
+    - "offset": Traditional limit/offset pagination
+
+    Defaults to "cursor" which is the most common pattern in GraphQL APIs.
+    """
     pagination_style = configs.String(default="cursor")
 
-    # Case conversion settings
+    """
+    The case convention used by the GraphQL API for field names.
+
+    Common values: "camelCase", "snake_case", "PascalCase", "kebab-case"
+    Defaults to "camelCase" which is the GraphQL standard.
+    """
     api_case = configs.String(default="camelCase")
+
+    """
+    The case convention used by clearskies model column names.
+
+    Common values: "snake_case", "camelCase", "PascalCase", "kebab-case"
+    Defaults to "snake_case" which is the Python/clearskies standard.
+    """
     model_case = configs.String(default="snake_case")
-    # Resource type: None=auto-detect, True=collection, False=singular
+
+    """
+    Explicitly set whether the resource is a collection or singular.
+
+    Values:
+    - None: Auto-detect based on field name patterns (default)
+    - True: Resource is a collection (returns multiple items with pagination)
+    - False: Resource is singular (returns a single object, like "currentUser")
+
+    Auto-detection works for most cases, but you can override it if needed.
+    """
     is_collection = configs.Boolean(default=None, required=False)
 
-    # Relationship support configuration
-    # Note: The backend ALWAYS includes relationships for columns with wants_n_plus_one=True
-    # These settings only control depth and limits, not whether to include relationships at all
+    """
+    Maximum depth for nested relationship queries.
+
+    Controls how deep the backend will traverse relationships when building GraphQL queries.
+    For example, with max_relationship_depth=2:
+    - Depth 0: Root model (Group)
+    - Depth 1: First level relationships (Group.projects)
+    - Depth 2: Second level relationships (Project.namespace)
+
+    This prevents infinite recursion in circular relationships. Defaults to 2.
+    """
     max_relationship_depth = configs.Integer(default=2)
+
+    """
+    Default limit for HasMany and ManyToMany relationship collections.
+
+    When fetching related collections (e.g., projects for a group), this sets the maximum
+    number of related records to fetch. Defaults to 10.
+
+    Example:
+    ```python
+    backend = clearskies.backends.GraphqlBackend(
+        graphql_client=my_client,
+        relationship_limit=50  # Fetch up to 50 related items
+    )
+    ```
+    """
     relationship_limit = configs.Integer(default=10)
+
+    """
+    Whether to use GraphQL connection pattern for relationship collections.
+
+    When True, relationship queries use the connection pattern:
+    ```graphql
+    projects(first: 10) {
+        nodes { id name }
+        pageInfo { endCursor hasNextPage }
+    }
+    ```
+
+    When False, expects direct arrays:
+    ```graphql
+    projects { id name }
+    ```
+
+    Defaults to True (Relay-style connections are the GraphQL standard).
+    """
     use_connection_for_relationships = configs.Boolean(default=True)
 
     _client: client.GraphqlClient
@@ -88,6 +200,16 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
 
     @property
     def client(self) -> client.GraphqlClient:
+        """
+        Get the GraphQL client instance.
+
+        Lazily creates or retrieves the GraphqlClient used to execute queries. If a graphql_client
+        was provided during initialization, it's used directly. Otherwise, the client is retrieved
+        from the dependency injection container using graphql_client_name.
+
+        Returns:
+            GraphqlClient: The configured GraphQL client instance for executing queries.
+        """
         if hasattr(self, "_client"):
             return self._client
 
