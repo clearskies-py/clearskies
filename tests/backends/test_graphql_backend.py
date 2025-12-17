@@ -56,16 +56,6 @@ class TestGraphqlBackend(unittest.TestCase):
         assert self.backend.graphql_client == self.mock_client
         assert self.backend.root_field == "users"
 
-    def test_case_conversion_snake_to_camel(self):
-        """Test case conversion from snake_case to camelCase."""
-        result = self.backend._convert_case("user_name", "snake_case", "camelCase")
-        assert result == "userName"
-
-    def test_case_conversion_camel_to_snake(self):
-        """Test case conversion from camelCase to snake_case."""
-        result = self.backend._convert_case("userName", "camelCase", "snake_case")
-        assert result == "user_name"
-
     def test_model_to_api_name(self):
         """Test converting model field names to API names."""
         result = self.backend._model_to_api_name("user_name")
@@ -400,19 +390,18 @@ class TestGraphqlBackendRelationships(unittest.TestCase):
             assert False, "Expected nodes in projects data"
 
     def test_map_relationship_data_belongs_to(self):
-        """Test that BelongsTo relationships return model instances."""
+        """Test that BelongsTo relationships return raw dicts from backend."""
 
         # Create a mock parent model to test BelongsTo
-        # Note: Set backend to self.backend (not None) so the models can be instantiated
         class User(clearskies.Model):
             id_column_name = "id"
-            backend = None  # type: ignore[assignment]  # Will be set by _map_relationship_data
+            backend = None  # type: ignore[assignment]
             id = clearskies.columns.String()
             name = clearskies.columns.String()
 
         class Post(clearskies.Model):
             id_column_name = "id"
-            backend = None  # type: ignore[assignment]  # Will be set by _map_relationship_data
+            backend = None  # type: ignore[assignment]
             id = clearskies.columns.String()
             title = clearskies.columns.String()
 
@@ -424,15 +413,14 @@ class TestGraphqlBackendRelationships(unittest.TestCase):
         record = {"id": "1", "title": "Test Post", "user": {"id": "42", "name": "Alice"}}
 
         # Map the relationship data
-        # The backend code will temporarily set User.backend = self.backend before instantiation
+        # The backend should return raw dict (not a Model instance)
         user_data = self.backend._map_relationship_data(record, Post.user, parent_model=None)
 
-        # Should return a User model instance (not a dict)
+        # Backend returns raw dict - column handles transformation
         assert user_data is not None
-        assert isinstance(user_data, User)
-        assert user_data.id == "42"
-        assert user_data.name == "Alice"
-        assert user_data._exists is True  # type: ignore[attr-defined]  # Should be marked as existing
+        assert isinstance(user_data, dict)
+        assert user_data["id"] == "42"
+        assert user_data["name"] == "Alice"
 
 
 class TestGraphqlBackendNestedFields(unittest.TestCase):

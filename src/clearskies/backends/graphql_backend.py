@@ -9,7 +9,7 @@ from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
 from clearskies.clients import graphql_client as client
 from clearskies.di import InjectableProperties, inject
-from clearskies.functional import string as string_helpers
+from clearskies.functional.string import swap_casing
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -99,46 +99,20 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         self._client.injectable_properties(self.di)
         return self._client
 
-    def _convert_case(self, name: str, from_case: str, to_case: str) -> str:
-        """
-        Convert a string from one case convention to another.
-
-        Supports: snake_case, camelCase, PascalCase, kebab-case
-        """
-        if from_case == to_case:
-            return name
-
-        # First convert to snake_case as intermediate format
-        if from_case == "camelCase" or from_case == "PascalCase":
-            name = string_helpers.camel_case_to_snake_case(name)
-        elif from_case == "kebab-case":
-            name = name.replace("-", "_")
-
-        # Then convert from snake_case to target format
-        if to_case == "camelCase":
-            return string_helpers.snake_case_to_camel_case(name)
-        elif to_case == "PascalCase":
-            camel = string_helpers.snake_case_to_camel_case(name)
-            return camel[0].upper() + camel[1:] if camel else camel
-        elif to_case == "kebab-case":
-            return name.replace("_", "-")
-
-        return name  # default to snake_case
-
     def _model_to_api_name(self, model_name: str) -> str:
         """Convert a model field name to API field name."""
-        return self._convert_case(model_name, self.model_case, self.api_case)
+        return swap_casing(model_name, self.model_case, self.api_case)
 
     def _api_to_model_name(self, api_name: str) -> str:
         """Convert an API field name to model field name."""
-        return self._convert_case(api_name, self.api_case, self.model_case)
+        return swap_casing(api_name, self.api_case, self.model_case)
 
     def _get_root_field_name(self, model: "Model" | type["Model"]) -> str:
         """Get the root field name for GraphQL queries."""
         if self.root_field:
             return self.root_field
         # Use the model's destination name and convert to API case
-        return self._model_to_api_name(model.destination_name())
+        return swap_casing(model.destination_name(), self.model_case, self.api_case)
 
     def _is_relationship_column(self, column: "Column") -> bool:
         """
@@ -560,19 +534,12 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         """
         Map nested relationship data from GraphQL response to clearskies format.
 
-        For HasMany relationships, creates child model instances that use the same
-        backend as the parent to ensure consistent configuration and prevent
-        query failures.
+        Returns raw dict data (not Model instances) to maintain separation between
+        _data (raw values) and _transformed_data (processed values). The relationship
+        columns handle transformation to Model instances when accessed.
 
-        Caching Strategy:
-        -----------------
-        This implementation leverages clearskies' column-level caching mechanism.
-        When we call set_raw_data() on child models and use the parent's backend,
-        the data is stored in the model. The HasMany column will recognize these
-        as pre-loaded models and won't attempt to fetch them again.
-
-        For BelongsTo relationships, we return the mapped dict which will be cached
-        by the column's from_backend() method when it's first accessed.
+        For BelongsTo relationships, returns a single dict.
+        For HasMany/ManyToMany relationships, returns a list of dicts.
         """
         related_model = self._get_relationship_model(column)
         if not related_model:
@@ -586,29 +553,14 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
 
         column_type = column.__class__.__name__
 
-        # BelongsTo: single object (return model instance with pre-loaded data)
+        # BelongsTo: single object - return raw dict
         if column_type in ["BelongsTo", "BelongsToModel", "BelongsToId"]:
             if isinstance(nested_data, dict):
-                # Map the data using ONLY the related model's columns (not parent columns)
-                mapped_data = self._map_record(nested_data, related_model.get_columns())
-
-                # Create a model instance with the PARENT's backend (same pattern as HasMany)
-                # This ensures the related model can be used immediately without additional queries
-                # Set backend on the class before instantiation to avoid __init__ validation error
-                original_backend = related_model.backend
-                related_model.backend = self
-                try:
-                    related_instance = related_model()
-                    related_instance.set_raw_data(mapped_data)
-                    related_instance._exists = True  # type: ignore[attr-defined]  # Mark as existing record from backend
-                    return related_instance
-                finally:
-                    # Restore original backend on the class
-                    related_model.backend = original_backend
+                # Map and return the raw dict data
+                return self._map_record(nested_data, related_model.get_columns())
             return None
 
-        # HasMany/ManyToMany: collection
-        # Create model instances using the PARENT's backend to ensure consistency
+        # HasMany/ManyToMany: collection - return list of raw dicts
         if column_type in ["HasMany", "ManyToMany"]:
             # Extract nodes from connection pattern
             nodes = []
@@ -617,25 +569,13 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             elif isinstance(nested_data, list):
                 nodes = nested_data
 
-            # Create child model instances from the nested data
-            # IMPORTANT: Use the parent's backend (self) instead of child model's default backend
-            child_models = []
+            # Map each node to a raw dict (NOT Model instances)
+            child_dicts = []
             for node in nodes:
-                # Map the child record data
                 child_data = self._map_record(node, related_model.get_columns())
-                # Create a model instance with the PARENT's backend
-                # Set backend on the class before instantiation to avoid __init__ validation error
-                original_backend = related_model.backend
-                related_model.backend = self
-                try:
-                    child_model = related_model()
-                    child_model.set_raw_data(child_data)
-                    child_models.append(child_model)
-                finally:
-                    # Restore original backend on the class
-                    related_model.backend = original_backend
+                child_dicts.append(child_data)
 
-            return child_models
+            return child_dicts
 
         return None
 
@@ -770,16 +710,8 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         """
         Return the count of records matching the query.
 
-        For pre-loaded relationship data, returns the count without querying.
-        Otherwise, attempts to use a dedicated count field or falls back to counting returned records.
+        Attempts to use a dedicated count field or falls back to counting returned records.
         """
-        # Check if this is a HasMany relationship query with pre-loaded data
-        # If the query has conditions filtering by a parent ID, and the data is already
-        # loaded in memory, we can count it directly without a query
-        if hasattr(query, "_models") and query._models is not None:
-            # Data is already loaded - count it directly
-            return len(list(query._models))
-
         # Try to build a count query
         model = query.model_class
         root_field = self._get_root_field_name(model)
@@ -811,15 +743,18 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         """
         Fetch records matching the query.
 
-        For queries with pre-loaded data (from relationship fetching), returns the cached data.
-        Otherwise, handles pagination data to enable fetching additional pages.
+        Handles pagination data to enable fetching additional pages.
+        Supports pre-loaded records from relationship columns.
         """
-        # Check if this query has pre-loaded data (from relationship fetching)
-        # If so, return it directly without making a new query
-        if hasattr(query, "_models") and query._models is not None:
-            self.logger.debug("Using pre-loaded relationship data, skipping query")
-            # Convert model instances back to dicts for clearskies
-            return [model._data for model in query._models if hasattr(model, "_data")]
+        # Check if query has pre-loaded records (from relationship columns)
+        self.logger.debug(f"Checking for pre-loaded records. hasattr: {hasattr(query, '_pre_loaded_records')}")
+        self.logger.debug(f"Query attributes: {dir(query)}")
+        if hasattr(query, "_pre_loaded_records"):
+            self.logger.debug("Using pre-loaded relationship data, skipping GraphQL query")
+            pre_loaded = query._pre_loaded_records  # type: ignore[attr-defined]
+            # Clear the pre-loaded data to avoid reuse
+            delattr(query, "_pre_loaded_records")
+            return pre_loaded
 
         query_str, variables = self._build_query(query)
         self.logger.info(f"GraphQL Query:\n{query_str}")

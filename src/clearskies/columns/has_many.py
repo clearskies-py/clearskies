@@ -463,50 +463,53 @@ class HasMany(Column):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
-        # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        # Initialize if needed
+        if "name" not in self._config:
             model.get_columns()
 
-        # The data will be in model._data[column_name] as a list of child models
+        # Check cache first
+        if self.name in model._transformed_data:
+            return model._transformed_data[self.name]
+
+        # Check if backend provided pre-loaded data as raw dicts in _data
         raw_data = model.get_raw_data()
 
         if self.name in raw_data and isinstance(raw_data[self.name], list):
-            preloaded_models = raw_data[self.name]
+            # Backend provided pre-loaded data (could be empty list or list of dicts)
+            # Even an empty list means the data was pre-loaded (just happens to be empty)
+            pre_loaded_list = raw_data[self.name]
 
-            # Check if this is pre-loaded relationship data
-            # Empty lists are valid (no related records)
-            # Non-empty lists should contain model instances
-            if not preloaded_models or all(hasattr(m, "__class__") and hasattr(m, "_data") for m in preloaded_models):
-                # Create a Models instance with pre-loaded data
-                # Use the parent class to get the base query Model instance
-                children = super().__get__(model, cls)
-                # Set the pre-loaded models on the QUERY object (not the Model)
-                # The backend checks query._models in its records() method
-                if children._query:
-                    children._query._models = preloaded_models
+            # Verify all items are dicts (skip check for empty list)
+            if not pre_loaded_list or all(isinstance(item, dict) for item in pre_loaded_list):
+                # Create a query-enabled Model with pre-loaded data
+                # Attach the pre-loaded records to the query so the backend can find them
+                children = [self.child_model.model(child_data) for child_data in pre_loaded_list]
+                model._transformed_data[self.name] = children
                 return children
 
-        # No pre-loaded data, use the standard HasMany behavior (creates query)
+        # Build the query
         foreign_column_name = self.foreign_column_name
         model_id = getattr(model, model.id_column_name)
         children = self.child_model.where(f"{foreign_column_name}={model_id}")
 
-        if not self.where:
-            return children
-
-        for index, where in enumerate(self.where):
-            if callable(where):
-                children = self.di.call_function(
-                    where, model=children, parent=model, **self.input_output.get_context_for_callables()
-                )
-                if not validations.is_model(children):
-                    raise ValueError(
-                        f"Configuration error for column '{self.name}' in model '{self.model_class.__name__}': when 'where' is a callable, it must return a models class, but when the callable in where entry #{index + 1} was called, it did not return the models class"
+        # Apply where conditions
+        if self.where:
+            for index, where in enumerate(self.where):
+                if callable(where):
+                    children = self.di.call_function(
+                        where, model=children, parent=model, **self.input_output.get_context_for_callables()
                     )
-            else:
-                children = children.where(where)
+                    if not validations.is_model(children):
+                        raise ValueError(
+                            f"Configuration error for column '{self.name}' in model '{self.model_class.__name__}': when 'where' is a callable, it must return a models class, but when the callable in where entry #{index + 1} was called, it did not return the models class"
+                        )
+                else:
+                    children = children.where(where)
+
+        # Cache and return
+        model._transformed_data[self.name] = children
         return children
 
     def __set__(self, model: Model, value: Model) -> None:
