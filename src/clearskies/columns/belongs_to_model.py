@@ -60,16 +60,28 @@ class BelongsToModel(Column):
         if "name" not in self._config:  # type: ignore
             model.get_columns()
 
+        # Check cache first
+        if self.name in model._transformed_data:
+            return model._transformed_data[self.name]
+
         belongs_to_column = getattr(model.__class__, self.belongs_to_column_name)
         parent_id = getattr(model, self.belongs_to_column_name)
         parent_class = belongs_to_column.parent_model_class
         parent_model = self.di.build(parent_class, cache=False)
         if not parent_id:
-            return parent_model.empty()
+            empty_parent = parent_model.empty()
+            model._transformed_data[self.name] = empty_parent
+            return empty_parent
 
         parent_id_column_name = parent_model.id_column_name
         join_alias = belongs_to_column.join_table_alias()
         raw_data = model.get_raw_data()
+
+        # Check if backend provided pre-loaded data as raw dict in _data
+        if self.name in raw_data and isinstance(raw_data[self.name], dict):
+            parent_instance = parent_model.model(raw_data[self.name])
+            model._transformed_data[self.name] = parent_instance
+            return parent_instance
 
         # sometimes the model is loaded via the N+1 functionality, in which case the data will already exist
         # in model.data but hiding under a different name.
@@ -78,9 +90,13 @@ class BelongsToModel(Column):
             for column_name in belongs_to_column.readable_parent_columns:
                 select_alias = f"{join_alias}_{column_name}"
                 parent_data[column_name] = raw_data[select_alias] if select_alias in raw_data else None
-            return parent_model.model(parent_data)
+            parent_instance = parent_model.model(parent_data)
+            model._transformed_data[self.name] = parent_instance
+            return parent_instance
 
-        return parent_model.find(f"{parent_id_column_name}={parent_id}")
+        parent_instance = parent_model.find(f"{parent_id_column_name}={parent_id}")
+        model._transformed_data[self.name] = parent_instance
+        return parent_instance
 
     def __set__(self, model: Model, value: Model) -> None:
         # this makes sure we're initialized

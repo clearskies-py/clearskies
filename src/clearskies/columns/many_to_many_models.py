@@ -83,7 +83,13 @@ class ManyToManyModels(Column):
         if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
-        return self.many_to_many_column.get_related_models(instance)  # type: ignore
+        if self.name in instance._transformed_data:
+            return instance._transformed_data[self.name]
+
+        children = self.many_to_many_column.get_related_models(instance)
+
+        instance._transformed_data[self.name] = children
+        return children
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
         # this makes sure we're initialized
