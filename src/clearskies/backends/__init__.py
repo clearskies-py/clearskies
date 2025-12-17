@@ -47,6 +47,7 @@ class MyModel(clearskies.model):
 from clearskies.backends.api_backend import ApiBackend
 from clearskies.backends.backend import Backend
 from clearskies.backends.cursor_backend import CursorBackend
+from clearskies.backends.graphql_backend import GraphqlBackend
 from clearskies.backends.memory_backend import MemoryBackend
 
 # from .memory_backend import MemoryBackend
@@ -59,6 +60,7 @@ __all__ = [
     # "ApiGetOnlyBackend",
     "Backend",
     "CursorBackend",
+    "GraphqlBackend",
     "MemoryBackend",
     # "RestfulApiAdvancedSearchBackend",
     # "SecretsBackend",

@@ -82,7 +82,27 @@ class ManyToManyModels(Column):
         if "name" not in self._config:  # type: ignore
             instance.get_columns()
 
-        return self.many_to_many_column.get_related_models(instance)  # type: ignore
+        # The data will be in instance._data[column_name] as a list of child models
+        raw_data = instance.get_raw_data()
+
+        children = self.many_to_many_column.get_related_models(instance)  # type: ignore
+
+        if self.name in raw_data and isinstance(raw_data[self.name], list):
+            preloaded_models = raw_data[self.name]
+
+            # Check if this is pre-loaded relationship data
+            # Empty lists are valid (no related records)
+            # Non-empty lists should contain model instances
+            if not preloaded_models or all(hasattr(m, "__class__") and hasattr(m, "_data") for m in preloaded_models):
+                # Get the Models instance from many_to_many_column
+                # Set the pre-loaded models on the QUERY object (not the Model)
+                # The backend checks query._models in its records() method
+                if children._query:
+                    children._query._models = preloaded_models
+                return children
+
+        # No pre-loaded data, use the standard behavior
+        return children
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
         # this makes sure we're initialized

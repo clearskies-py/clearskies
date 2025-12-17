@@ -463,12 +463,32 @@ class HasMany(Column):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type:  ignore
+            return self  # type: ignore
 
         # this makes sure we're initialized
         if "name" not in self._config:  # type: ignore
             model.get_columns()
 
+        # The data will be in model._data[column_name] as a list of child models
+        raw_data = model.get_raw_data()
+
+        if self.name in raw_data and isinstance(raw_data[self.name], list):
+            preloaded_models = raw_data[self.name]
+
+            # Check if this is pre-loaded relationship data
+            # Empty lists are valid (no related records)
+            # Non-empty lists should contain model instances
+            if not preloaded_models or all(hasattr(m, "__class__") and hasattr(m, "_data") for m in preloaded_models):
+                # Create a Models instance with pre-loaded data
+                # Use the parent class to get the base query Model instance
+                children = super().__get__(model, cls)
+                # Set the pre-loaded models on the QUERY object (not the Model)
+                # The backend checks query._models in its records() method
+                if children._query:
+                    children._query._models = preloaded_models
+                return children
+
+        # No pre-loaded data, use the standard HasMany behavior (creates query)
         foreign_column_name = self.foreign_column_name
         model_id = getattr(model, model.id_column_name)
         children = self.child_model.where(f"{foreign_column_name}={model_id}")
