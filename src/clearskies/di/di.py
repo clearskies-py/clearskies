@@ -892,6 +892,11 @@ class Di:
     def provide_environment(self):
         return Environment(os.getcwd() + "/.env", os.environ, {})
 
+    def provide_grahpql_client(self):
+        from clearskies.clients import GraphQLClient
+
+        return GraphQLClient()
+
     def provide_cursor(self):
         from clearskies.cursors.from_environment import MySql
 

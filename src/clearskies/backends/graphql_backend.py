@@ -42,8 +42,11 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
     # it would fail (e.g., for relationship queries with incompatible filters)
     can_count = True
 
-    # GraphQL connection (required)
-    graphql_client = configs.Any(default=client.GraphqlClient(endpoint="http://localhost:4000/graphql"))
+    # GraphQL connection client instance
+    graphql_client = configs.Any(default=None)
+
+    # GraphQL client by name from DI container (if graphql_client not provided)
+    graphql_client_name = configs.String(default="graphql_client")
 
     # Optional: override root field name (defaults to model.destination_name())
     root_field = configs.String(default="")
@@ -71,6 +74,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
     def __init__(
         self,
         graphql_client: client.GraphqlClient | None = None,
+        graphql_client_name: str = "graphql_client",
         root_field: str = "",
         pagination_style: str = "cursor",
         api_case: str = "camelCase",
@@ -91,7 +95,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             self._client = self.graphql_client
         else:
             self.logger.warning("No GraphQL client provided, creating default client.")
-            self._client = client.GraphqlClient(endpoint="http://localhost:4000/graphql")
+            self._client = inject.ByName(self.graphql_client_name)  # type: ignore[assignment]
         self._client.injectable_properties(self.di)
         return self._client
 
