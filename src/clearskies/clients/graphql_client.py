@@ -151,7 +151,6 @@ class GraphqlClient(configurable.Configurable, loggable.Loggable, InjectableProp
             # Inject dependencies if the authentication object supports it
             if hasattr(self.authentication, "injectable_properties"):
                 self.authentication.injectable_properties(self.di)  # type: ignore[attr-defined]
-            self.headers.update(self.authentication.headers())
         transport = RequestsHTTPTransport(
             url=self.endpoint,
             headers=self.headers,
