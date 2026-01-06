@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 
 class Loggable:
@@ -11,7 +12,7 @@ class Loggable:
 
     logger: logging.Logger
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         # Automatically create a logger named 'module.ClassName'
         # This runs once when the class is defined (imported), not instantiated.
