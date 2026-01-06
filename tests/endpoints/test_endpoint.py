@@ -127,10 +127,11 @@ class EndpointTest(TestBase):
         (status_code, response, response_headers) = context(url="jane")
 
         assert status_code == 200
+        this_year = datetime.datetime.now(datetime.timezone.utc).year
         assert response["data"] == [
-            {"id": "1-2-3-5", "name": "Jane", "age": 5, "is_special": True},
-            {"id": "1-2-3-4", "name": "Bob", "age": 35, "is_special": False},
-            {"id": "1-2-3-6", "name": "Greg", "age": 45, "is_special": False},
+            {"id": "1-2-3-5", "name": "Jane", "age": this_year - 2020, "is_special": True},
+            {"id": "1-2-3-4", "name": "Bob", "age": this_year - 1990, "is_special": False},
+            {"id": "1-2-3-6", "name": "Greg", "age": this_year - 1980, "is_special": False},
         ]
 
     def test_readable_column_names(self):

@@ -32,7 +32,7 @@ class ManyToManyPivots(Column):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        many_to_many_column_name,
+        many_to_many_column_name: str,
     ):
         pass
 
