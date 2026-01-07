@@ -770,6 +770,21 @@ class Di:
 
         return None
 
+    def build_standard_lib(self, argument_name: str, type_hint: type) -> Any | None:
+        """
+        Build a standard library type.
+
+        This method exists to allow for future expansion of the DI system to handle standard library
+        types.  Right now, there are no standard library types that are supported, so this always returns None.
+        """
+        try:
+            instance = self.build_from_name(argument_name)
+            if instance is not None and isinstance(instance, type_hint):
+                return instance
+        except MissingDependency:
+            pass
+        return None
+
     def call_function(self, callable_to_execute: Callable, **kwargs):
         """
         Call a function, building any positional arguments and providing them.
@@ -946,3 +961,13 @@ class Di:
         import logging
 
         return logging.getLogger()
+
+    def provide_socket(self):
+        import socket
+
+        return socket
+
+    def provide_subprocess(self):
+        import subprocess
+
+        return subprocess
