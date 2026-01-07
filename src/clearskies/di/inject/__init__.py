@@ -7,8 +7,11 @@ from clearskies.di.inject.logger import Logger
 from clearskies.di.inject.now import Now
 from clearskies.di.inject.requests import Requests
 from clearskies.di.inject.secrets import Secrets
+from clearskies.di.inject.socket import Socket
+from clearskies.di.inject.subprocess import Subprocess
 from clearskies.di.inject.utcnow import Utcnow
 from clearskies.di.inject.uuid import Uuid
+
 
 __all__ = [
     "ByClass",
@@ -20,6 +23,8 @@ __all__ = [
     "Now",
     "Requests",
     "Secrets",
+    "Socket",
+    "Subprocess",
     "Utcnow",
     "Uuid",
 ]
