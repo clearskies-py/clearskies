@@ -1,36 +1,36 @@
-import clearskies.configs
 from clearskies import decorators
+from clearskies.configs import String
 from clearskies.cursors.mysql import Mysql as MysqlBase
 from clearskies.di import inject
 
 
 class MySql(MysqlBase):
-    hostname_environment_key = clearskies.configs.String(default="DATABASE_HOST")
-    username_environment_key = clearskies.configs.String(default="DATABASE_USERNAME")
-    password_environment_key = clearskies.configs.String(default="DATABASE_PASSWORD")
-    database_environment_key = clearskies.configs.String(default="DATABASE_NAME")
+    hostname_environment_key = String(default="DATABASE_HOST")
+    username_environment_key = String(default="DATABASE_USERNAME")
+    password_environment_key = String(default="DATABASE_PASSWORD")
+    database_environment_key = String(default="DATABASE_NAME")
 
-    port_environment_key = clearskies.configs.String(default="DATABASE_PORT")
-    cert_path_environment_key = clearskies.configs.String(default="DATABASE_CERT_PATH")
-    autocommit_environment_key = clearskies.configs.String(default="DATABASE_AUTOCOMMIT")
-    connect_timeout_environment_key = clearskies.configs.String(default="DATABASE_CONNECT_TIMEOUT")
+    port_environment_key = String(default="DATABASE_PORT")
+    cert_path_environment_key = String(default="DATABASE_CERT_PATH")
+    autocommit_environment_key = String(default="DATABASE_AUTOCOMMIT")
+    connect_timeout_environment_key = String(default="DATABASE_CONNECT_TIMEOUT")
 
     environment = inject.Environment()
 
     @decorators.parameters_to_properties
     def __init__(
         self,
-        hostname_environment_key="DATABASE_HOST",
-        username_environment_key="DATABASE_USERNAME",
-        password_environment_key="DATABASE_PASSWORD",
-        database_environment_key="DATABASE_NAME",
-        port_environment_key="DATABASE_PORT",
-        cert_path_environment_key="DATABASE_CERT_PATH",
-        autocommit_environment_key="DATABASE_AUTOCOMMIT",
-        connect_timeout_environment_key="DATABASE_CONNECT_TIMEOUT",
+        hostname_environment_key: str | None = "DATABASE_HOST",
+        username_environment_key: str | None = "DATABASE_USERNAME",
+        password_environment_key: str | None = "DATABASE_PASSWORD",
+        database_environment_key: str | None = "DATABASE_NAME",
+        port_environment_key: str | None = "DATABASE_PORT",
+        cert_path_environment_key: str | None = "DATABASE_CERT_PATH",
+        autocommit_environment_key: str | None = "DATABASE_AUTOCOMMIT",
+        connect_timeout_environment_key: str | None = "DATABASE_CONNECT_TIMEOUT",
         port_forwarding=None,
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {

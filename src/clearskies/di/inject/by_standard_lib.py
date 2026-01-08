@@ -1,0 +1,22 @@
+from __future__ import annotations
+
+from typing import Any
+
+from clearskies.di.injectable import Injectable
+
+
+class ByStandardLib(Injectable):
+    def __init__(self, name: str, cache: bool = True):
+        if not isinstance(name, str):
+            raise TypeError(
+                f"I expected a string for the first argument to clearskies.di.inject.ByStandardLib, but I received an object of type '{name.__class__.__name__}' instead."
+            )
+        self.name = name
+        self.cache = cache
+
+    def __get__(self, instance, parent) -> Any:
+        if instance is None:
+            return self  # type: ignore
+
+        self.initiated_guard(instance)
+        return self._di.build_standard_lib(self.name, cache=self.cache)

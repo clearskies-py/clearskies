@@ -26,7 +26,7 @@ class Mysql(Cursor):
         cert_path=None,
         port_forwarding=None,
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     @property
     def factory(self) -> ModuleType:
