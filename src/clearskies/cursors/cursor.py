@@ -22,6 +22,21 @@ class DBAPICursor(Protocol):
         ...
 
 
+class DBAPIConnection(Protocol):
+    """
+    A minimal protocol for a DB-API 2.0 connection.
+
+    This uses structural subtyping. Any object (like a real connection
+    or a mock) will match this type as long as it has the
+    required attributes, even if it doesn't explicitly inherit
+    from DBAPIConnection.
+    """
+
+    def cursor(self) -> DBAPICursor:
+        """Return a cursor for this connection."""
+        ...
+
+
 class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Loggable):
     """
     Abstract base class for database cursor implementations.
@@ -54,6 +69,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     value_placeholder = "%s"
     _cursor: DBAPICursor
     _factory: ModuleType
+    _connection: DBAPIConnection
 
     @decorators.parameters_to_properties
     def __init__(
@@ -82,15 +98,20 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     def cursor(self) -> DBAPICursor:
         """Get or create a database cursor instance."""
         if not hasattr(self, "_cursor"):
-            try:
-                if self.port_forwarding:
-                    self.port_forwarding_context()
-            except KeyError:
-                pass
+            if self.port_forwarding:
+                self.logger.info("Establishing port forwarding...")
+                try:
+                    forwarded = self.port_forwarding_context()
+                    if not forwarded:
+                        raise ValueError("Port forwarding context did not yield forwarded ports.")
+                except Exception as e:
+                    self.logger.error(f"Port forwarding failed: {e}")
+                    raise
 
-            self._cursor = self.factory.connect(
+            self._connection = self.factory.connect(
                 **self.build_connection_kwargs(),
-            ).cursor()
+            )
+            self._cursor = self._connection.cursor()
 
         return self._cursor
 
@@ -155,10 +176,38 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         try:
             self.logger.debug(f"Executing SQL: {sql} with parameters: {parameters}")
             return self.cursor.execute(sql, parameters)
-        except Exception as e:
+        except Exception:
             self.logger.exception(f"Error executing SQL: {sql} with parameters: {parameters}")
             raise
 
     @property
-    def lastrowid(self):
-        return getattr(self.cursor, "lastrowid", None)
+    def lastrowid(self) -> int | None:
+        """
+        Get the last inserted row ID from the most recent INSERT operation.
+
+        The DB-API 2.0 standard specifies that `lastrowid` should be available
+        on the cursor object. However, some implementations (e.g., pymysql) expose
+        this as `connection.insert_id()` instead.
+
+        Returns
+        -------
+            int | None: The last inserted row ID, or None if unavailable.
+
+        Notes
+        -----
+            Fallback strategy:
+            1. Check cursor.lastrowid (DB-API 2.0 standard)
+            2. Check connection.insert_id() (pymysql compatibility)
+        """
+        cursor_lastrowid = getattr(self.cursor, "lastrowid", None)
+        if cursor_lastrowid:
+            return cursor_lastrowid
+
+        # Fallback for pymysql which uses connection.insert_id()
+        if hasattr(self, "_connection"):
+            connection_insert_id = getattr(self._connection, "insert_id", None)
+            if callable(connection_insert_id):
+                return connection_insert_id()
+            return connection_insert_id
+
+        return None
