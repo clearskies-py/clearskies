@@ -29,7 +29,7 @@ class Postgresql(PostgresqlBase):
         autocommit_environment_key="DATABASE_AUTOCOMMIT",
         port_forwarding=None,
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {

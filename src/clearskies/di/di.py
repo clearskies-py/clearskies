@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import inspect
 import os
 from types import ModuleType
@@ -770,19 +771,30 @@ class Di:
 
         return None
 
-    def build_standard_lib(self, argument_name: str, type_hint: type) -> Any | None:
+    def build_standard_lib(self, name: str, context: str | None = None, cache: bool = False) -> Any | None:
         """
         Build a standard library type.
 
         This method exists to allow for future expansion of the DI system to handle standard library
-        types.  Right now, there are no standard library types that are supported, so this always returns None.
+        types.
         """
         try:
-            instance = self.build_from_name(argument_name)
-            if instance is not None and isinstance(instance, type_hint):
+            instance = self.build_from_name(name, context, cache)
+            if instance is not None:
                 return instance
+            raise MissingDependency
         except MissingDependency:
             pass
+        try:
+            library = importlib.import_module(name)
+            self.add_binding(name, library)
+            return library
+        except ImportError:
+            context_note = f" for {context}" if context else ""
+            raise MissingDependency(
+                f"I was asked to build {name}{context_note} but there is no dependency available, configured binding, "
+                + f"or a corresponding 'provide_{name}' method for this name."
+            )
         return None
 
     def call_function(self, callable_to_execute: Callable, **kwargs):

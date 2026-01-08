@@ -18,7 +18,7 @@ class Sqlite(SqliteBase):
         autocommit_environment_key="DATABASE_AUTOCOMMIT",
         connect_timeout_environment_key="DATABASE_CONNECT_TIMEOUT",
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {

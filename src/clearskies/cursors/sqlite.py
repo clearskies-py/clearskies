@@ -21,6 +21,7 @@ class Sqlite(Cursor):
         self.autocommit = autocommit
         self.database = database
         self.connect_timeout = connect_timeout
+        self.finalize_and_validate_configuration()
 
     @property
     def factory(self) -> ModuleType:

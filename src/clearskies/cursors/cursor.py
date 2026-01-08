@@ -41,6 +41,9 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         value_placeholder: Placeholder character for parameter binding.
     """
 
+    socket = clearskies.di.inject.Socket()
+    subprocess = clearskies.di.inject.Subprocess()
+
     database = clearskies.configs.String(default="example")
     autocommit = clearskies.configs.Boolean(default=True)
     port_forwarding = clearskies.configs.Any(default=None)
@@ -60,7 +63,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         port_forwarding=None,
         connect_timeout=2,
     ):
-        pass
+        self.finalize_and_validate_configuration()
 
     @property
     def factory(self) -> ModuleType:
