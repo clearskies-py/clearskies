@@ -5,9 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.30] - 2026-01-09
+
+### Added
+- Add port forwarder and update docs in [#49](https://github.com/clearskies-py/clearskies/pull/49)
+- Add sockets and subsystems
+
+### Fixed
+- Lastrowid for mysql
+- The cursors
+
 ## [2.0.29] - 2026-01-06
 
 ### Changed
+- Bump version to v2.0.29 by @github-actions[bot]
 - Update dependencies
 
 ### Fixed
@@ -978,6 +989,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.30]: https://github.com/clearskies-py/clearskies/compare/v2.0.29..v2.0.30
 [2.0.29]: https://github.com/clearskies-py/clearskies/compare/v2.0.28..v2.0.29
 [2.0.28]: https://github.com/clearskies-py/clearskies/compare/v2.0.27..v2.0.28
 [2.0.27]: https://github.com/clearskies-py/clearskies/compare/v2.0.26..v2.0.27
