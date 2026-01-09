@@ -7,7 +7,43 @@ from clearskies.di import inject
 
 
 class Sqlite(Cursor):
+    """
+    A clearskies SQLite cursor.
+
+    This class provides a SQLite cursor implementation with support for
+    connection configuration and SQL formatting.
+
+    ### Configuration
+
+    The following parameters are available (with their default values):
+
+    - `database`: Path or name of the SQLite database file (`example.db`)
+    - `autocommit`: Whether to autocommit transactions (`True`)
+    - `connect_timeout`: Connection timeout in seconds (`2.0`)
+
+    #### Example
+
+    ```python
+    import clearskies
+
+    cursor = clearskies.cursors.Sqlite(
+        database="example.db",
+        autocommit=True,
+        connect_timeout=2.0,
+    )
+    cursor.execute("SELECT * FROM users")
+    results = cursor.fetchall()
+    ```
+    """
+
+    """
+    Path or name of the SQLite database file.
+    """
     database = clearskies.configs.String(default="example.db")
+
+    """
+    Connection timeout in seconds.
+    """
     connect_timeout = clearskies.configs.Float(default=2.0)  # type: ignore[assignment]
     value_placeholder = "?"
     sys = inject.ByName("sys")

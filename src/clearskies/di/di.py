@@ -925,9 +925,9 @@ class Di:
         return GraphQLClient()
 
     def provide_cursor(self):
-        from clearskies.cursors.from_environment import MySql
+        from clearskies.cursors.from_environment import Mysql
 
-        return MySql()
+        return Mysql()
 
     def provide_now(self):
         return datetime.datetime.now() if self._now is None else self._now

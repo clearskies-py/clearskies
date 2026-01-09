@@ -4,6 +4,7 @@ from typing import Protocol
 
 import clearskies.configs
 from clearskies import configurable, decorators, loggable
+from clearskies.cursors.port_forwarding.port_forwarder import PortForwarder
 from clearskies.di import InjectableProperties
 
 
@@ -21,6 +22,10 @@ class DBAPICursor(Protocol):
         """Execute a SQL statement with parameters."""
         ...
 
+    def close(self):
+        """Close the cursor."""
+        ...
+
 
 class DBAPIConnection(Protocol):
     """
@@ -36,32 +41,73 @@ class DBAPIConnection(Protocol):
         """Return a cursor for this connection."""
         ...
 
+    def close(self):
+        """Close the connection."""
+        ...
+
 
 class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Loggable):
     """
-    Abstract base class for database cursor implementations.
+    A clearskies database cursor.
 
-    Provides a common interface for database operations across different
-    database backends. Handles connection management, query execution,
-    and SQL formatting with configurable escape characters and placeholders.
+    This is the base class for all cursor implementations, providing a unified interface for
+    database operations across different backends. It manages connection setup, query execution,
+    and SQL formatting, and supports optional port forwarding.
 
-    Attributes
-    ----------
-        database: Name of the database to connect to.
-        autocommit: Whether to automatically commit transactions.
-        port_forwarding: Optional port forwarding configuration.
-        connect_timeout: Connection timeout in seconds.
-        table_escape_character: Character used to escape table names.
-        column_escape_character: Character used to escape column names.
-        value_placeholder: Placeholder character for parameter binding.
+    ### Port Forwarding
+
+    The `port_forwarding` parameter accepts an instance of a subclass of
+    [`PortForwarder`](src/clearskies/cursors/port_forwarding/port_forwarder.py:1).
+    This enables flexible port forwarding strategies, such as SSM, SSH with certificate,
+    or SSH with private key. Only SSM is implemented in this repository; others can be
+    implemented as needed.
+
+    #### Example: SSM Port Forwarding
+
+    ```python
+    from clearskies.cursors.port_forwarding.ssm import SSMPortForwarder
+    import clearskies
+
+    cursor = clearskies.cursors.from_environment.Mysql(
+        database="example",
+        port_forwarding=SSMPortForwarder(
+            instance_id="i-1234567890abcdef0",
+            region="eu-west-1",
+        ),
+    )
+    cursor.execute("SELECT * FROM table")
+    results = cursor.fetchall()
+    ```
+
+    ### Attributes
+
+    - `database`: Name of the database to connect to.
+    - `autocommit`: Whether to automatically commit transactions.
+    - `port_forwarding`: Optional port forwarding configuration (PortForwarder subclass).
+    - `connect_timeout`: Connection timeout in seconds.
+    - `table_escape_character`: Character used to escape table names.
+    - `column_escape_character`: Character used to escape column names.
+    - `value_placeholder`: Placeholder character for parameter binding.
     """
 
-    socket = clearskies.di.inject.Socket()
-    subprocess = clearskies.di.inject.Subprocess()
-
+    """
+    Name of the database to connect to.
+    """
     database = clearskies.configs.String(default="example")
+
+    """
+    Whether to automatically commit transactions.
+    """
     autocommit = clearskies.configs.Boolean(default=True)
+
+    """
+    Optional port forwarding configuration (can be a PortForwarder instance).
+    """
     port_forwarding = clearskies.configs.Any(default=None)
+
+    """
+    Connection timeout in seconds.
+    """
     connect_timeout = clearskies.configs.Integer(default=2)
 
     table_escape_character = "`"
@@ -70,6 +116,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     _cursor: DBAPICursor
     _factory: ModuleType
     _connection: DBAPIConnection
+    _port_forwarder_active = False
 
     @decorators.parameters_to_properties
     def __init__(
@@ -97,23 +144,63 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     @property
     def cursor(self) -> DBAPICursor:
         """Get or create a database cursor instance."""
-        if not hasattr(self, "_cursor"):
-            if self.port_forwarding:
-                self.logger.info("Establishing port forwarding...")
-                try:
-                    forwarded = self.port_forwarding_context()
-                    if not forwarded:
-                        raise ValueError("Port forwarding context did not yield forwarded ports.")
-                except Exception as e:
-                    self.logger.error(f"Port forwarding failed: {e}")
-                    raise
+        if hasattr(self, "_cursor"):
+            return self._cursor
 
-            self._connection = self.factory.connect(
-                **self.build_connection_kwargs(),
-            )
-            self._cursor = self._connection.cursor()
+        connection_kwargs = self.build_connection_kwargs()
+
+        if self.port_forwarding:
+            if not isinstance(self.port_forwarding, PortForwarder):
+                raise TypeError(f"port_forwarding must be a PortForwarder instance, got {type(self.port_forwarding)}")
+
+            self.logger.info("Establishing port forwarding...")
+            try:
+                # Get original host/port from connection kwargs
+                original_host = connection_kwargs.get("host", "localhost")
+                original_port = connection_kwargs.get(
+                    "port", self.default_port if hasattr(self, "default_port") else 3306
+                )
+
+                # Setup port forwarding and get local endpoint
+                local_host, local_port = self.port_forwarding.setup(original_host, original_port)
+
+                # Update connection kwargs to use local endpoint
+                connection_kwargs["host"] = local_host
+                connection_kwargs["port"] = local_port
+
+                self._port_forwarder_active = True
+
+            except Exception as e:
+                self.logger.error(f"Port forwarding failed: {e}")
+                raise
+
+        self._connection = self.factory.connect(
+            **connection_kwargs,
+        )
+        self._cursor = self._connection.cursor()
 
         return self._cursor
+
+    def close(self) -> None:
+        """Close cursor, connection, and port forwarding."""
+        if hasattr(self, "_cursor"):
+            self._cursor.close()
+            delattr(self, "_cursor")
+
+        if hasattr(self, "_connection"):
+            self._connection.close()
+            delattr(self, "_connection")
+
+        if self._port_forwarder_active and self.port_forwarding:
+            self.port_forwarding.teardown()
+            self._port_forwarder_active = False
+
+    def __del__(self):
+        """Ensure cleanup on object destruction."""
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def __call__(self, *args: configurable.Any, **kwds: configurable.Any) -> configurable.Any:
         return self.cursor
@@ -125,10 +212,6 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     def __next__(self):
         """Allow direct next() calls on the cursor config."""
         return next(self())
-
-    def port_forwarding_context(self):
-        """Context manager for port forwarding (if applicable)."""
-        raise NotImplementedError("Port forwarding not implemented for this cursor.")
 
     def column_equals_with_placeholder(self, column_name: str) -> str:
         """
