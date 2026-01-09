@@ -95,6 +95,35 @@
             ]
         },
         {
+            "title": "Cursors",
+            "source": "clearskies.cursors.Cursor",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "classes": [
+                "clearskies.cursors.Sqlite",
+                "clearskies.cursors.Mysql",
+                "clearskies.cursors.Postgresql"
+            ]
+        },
+        {
+            "title": "Cursors from Environment",
+            "source": "clearskies.cursors.Cursor",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "classes": [
+                "clearskies.cursors.from_environment.Sqlite",
+                "clearskies.cursors.from_environment.Mysql",
+                "clearskies.cursors.from_environment.Postgresql"
+            ]
+        },
+         {
+            "title": "Cursors Port Forwarder",
+            "source": "clearskies.cursors.port_forwarding.PortForwarder",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "classes": [
+                "clearskies.cursors.port_forwarding.SSHCert",
+                "clearskies.cursors.port_forwarding.SSHPrivateKey"
+            ]
+        },
+        {
             "title": "Endpoints",
             "source": "clearskies.endpoint.Endpoint",
             "builder": "clearskies_doc_builder.builders.Module",
