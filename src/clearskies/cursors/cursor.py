@@ -5,7 +5,7 @@ from typing import Protocol
 import clearskies.configs
 from clearskies import configurable, decorators, loggable
 from clearskies.cursors.port_forwarding.port_forwarder import PortForwarder
-from clearskies.di import InjectableProperties
+from clearskies.di import InjectableProperties, inject
 
 
 class DBAPICursor(Protocol):
@@ -110,6 +110,9 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     """
     connect_timeout = clearskies.configs.Integer(default=2)
 
+    """Dependency injection container.a"""
+    di = inject.Di()
+
     table_escape_character = "`"
     column_escape_character = "`"
     value_placeholder = "%s"
@@ -126,6 +129,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         port_forwarding=None,
         connect_timeout=2,
     ):
+        self._di = None  # Ensure _di exists to avoid AttributeError
         self.finalize_and_validate_configuration()
 
     @property
@@ -162,6 +166,8 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
                 )
 
                 # Setup port forwarding and get local endpoint
+                if hasattr(self.port_forwarding, "injectable_properties"):
+                    self.port_forwarding.injectable_properties(di=self.di)
                 local_host, local_port = self.port_forwarding.setup(original_host, original_port)
 
                 # Update connection kwargs to use local endpoint

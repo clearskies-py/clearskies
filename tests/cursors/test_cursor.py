@@ -51,6 +51,7 @@ class CursorTest(unittest.TestCase):
         cursor.hostname = "remote-db"
         cursor.port = 5432
         cursor.port_forwarding = port_forwarder
+        cursor.di = self.di
         cursor.finalize_and_validate_configuration()
         cursor._factory = self.factory_mock
 
