@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
-from clearskies import configurable, loggable
+from clearskies import configurable, di, loggable
 from clearskies.di import inject
 
 
-class PortForwarder(ABC, configurable.Configurable, loggable.Loggable):
+class PortForwarder(ABC, configurable.Configurable, loggable.Loggable, di.InjectableProperties):
     """
     Abstract base class for port forwarding implementations.
 
