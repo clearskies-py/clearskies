@@ -75,6 +75,7 @@ from .callable_config import Callable
 from .columns import Columns
 from .conditions import Conditions
 from .config import Config
+from .cursor import Cursor
 from .datetime import Datetime
 from .datetime_or_callable import DatetimeOrCallable
 from .email import Email
@@ -128,6 +129,7 @@ __all__ = [
     "Columns",
     "Conditions",
     "Config",
+    "Cursor",
     "Datetime",
     "DatetimeOrCallable",
     "Email",

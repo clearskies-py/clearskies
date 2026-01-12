@@ -1,9 +1,8 @@
 from abc import ABC
 from types import ModuleType
-from typing import Protocol
+from typing import Any, Protocol
 
-import clearskies.configs
-from clearskies import configurable, decorators, loggable
+from clearskies import configs, configurable, decorators, loggable
 from clearskies.cursors.port_forwarding.port_forwarder import PortForwarder
 from clearskies.di import InjectableProperties
 
@@ -93,22 +92,22 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     """
     Name of the database to connect to.
     """
-    database = clearskies.configs.String(default="example")
+    database = configs.String(default="example")
 
     """
     Whether to automatically commit transactions.
     """
-    autocommit = clearskies.configs.Boolean(default=True)
+    autocommit = configs.Boolean(default=True)
 
     """
     Optional port forwarding configuration (can be a PortForwarder instance).
     """
-    port_forwarding = clearskies.configs.Any(default=None)
+    port_forwarding = configs.Any(default=None)
 
     """
     Connection timeout in seconds.
     """
-    connect_timeout = clearskies.configs.Integer(default=2)
+    connect_timeout = configs.Integer(default=2)
 
     table_escape_character = "`"
     column_escape_character = "`"
@@ -180,6 +179,12 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         self._cursor = self._connection.cursor()
 
         return self._cursor
+
+    @property
+    def connection(self) -> Any:
+        # cheating badly
+        self.cursor
+        return self._connection
 
     def close(self) -> None:
         """Close cursor, connection, and port forwarding."""

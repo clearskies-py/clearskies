@@ -17,8 +17,9 @@ Port forwarding support is available via the port_forwarding submodule.
 """
 
 from clearskies.cursors import from_environment
+from clearskies.cursors.cursor import Cursor
 from clearskies.cursors.mysql import Mysql
 from clearskies.cursors.postgresql import Postgresql
 from clearskies.cursors.sqlite import Sqlite
 
-__all__ = ["from_environment", "Mysql", "Postgresql", "Sqlite"]
+__all__ = ["Cursor", "from_environment", "Mysql", "Postgresql", "Sqlite"]
