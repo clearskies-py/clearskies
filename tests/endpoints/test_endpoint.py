@@ -341,9 +341,9 @@ class EndpointTest(TestBase):
     def test_route_from_request_data_unpacks_body_params(self):
         """Test that route_from_request_data also unpacks request body params for callables."""
 
-        def my_handler(group_id, page_data: dict = {}):
+        def my_handler(group_id, request_data: dict = {}):
             """Return group_id from routing and page_data from body."""
-            return {"group_id": group_id, "page_data": page_data}
+            return {"group_id": group_id, "page_data": request_data["page_data"]}
 
         context = Context(
             clearskies.endpoints.Callable(
@@ -358,6 +358,31 @@ class EndpointTest(TestBase):
             url="/groups/{group_id}/members",
             body={"group_id": "abc-123", "page_data": {"page": 2, "per_page": 50}},
         )
+        assert status_code == 200
+        assert response["data"]["group_id"] == "abc-123"
+        assert response["data"]["page_data"] == {"page": 2, "per_page": 50}
+
+    def test_route_from_request_data_with_key(self):
+        """Test that route_from_request_data also unpacks request body params for callables."""
+
+        def my_handler(group_id, request_data: dict = {}):
+            """Return group_id from routing and page_data from body."""
+            return {"group_id": group_id, "page_data": request_data["page_data"]}
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                my_handler,
+                url="/groups/{group_id}/members",
+                request_methods=["GET", "POST"],
+            ),
+            route_from_request_data=True,
+            request_data_route_key="url",
+        )
+
+        (status_code, response, headers) = context(
+            body={"url": "/groups/{group_id}/members", "group_id": "abc-123", "page_data": {"page": 2, "per_page": 50}},
+        )
+        print(response)
         assert status_code == 200
         assert response["data"]["group_id"] == "abc-123"
         assert response["data"]["page_data"] == {"page": 2, "per_page": 50}

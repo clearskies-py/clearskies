@@ -28,6 +28,24 @@ class Context:
     """
     application: Callable | Endpoint | EndpointGroup = None  # type: ignore
 
+    """
+    Switch to routing based on the request body rather than a URL
+
+    With this flag set to true, clearskies will no longer look for a URL in an actual URL (not all contexts support that anyway)
+    and will instead look to the request data for routing information.  This is typically combined with the `request_data_route_key`
+    to specify a key in the request data that should be used for the URL.  You can also pass the URL in when you call the context,
+    in most cases.
+    """
+    route_from_request_data: bool = False
+
+    """
+    Specify the key in the request data that should be used as the URL when processing the request
+
+    If you set `route_from_request_data` to True, but don't set a request data route key, then you have to provide the URL
+    when you invoke the context.
+    """
+    request_data_route_key: str = ""
+
     def __init__(
         self,
         application: Callable | Endpoint | EndpointGroup,
@@ -40,6 +58,7 @@ class Context:
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
         route_from_request_data: bool = False,
+        request_data_route_key: str = "",
     ):
         self.di = Di(
             classes=classes,
@@ -53,9 +72,11 @@ class Context:
         )
         self.application = application
         self.route_from_request_data = route_from_request_data
+        self.request_data_route_key = request_data_route_key
 
     def execute_application(self, input_output: InputOutput):
-        input_output.route_from_request_data = self.route_from_request_data
+        if self.route_from_request_data:
+            input_output.override_route_from_request_data(self.request_data_route_key)
         self.di.add_binding("input_output", input_output)
         self.di.add_class_override(InputOutput, input_output)
 
