@@ -1002,6 +1002,32 @@ class Endpoint(
                 matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=False)
                 if not matches:
                     return self.error(input_output, "Not Found", 404)
+
+                if input_output.route_from_request_data:
+                    request_data = input_output.request_data
+                    if request_data and isinstance(request_data, dict):
+                        for key, value in routing_data.items():
+                            # If the URL value is a placeholder, and we have a value in request_data, use it.
+                            # Otherwise, if it's a placeholder and no value in request_data, it's an error.
+                            if value == f"{{{key}}}" or value == f":{key}":
+                                if key in request_data:
+                                    routing_data[key] = request_data[key]
+                                else:
+                                    return self.error(
+                                        input_output, f"Missing routing parameter '{key}' in request body", 404
+                                    )
+                            # If the URL value is not a placeholder, but we have a value in request_data, override it.
+                            # This supports cases like /users/123 where 123 is overridden by body {"id": 456}
+                            elif key in request_data:
+                                routing_data[key] = request_data[key]
+
+                    # After attempting to populate from request_data, check if any placeholders remain
+                    for key, value in routing_data.items():
+                        if value == f"{{{key}}}" or value == f":{key}":
+                            return self.error(
+                                input_output, f"Missing routing parameter '{key}' from URL or request body", 404
+                            )
+
                 input_output.routing_data = routing_data
 
     def failure(self, input_output: InputOutput) -> Any:

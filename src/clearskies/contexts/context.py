@@ -39,6 +39,7 @@ class Context:
         overrides: dict[str, type] = {},
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
+        route_from_request_data: bool = False,
     ):
         self.di = Di(
             classes=classes,
@@ -51,8 +52,10 @@ class Context:
             utcnow=utcnow,
         )
         self.application = application
+        self.route_from_request_data = route_from_request_data
 
     def execute_application(self, input_output: InputOutput):
+        input_output.route_from_request_data = self.route_from_request_data
         self.di.add_binding("input_output", input_output)
         self.di.add_class_override(InputOutput, input_output)
 

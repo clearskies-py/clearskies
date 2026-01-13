@@ -23,6 +23,7 @@ class InputOutput(ABC, configurable.Configurable):
     request_method = configs.Select(["GET", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
     supports_request_method = configs.Boolean(default=True)
     supports_url = configs.Boolean(default=True)
+    route_from_request_data = configs.Boolean(default=False)
 
     _body_as_json: dict[str, Any] | list[Any] | None = {}
     _body_loaded_as_json = False
