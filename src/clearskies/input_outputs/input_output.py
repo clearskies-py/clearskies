@@ -102,9 +102,11 @@ class InputOutput(ABC, configurable.Configurable):
         | query_parameters   | dict[str, Any]                   | input_output.query_parameters      | The query parameters                                                            |
         | request_headers    | clearskies.input_outputs.Headers | input_output.request_headers       | The request headers sent by the client                                          |
         | **routing_data     | string                           | **input_output.routing_data        | The routing data is unpacked so keys can be fetched directly                    |
+        | **request_data     | varies                           | **input_output.request_data        | When route_from_request_data is enabled, request_data is also unpacked          |
         | **[varies]         | varies                           | **input_output.context_specifics() | Any additional properties added on by the context (see your context docs)       |
         """
-        return {
+        # Build the base context
+        context: dict[str, Any] = {
             **self.routing_data,
             **self.context_specifics(),
             **{
@@ -115,3 +117,13 @@ class InputOutput(ABC, configurable.Configurable):
                 "query_parameters": self.query_parameters,
             },
         }
+
+        # When route_from_request_data is enabled, also unpack request_data so individual
+        # keys are available directly by name (e.g., page_data from request body)
+        if self.route_from_request_data and self.request_data and isinstance(self.request_data, dict):
+            # Add request_data keys, but don't override existing keys
+            for key, value in self.request_data.items():
+                if key not in context:
+                    context[key] = value
+
+        return context

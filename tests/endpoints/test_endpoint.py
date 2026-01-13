@@ -337,3 +337,58 @@ class EndpointTest(TestBase):
         assert status_code == 200
         assert response["data"]["routing_data"]["group_id"] == "group-456"
         assert response["data"]["routing_data"]["member_id"] == "member-789"
+
+    def test_route_from_request_data_unpacks_body_params(self):
+        """Test that route_from_request_data also unpacks request body params for callables."""
+
+        def my_handler(group_id, page_data: dict = {}):
+            """Return group_id from routing and page_data from body."""
+            return {"group_id": group_id, "page_data": page_data}
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                my_handler,
+                url="/groups/{group_id}/members",
+                request_methods=["GET", "POST"],
+            ),
+            route_from_request_data=True,
+        )
+
+        (status_code, response, headers) = context(
+            url="/groups/{group_id}/members",
+            body={"group_id": "abc-123", "page_data": {"page": 2, "per_page": 50}},
+        )
+        assert status_code == 200
+        assert response["data"]["group_id"] == "abc-123"
+        assert response["data"]["page_data"] == {"page": 2, "per_page": 50}
+
+    def test_route_from_request_data_does_not_override_routing_data(self):
+        """Test that request body keys don't override routing_data or other core context keys."""
+
+        def my_handler(routing_data, request_data):
+            """Return both routing_data and request_data."""
+            return {"routing_data": routing_data, "request_data": request_data}
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                my_handler,
+                url="/groups/{group_id}/members",
+                request_methods=["GET", "POST"],
+            ),
+            route_from_request_data=True,
+        )
+
+        # Try to override routing_data from body - should not work
+        (status_code, response, headers) = context(
+            url="/groups/{group_id}/members",
+            body={
+                "group_id": "abc-123",
+                "routing_data": {"should": "not override"},
+                "request_data": {"also": "should not override"},
+            },
+        )
+        assert status_code == 200
+        # routing_data should be the actual routing data, not the body's "routing_data"
+        assert response["data"]["routing_data"]["group_id"] == "abc-123"
+        # request_data should be the full body
+        assert response["data"]["request_data"]["routing_data"] == {"should": "not override"}
