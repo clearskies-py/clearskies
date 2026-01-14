@@ -1002,6 +1002,7 @@ class Endpoint(
                 matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=False)
                 if not matches:
                     return self.error(input_output, "Not Found", 404)
+
                 input_output.routing_data = routing_data
 
     def failure(self, input_output: InputOutput) -> Any:

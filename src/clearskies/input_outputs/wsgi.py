@@ -64,6 +64,8 @@ class Wsgi(InputOutput):
         return self._from_environment("PATH_INFO")
 
     def get_full_path(self):
+        if self.url is not None:
+            return self.url
         path_info = self.get_path_info()
         script_name = self.get_script_name()
         if not path_info or path_info[0] != "/":
