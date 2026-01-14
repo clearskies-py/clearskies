@@ -298,6 +298,57 @@ class ApiBackendTest(unittest.TestCase):
             {"login": "eijerei", "profile_url": "https://github.com/eijerei"},
         ]
 
+    def test_len_uses_total_count_from_header_after_iteration(self):
+        """Test that len() works on a model after iteration when x-total-count header is present."""
+
+        class User(clearskies.Model):
+            id_column_name = "login"
+            backend = clearskies.backends.ApiBackend(
+                pagination_parameter_name="since",
+                base_url="https://api.github.com",
+                limit_parameter_name="per_page",
+            )
+
+            id = clearskies.columns.Integer()
+            login = clearskies.columns.String()
+            html_url = clearskies.columns.String()
+
+        requests = MagicMock()
+        response = MagicMock()
+        response.ok = True
+        response.headers = {
+            "link": (
+                ' <https://api.github.com/users?per_page=5&since=5>; rel="next", <https://api.github.com/users{?since}>; rel="first"'
+            ),
+            "x-total-count": "100",
+        }
+        response.json = MagicMock(
+            return_value=[
+                {"id": "4", "login": "eijerei", "html_url": "https://github.com/eijerei"},
+                {"id": "5", "login": "qwerty", "html_url": "https://github.com/qwerty"},
+            ]
+        )
+        requests.request = MagicMock(return_value=response)
+
+        def test_len(users: User):
+            query = users.limit(10)
+            # Iterate to trigger the API call and populate _next_page_data
+            results = list(query)
+            # Now len() should use the total_count from the header
+            count = len(query)
+            return {"count": count, "results_returned": len(results)}
+
+        context = Context(
+            clearskies.endpoints.Callable(test_len),
+            classes=[User],
+            bindings={"requests": requests},
+        )
+
+        (status_code, response, response_headers) = context()
+        assert status_code == 200
+        assert response["data"]["count"] == 100
+        assert response["data"]["results_returned"] == 2
+
     def test_pagination_with_x_total_count_header(self):
         class User(clearskies.Model):
             id_column_name = "login"
