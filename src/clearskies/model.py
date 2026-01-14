@@ -1740,6 +1740,8 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
             self.get_final_query(),
             next_page_data=self._next_page_data,
         )
+        if self._next_page_data.get("total_count"):
+            self._count = self._next_page_data["total_count"]
         return iter([self.model(row) for row in raw_rows])
 
     def get_final_query(self) -> Query:

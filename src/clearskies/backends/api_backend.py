@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import urllib.parse
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import requests
 
@@ -891,7 +892,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
                 return []
             if not self.check_dict_and_map_to_model(response_data[0], columns, query_data):
                 raise ValueError(
-                    f"The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
+                    "The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
                 )
             return [self.check_dict_and_map_to_model(record, columns, query_data) for record in response_data]  # type: ignore
 
@@ -967,7 +968,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         mapped = {response_to_model_map[key]: response_data[key] for key in matching}
 
         for api_key, column_name in self.api_to_model_map.items():
-            if not "." in api_key:
+            if "." not in api_key:
                 continue
             try:
                 value = json_functional.get_nested_attribute(response_data, api_key)
@@ -1040,6 +1041,11 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         # Different APIs generally have completely different ways of communicating pagination data, but one somewhat common
         # approach is to use a link header, so let's support that in the base class.
+        # Extract total count from headers if available
+        if "x-total-count" in response.headers or "x-total" in response.headers:
+            next_page_data["total_count"] = int(response.headers.get("x-total-count", response.headers.get("x-total")))
+        if "x-total-pages" in response.headers:
+            next_page_data["total_pages"] = int(response.headers["x-total-pages"])
         if "link" not in response.headers:
             return
         next_link = [rel for rel in response.headers["link"].split(",") if 'rel="next"' in rel]
