@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from clearskies import configs, configurable, exceptions, functional
+from clearskies import configs, configurable, exceptions, functional, loggable
 
 from .headers import Headers
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from clearskies import typing
 
 
-class InputOutput(ABC, configurable.Configurable):
+class InputOutput(ABC, configurable.Configurable, loggable.Loggable):
     """Manage the request and response to the client."""
 
     response_headers = configs.Headers(default=Headers())
@@ -136,9 +136,11 @@ class InputOutput(ABC, configurable.Configurable):
                 "I was asked to override the route from the request data, but the request data is not a dictionary"
             )
 
-        url_override = ""
+        url_override: str = ""
         if hasattr(self, "url") and self.url:
             url_override = self.url
+        if not url_override and hasattr(self, "path"):
+            url_override = str(self.path)
         if request_data_route_key in request_data:
             url_override = request_data[request_data_route_key]
 
@@ -150,5 +152,4 @@ class InputOutput(ABC, configurable.Configurable):
             if not isinstance(request_data[key], str):
                 raise exceptions.NotFound(f"Invalid route key '{key}' key in request data is not a string")
             url_parts[index] = request_data[key]
-
         self.url = "/".join(url_parts)
