@@ -14,6 +14,7 @@ from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import json as json_functional
 from clearskies.functional import routing, string
+from clearskies.query_response import QueryResponse
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -152,7 +153,8 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def fetch_user(users: User, user_repos: UserRepo):
         # If we execute this models query:
         some_repos = (
-            user_repos.where("login=cmancone")
+            user_repos
+            .where("login=cmancone")
             .sort_by("created", "desc")
             .where("type=owner")
             .pagination(page=2)
@@ -731,7 +733,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """Return the request method to use for an update request."""
         return "PATCH"
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> QueryResponse:
         """Update a record."""
         data = {**data}
         url, used_routing_parameters = self.update_url(id, data, model)
@@ -744,7 +746,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         new_record = {**model.get_raw_data(), **data}
         if response.content:
             new_record = {**new_record, **self.map_update_response(response.json(), model)}
-        return new_record
+        return QueryResponse(data=new_record)
 
     def map_update_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         """
@@ -754,7 +756,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.map_record_response(response_data, model.get_columns(), "update")
 
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
         """Create a record."""
         data = {**data}
         url, used_routing_parameters = self.create_url(data, model)
@@ -765,27 +767,41 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         response = self.execute_request(url, request_method, json=data, headers=self.headers)
         json_response = response.json() if response.content else {}
         if response.content:
-            return self.map_create_response(response.json(), model)
-        return {}
+            record = self.map_create_response(response.json(), model)
+            return QueryResponse(data=record)
+        return QueryResponse(data={})
 
     def map_create_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         return self.map_record_response(response_data, model.get_columns(), "create")
 
-    def delete(self, id: int | str, model: Model) -> bool:
-        url, used_routing_parameters = self.delete_url(id, model)
+    def delete(self, id: int | str, model: Model) -> QueryResponse:
+        (url, used_routing_parameters) = self.delete_url(id, model)
         request_method = self.delete_method(id, model)
 
         response = self.execute_request(url, request_method)
-        return True
+        return QueryResponse(success=True)
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
         self.check_query(query)
-        url, method, body, headers = self.build_records_request(query)
+        response_next_page_data: dict[str, str | int] = {}
+        (url, method, body, headers) = self.build_records_request(query)
         response = self.execute_request(url, method, json=body, headers=headers)
         records = self.map_records_response(response.json(), query)
-        if isinstance(next_page_data, dict):
-            self.set_next_page_data_from_response(next_page_data, query, response)
-        return records
+        self.set_next_page_data_from_response(response_next_page_data, query, response)
+
+        # Extract count info if available (keep in dict for backward compatibility)
+        raw_total_count = response_next_page_data.get("total_count")
+        raw_total_pages = response_next_page_data.get("total_pages")
+        total_count = int(raw_total_count) if raw_total_count is not None else None
+        total_pages = int(raw_total_pages) if raw_total_pages is not None else None
+
+        return QueryResponse(
+            data=records,
+            next_page_data=response_next_page_data if response_next_page_data else None,
+            total_count=total_count,
+            total_pages=total_pages,
+            can_count=total_count is not None,
+        )
 
     def build_records_request(self, query: Query) -> tuple[str, str, dict[str, Any], dict[str, str]]:
         url, used_routing_parameters = self.records_url(query)
@@ -1042,10 +1058,13 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         # Different APIs generally have completely different ways of communicating pagination data, but one somewhat common
         # approach is to use a link header, so let's support that in the base class.
         # Extract total count from headers if available
-        if "x-total-count" in response.headers or "x-total" in response.headers:
-            next_page_data["total_count"] = int(response.headers.get("x-total-count", response.headers.get("x-total")))
-        if "x-total-pages" in response.headers:
-            next_page_data["total_pages"] = int(response.headers["x-total-pages"])
+        count_info = self.extract_count_from_response(dict(response.headers), None)
+        if count_info:
+            total_count, total_pages = count_info
+            if total_count is not None:
+                next_page_data["total_count"] = total_count
+            if total_pages is not None:
+                next_page_data["total_pages"] = total_pages
         if "link" not in response.headers:
             return
         next_link = [rel for rel in response.headers["link"].split(",") if 'rel="next"' in rel]
@@ -1060,7 +1079,61 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             )
         next_page_data[self.pagination_parameter_name] = query_parameters[self.pagination_parameter_name][0]
 
-    def count(self, query: Query) -> int:
+    def extract_count_from_response(
+        self,
+        response_headers: dict[str, str] | None = None,
+        response_data: Any = None,
+    ) -> tuple[int | None, int | None] | None:
+        """
+        Extract count information from API response headers.
+
+        This implementation checks for common count headers used by REST APIs:
+        - X-Total-Count or X-Total for total record count
+        - X-Total-Pages for total pages
+
+        Override this method in subclasses to handle API-specific count headers.
+
+        ```python
+        def extract_count_from_response(
+            self,
+            response_headers: dict[str, str] | None = None,
+            response_data: Any = None,
+        ) -> tuple[int | None, int | None] | None:
+            if not response_headers:
+                return None
+            # Custom header names for your API
+            total = response_headers.get("X-My-Api-Total")
+            pages = response_headers.get("X-My-Api-Pages")
+            if total is not None:
+                return (int(total), int(pages) if pages else None)
+            return None
+        ```
+        """
+        if not response_headers:
+            return None
+
+        # Normalize header keys to lowercase for case-insensitive lookup
+        headers_lower = {k.lower(): v for k, v in response_headers.items()}
+
+        total_count = None
+        total_pages = None
+
+        # Check for common total count headers
+        if "x-total-count" in headers_lower:
+            total_count = int(headers_lower["x-total-count"])
+        elif "x-total" in headers_lower:
+            total_count = int(headers_lower["x-total"])
+
+        # Check for total pages header
+        if "x-total-pages" in headers_lower:
+            total_pages = int(headers_lower["x-total-pages"])
+
+        if total_count is not None or total_pages is not None:
+            return (total_count, total_pages)
+
+        return None
+
+    def count(self, query: Query) -> QueryResponse:
         raise NotImplementedError(
             f"The {self.__class__.__name__} backend does not support count operations, so you can't use the `len` or `bool` function for any models using it."
         )

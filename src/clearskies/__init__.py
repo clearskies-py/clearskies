@@ -26,6 +26,7 @@ from .endpoint import Endpoint
 from .endpoint_group import EndpointGroup
 from .environment import Environment
 from .model import Model
+from .query_response import QueryResponse
 from .schema import Schema
 from .security_header import SecurityHeader
 from .validator import Validator
@@ -58,6 +59,7 @@ __all__ = [
     "exceptions",
     "functional",
     "Model",
+    "QueryResponse",
     "Schema",
     "Validator",
     "query",

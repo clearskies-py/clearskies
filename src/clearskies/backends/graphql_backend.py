@@ -10,6 +10,7 @@ from clearskies.backends.backend import Backend
 from clearskies.clients import graphql_client as client
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional.string import swap_casing
+from clearskies.query_response import QueryResponse
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -795,7 +796,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
 
         return mutation_str, variables
 
-    def update(self, id: int | str, data: dict[str, Any], model: "Model") -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: "Model") -> QueryResponse:
         """Update a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("update", model, data, id)
         try:
@@ -803,11 +804,12 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             records = self._extract_records(response)
             if not records:
                 raise Exception("No data returned from update mutation")
-            return self._map_record(records[0], model.get_columns())
+            record = self._map_record(records[0], model.get_columns())
+            return QueryResponse(data=record)
         except Exception as e:
             raise Exception(f"GraphQL update failed: {e}")
 
-    def create(self, data: dict[str, Any], model: "Model") -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: "Model") -> QueryResponse:
         """Create a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("create", model, data)
         try:
@@ -815,20 +817,21 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             records = self._extract_records(response)
             if not records:
                 raise Exception("No data returned from create mutation")
-            return self._map_record(records[0], model.get_columns())
+            record = self._map_record(records[0], model.get_columns())
+            return QueryResponse(data=record)
         except Exception as e:
             raise Exception(f"GraphQL create failed: {e}")
 
-    def delete(self, id: int | str, model: "Model") -> bool:
+    def delete(self, id: int | str, model: "Model") -> QueryResponse:
         """Delete a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("delete", model, {}, id)
         try:
             self.client.execute(mutation_str, variable_values=variables)
-            return True
+            return QueryResponse(success=True)
         except Exception as e:
             raise Exception(f"GraphQL delete failed: {e}")
 
-    def count(self, query: "Query") -> int:
+    def count(self, query: "Query") -> QueryResponse:
         """
         Return the count of records matching the query.
 
@@ -848,7 +851,8 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             response = self.client.execute(count_query)
             data = response.get("data", {})
             if f"{root_field}Count" in data:
-                return int(data[f"{root_field}Count"])
+                count = int(data[f"{root_field}Count"])
+                return QueryResponse(data=count, total_count=count, can_count=True)
         except Exception:
             # Count query not supported, fall back to fetching and counting
             pass
@@ -857,11 +861,12 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         query_str, variables = self._build_query(query)
         try:
             response = self.client.execute(query_str, variable_values=variables)
-            return len(self._extract_records(response))
+            count = len(self._extract_records(response))
+            return QueryResponse(data=count, total_count=count, can_count=True)
         except Exception as e:
             raise Exception(f"GraphQL count failed: {e}")
 
-    def records(self, query: "Query", next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: "Query", next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
         """
         Fetch records matching the query.
 
@@ -876,8 +881,9 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             pre_loaded = query._pre_loaded_records  # type: ignore[attr-defined]
             # Clear the pre-loaded data to avoid reuse
             delattr(query, "_pre_loaded_records")
-            return pre_loaded
+            return QueryResponse(data=pre_loaded)
 
+        response_next_page_data: dict[str, str | int] = {}
         query_str, variables = self._build_query(query)
         self.logger.info(f"GraphQL Query:\n{query_str}")
         self.logger.info(f"Variables: {variables}")
@@ -894,25 +900,26 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             self.logger.debug(f"Mapped records: {mapped}")
 
             # Handle pagination
-            if isinstance(next_page_data, dict):
-                if self.pagination_style == "cursor":
-                    # Extract cursor from pageInfo
-                    data = response.get("data", response)
-                    root_field = self._get_root_field_name(query.model_class)
-                    root_data = data.get(root_field, {})
+            if self.pagination_style == "cursor":
+                # Extract cursor from pageInfo
+                data = response.get("data", response)
+                root_field = self._get_root_field_name(query.model_class)
+                root_data = data.get(root_field, {})
 
-                    if "pageInfo" in root_data:
-                        page_info = root_data["pageInfo"]
-                        if page_info.get("hasNextPage"):
-                            next_page_data["cursor"] = str(page_info.get("endCursor", ""))  # type: ignore[assignment]
-                else:
-                    # Offset-based pagination
-                    limit = query.limit
-                    start = query.pagination.get("start", 0)
-                    if limit and len(records) == limit:
-                        next_page_data["start"] = int(start) + int(limit)
+                if "pageInfo" in root_data:
+                    page_info = root_data["pageInfo"]
+                    if page_info.get("hasNextPage"):
+                        response_next_page_data["cursor"] = str(page_info.get("endCursor", ""))
+            else:
+                # Offset-based pagination
+                limit = query.limit
+                start = query.pagination.get("start", 0)
+                if limit and len(records) == limit:
+                    response_next_page_data["start"] = int(start) + int(limit)
 
-            return mapped
+            return QueryResponse(
+                data=mapped, next_page_data=response_next_page_data if response_next_page_data else None
+            )
         except Exception as e:
             self.logger.error(f"GraphQL records failed: {e}")
             raise Exception(f"GraphQL records failed: {e}")

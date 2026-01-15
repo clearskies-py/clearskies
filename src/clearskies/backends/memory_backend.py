@@ -8,6 +8,7 @@ from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+from clearskies.query_response import QueryResponse
 
 if TYPE_CHECKING:
     from clearskies import Model
@@ -499,23 +500,26 @@ class MemoryBackend(Backend, InjectableProperties):
         self.create_table(model_class)
         return self.get_table(model_class).create(data)
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> QueryResponse:
         self.create_table(model.__class__)
-        return self.get_table(model.__class__).update(id, data)
+        record = self.get_table(model.__class__).update(id, data)
+        return QueryResponse(data=record)
 
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
         self.create_table(model.__class__)
-        return self.get_table(model.__class__).create(data)
+        record = self.get_table(model.__class__).create(data)
+        return QueryResponse(data=record)
 
-    def delete(self, id: int | str, model: Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> QueryResponse:
         self.create_table(model.__class__)
-        return self.get_table(model.__class__).delete(id)
+        self.get_table(model.__class__).delete(id)
+        return QueryResponse(success=True)
 
-    def count(self, query: Query) -> int:
+    def count(self, query: Query) -> QueryResponse:
         self.check_query(query)
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
-                return 0
+                return QueryResponse(data=0, total_count=0, can_count=True)
 
             raise ValueError(
                 f"Attempt to count records for model '{query.model_class.__name__}' that hasn't yet been loaded into the MemoryBackend"
@@ -523,17 +527,20 @@ class MemoryBackend(Backend, InjectableProperties):
 
         # this is easy if we have no joins, so just return early so I don't have to think about it
         if not query.joins:
-            return self.get_table(query.model_class).count(query)
+            count = self.get_table(query.model_class).count(query)
+            return QueryResponse(data=count, total_count=count, can_count=True)
 
         # we can ignore left joins when counting
         query.joins = [join for join in query.joins if join.join_type != "LEFT"]
-        return len(self.rows_with_joins(query))
+        count = len(self.rows_with_joins(query))
+        return QueryResponse(data=count, total_count=count, can_count=True)
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
         self.check_query(query)
+        response_next_page_data: dict[str, str | int] = {}
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
-                return []
+                return QueryResponse(data=[])
 
             raise ValueError(
                 f"Attempt to fetch records for model '{query.model_class.__name__} that hasn't yet been loaded into the MemoryBackend"
@@ -541,7 +548,12 @@ class MemoryBackend(Backend, InjectableProperties):
 
         # this is easy if we have no joins, so just return early so I don't have to think about it
         if not query.joins:
-            return self.get_table(query.model_class).rows(query, query.conditions, next_page_data=next_page_data)
+            records = self.get_table(query.model_class).rows(
+                query, query.conditions, next_page_data=response_next_page_data
+            )
+            return QueryResponse(
+                data=records, next_page_data=response_next_page_data if response_next_page_data else None
+            )
         rows = self.rows_with_joins(query)
 
         if query.sorts:
@@ -563,9 +575,9 @@ class MemoryBackend(Backend, InjectableProperties):
             if query.limit and start + query.limit <= number_rows:
                 end = start + query.limit
             rows = rows[start:end]
-            if end < number_rows and type(next_page_data) == dict:
-                next_page_data["start"] = start + query.limit
-        return rows
+            if end < number_rows:
+                response_next_page_data["start"] = start + query.limit
+        return QueryResponse(data=rows, next_page_data=response_next_page_data if response_next_page_data else None)
 
     def rows_with_joins(self, query: Query) -> list[dict[str, Any]]:
         joins = [*query.joins]

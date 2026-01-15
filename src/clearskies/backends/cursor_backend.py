@@ -8,6 +8,7 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
 from clearskies.query import Condition, Query
+from clearskies.query_response import QueryResponse
 
 if TYPE_CHECKING:
     from clearskies import Model
@@ -149,7 +150,7 @@ class CursorBackend(Backend, InjectableProperties):
             + self.cursor.table_escape_character
         )
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> QueryResponse:
         query_parts = []
         parameters = []
         for key, val in data.items():
@@ -163,9 +164,11 @@ class CursorBackend(Backend, InjectableProperties):
         self.cursor.execute(f"UPDATE {table_name} SET {updates} WHERE {id_equals}", tuple([*parameters, id]))
 
         # and now query again to fetch the updated record.
-        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))[0]
+        records_response = self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))
+        records = records_response.data
+        return QueryResponse(data=records[0])
 
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
         escape = self.cursor.column_escape_character
         columns = escape + f"{escape}, {escape}".join(data.keys()) + escape
         placeholders = ", ".join([self.cursor.value_placeholder for i in range(len(data))])
@@ -178,33 +181,41 @@ class CursorBackend(Backend, InjectableProperties):
         if not new_id:
             raise ValueError("I can't figure out what the id is for a newly created record :(")
 
-        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={new_id}")]))[0]
+        records_response = self.records(
+            Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={new_id}")])
+        )
+        records = records_response.data
+        return QueryResponse(data=records[0])
 
-    def delete(self, id: int | str, model: Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> QueryResponse:
         table_name = self._finalize_table_name(model.destination_name())
         id_equals = self.cursor.column_equals_with_placeholder(model.id_column_name)
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {id_equals}", (id,))
-        return True
+        return QueryResponse(success=True)
 
-    def count(self, query: Query) -> int:
-        sql, parameters = self.as_count_sql(query)
+    def count(self, query: Query) -> QueryResponse:
+        (sql, parameters) = self.as_count_sql(query)
         self.cursor.execute(sql, parameters)
+        count = 0
         for row in self.cursor:
-            return row[0] if type(row) == tuple else row["count"]
-        return 0
+            count = row[0] if type(row) == tuple else row["count"]
+            break
+        return QueryResponse(data=count, total_count=count, can_count=True)
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
         # I was going to get fancy and have this return an iterator, but since I'm going to load up
         # everything into a list anyway, I may as well just return the list, right?
         sql, parameters = self.as_sql(query)
         self.cursor.execute(sql, parameters)
         records = [row for row in self.cursor]
+        response_next_page_data = None
         if type(next_page_data) == dict:
             limit = query.limit
             start = query.pagination.get("start", 0)
             if limit and len(records) == limit:
                 next_page_data["start"] = int(start) + int(limit)
-        return records
+                response_next_page_data = {"start": int(start) + int(limit)}
+        return QueryResponse(data=records, next_page_data=response_next_page_data)
 
     def as_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.cursor.column_escape_character
