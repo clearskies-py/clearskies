@@ -136,6 +136,8 @@ class Cli(InputOutput):
             self._body = final_data
 
     def get_full_path(self):
+        if self.url is not None:
+            return self.url
         return self.path
 
     def has_body(self):

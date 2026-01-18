@@ -4,7 +4,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from clearskies import configs, configurable
+from clearskies import configs, configurable, exceptions, functional, loggable
 
 from .headers import Headers
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from clearskies import typing
 
 
-class InputOutput(ABC, configurable.Configurable):
+class InputOutput(ABC, configurable.Configurable, loggable.Loggable):
     """Manage the request and response to the client."""
 
     response_headers = configs.Headers(default=Headers())
@@ -23,6 +23,8 @@ class InputOutput(ABC, configurable.Configurable):
     request_method = configs.Select(["GET", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
     supports_request_method = configs.Boolean(default=True)
     supports_url = configs.Boolean(default=True)
+    route_from_request_data = configs.Boolean(default=False)
+    url = configs.String(default=None)
 
     _body_as_json: dict[str, Any] | list[Any] | None = {}
     _body_loaded_as_json = False
@@ -103,7 +105,8 @@ class InputOutput(ABC, configurable.Configurable):
         | **routing_data     | string                           | **input_output.routing_data        | The routing data is unpacked so keys can be fetched directly                    |
         | **[varies]         | varies                           | **input_output.context_specifics() | Any additional properties added on by the context (see your context docs)       |
         """
-        return {
+        # Build the base context
+        context: dict[str, Any] = {
             **self.routing_data,
             **self.context_specifics(),
             **{
@@ -114,3 +117,39 @@ class InputOutput(ABC, configurable.Configurable):
                 "query_parameters": self.query_parameters,
             },
         }
+
+        # When route_from_request_data is enabled, also unpack request_data so individual
+        # keys are available directly by name (e.g., page_data from request body)
+        if self.route_from_request_data and self.request_data and isinstance(self.request_data, dict):
+            # Add request_data keys, but don't override existing keys
+            for key, value in self.request_data.items():
+                if key not in context:
+                    context[key] = value
+
+        return context
+
+    def override_route_from_request_data(self, request_data_route_key):
+        """Set the incoming URL based on the request data, for cases where we want to use request data routing."""
+        request_data = self.request_data
+        if not isinstance(request_data, dict):
+            raise ValueError(
+                "I was asked to override the route from the request data, but the request data is not a dictionary"
+            )
+
+        url_override: str = ""
+        if hasattr(self, "url") and self.url:
+            url_override = self.url
+        if not url_override and hasattr(self, "path"):
+            url_override = str(self.path)
+        if request_data_route_key in request_data:
+            url_override = request_data[request_data_route_key]
+
+        parameter_name_map = functional.routing.extract_url_parameter_name_map(url_override)
+        url_parts = url_override.strip("/").split("/")
+        for key, index in parameter_name_map.items():
+            if key not in request_data:
+                raise exceptions.NotFound(f"Missing route key '{key}': key is missing in request data")
+            if not isinstance(request_data[key], str):
+                raise exceptions.NotFound(f"Invalid route key '{key}' key in request data is not a string")
+            url_parts[index] = request_data[key]
+        self.url = "/".join(url_parts)
