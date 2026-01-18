@@ -150,6 +150,15 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         if hasattr(self, "_cursor"):
             return self._cursor
 
+        self._cursor = self.connection.cursor()
+        return self._cursor
+
+    @property
+    def connection(self) -> DBAPIConnection:
+        """Get or create a database connection instance."""
+        if hasattr(self, "_connection"):
+            return self._connection
+
         connection_kwargs = self.build_connection_kwargs()
 
         if self.port_forwarding:
@@ -182,14 +191,7 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         self._connection = self.factory.connect(
             **connection_kwargs,
         )
-        self._cursor = self._connection.cursor()
 
-        return self._cursor
-
-    @property
-    def connection(self) -> Any:
-        # cheating badly
-        self.cursor
         return self._connection
 
     def close(self) -> None:
