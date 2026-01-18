@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 class Cursor(config.Config):
     def __set__(self, instance, value: CursorBase):
-        if not hasattr(value, "cursor"):
+        if not hasattr(value, "build_connection_kwargs"):
             error_prefix = self._error_prefix(instance)
             raise TypeError(
                 f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to a parameter that requries a cursor."

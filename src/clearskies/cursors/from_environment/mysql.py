@@ -115,12 +115,12 @@ class Mysql(MysqlBase):
             "database": self.environment.get(self.database_environment_key),
             "port": self.environment.get(self.port_environment_key, silent=True),
             "ssl_ca": self.environment.get(self.cert_path_environment_key, silent=True),
-            "autocommit": self.environment.get(self.autocommit_environment_key, silent=True),
+            "autocommit": bool(self.environment.get(self.autocommit_environment_key, silent=True)),
             "connect_timeout": self.environment.get(self.connect_timeout_environment_key, silent=True),
         }
 
         for kwarg in ["autocommit", "connect_timeout", "port", "ssl_ca"]:
-            if not connection_kwargs[kwarg]:
+            if connection_kwargs[kwarg] is None:
                 del connection_kwargs[kwarg]
 
         return {**super().build_connection_kwargs(), **connection_kwargs}

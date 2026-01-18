@@ -29,7 +29,28 @@ class Mygrations(Endpoint):
     via SQL (using `CREATE TABLE` commands) and point mygrations at both your SQL files and your
     database.  It will then compare the two and calculate what changes need to be made to bring
     your database in line with your files.  Like most IaC, mygrations then relies on your standard
-    plan/apply combination.
+    plan/apply combination.  Here's a simple example:
+
+    ```
+    import clearskies
+
+    cli = clearskies.contexts.Cli(
+        clearskies.endpoints.Mygrations(
+            allow_input=True,
+            cursor=clearskies.cursors.from_environment.Mysql(),
+            sql=["./database/"],
+        )
+    )
+    cli()
+    ```
+
+    This would find database connection details in your environment and would look for `*.sql` files
+    in the `database` folder.  You could then call this script to plan/apply/whatever:
+
+    ```
+    ./mygrate.py --command=plan
+    ./mygrate.py --command=apply
+    ```
     """
 
     """
@@ -104,7 +125,8 @@ class Mygrations(Endpoint):
             raise ValueError("mygrations is not installed.")
 
         self.di.inject_properties(self.cursor.__class__)
-        if hasattr(self.cursor, "autocommit") and self.cursor.autocommit:
+        connection_kwargs = self.cursor.build_connection_kwargs()
+        if connection_kwargs.get("autocommit"):
             raise ValueError(
                 "Autocommit must be disabled for the mygrations endpoint to work, but the provided cursor has autocommit enabled."
             )
