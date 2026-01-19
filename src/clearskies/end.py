@@ -174,12 +174,13 @@ class End(
         # pagination isn't always relevant so if it is completely empty then leave it that way
         if not pagination:
             return pagination
+        # Handle next_page being None or missing - use empty dict
+        next_page = pagination.get("next_page") or {}
         return {
             self.auto_case_internal_column_name("number_results"): pagination.get("number_results", 0),
             self.auto_case_internal_column_name("limit"): pagination.get("limit", 0),
             self.auto_case_internal_column_name("next_page"): {
-                self.auto_case_internal_column_name(key): value
-                for (key, value) in pagination.get("next_page", {}).items()
+                self.auto_case_internal_column_name(key): value for (key, value) in next_page.items()
             },
         }
 

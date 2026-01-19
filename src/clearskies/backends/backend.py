@@ -9,7 +9,12 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 if TYPE_CHECKING:
     from clearskies import Column, Model
     from clearskies.query import Query
-    from clearskies.query_response import QueryResponse
+    from clearskies.query.result import (
+        CountQueryResult,
+        RecordQueryResult,
+        RecordsQueryResult,
+        SuccessQueryResult,
+    )
 
 
 class Backend(ABC, loggable.Loggable):
@@ -30,35 +35,31 @@ class Backend(ABC, loggable.Loggable):
     can_count = True
 
     @abstractmethod
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any] | QueryResponse:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Update the record with the given id with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any] | QueryResponse:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Create a record with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def delete(self, id: int | str, model: Model) -> bool | QueryResponse:
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
         """Delete the record with the given id."""
         pass
 
     @abstractmethod
-    def count(self, query: Query) -> int | QueryResponse:
+    def count(self, query: Query) -> CountQueryResult:
         """Return the number of records which match the given query configuration."""
         pass
 
     @abstractmethod
-    def records(
-        self, query: Query, next_page_data: dict[str, str | int] | None = None
-    ) -> list[dict[str, Any]] | QueryResponse:
+    def records(self, query: Query) -> RecordsQueryResult:
         """
         Return a list of records that match the given query configuration.
 
-        next_page_data is used to return data to the caller.  Pass in an empty dictionary, and it will be populated
-        with the data needed to return the next page of results.  If it is still an empty dictionary when returned,
-        then there is no additional data.
+        The QueryResult includes next_page_data for pagination information.
         """
         pass
 
@@ -124,7 +125,7 @@ class Backend(ABC, loggable.Loggable):
         in backends that can extract count from response headers/data, such as
         API backends with X-Total-Count headers.
 
-        This enables count caching in QueryResponse - when records() returns,
+        This enables count caching in QueryResult - when records() returns,
         the count can be cached from the response headers so that a subsequent
         count() call doesn't need to make a separate request.
 

@@ -7,7 +7,7 @@ from clearskies import loggable
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import string
 from clearskies.query import Condition, Join, Query, Sort
-from clearskies.query_response import QueryResponse
+from clearskies.query.result import CountQueryResult, QueryResult, RecordQueryResult, RecordsQueryResult
 from clearskies.schema import Schema
 
 if TYPE_CHECKING:
@@ -201,7 +201,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     _query_executed: bool = False
     _count: int | None = None
     _next_page_data: dict[str, Any] | None = None
-    _last_query_response: QueryResponse | None = None
+    _last_query_result: QueryResult | None = None
 
     id_column_name: str = ""
     backend: Backend = None  # type: ignore
@@ -234,7 +234,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         self._query_executed = False
         self._count = None
         self._next_page_data = None
-        self._last_query_response = None
+        self._last_query_result = None
 
     @classmethod
     def destination_name(cls: type[Self]) -> str:
@@ -507,10 +507,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         [to_save, temporary_data] = self.columns_to_backend(data, save_columns)
         to_save = self.to_backend(to_save, save_columns)
         if self:
-            result = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
+            result: RecordQueryResult = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
         else:
-            result = self.backend.create(to_save, self)  # type: ignore
-        new_data = self.extract_data_from_result(result)
+            result: RecordQueryResult = self.backend.create(to_save, self)  # type: ignore
+        new_data = result.record
         id = self.backend.column_from_backend(save_columns[self.id_column_name], new_data[self.id_column_name])  # type: ignore
 
         # if we had any temporary columns add them back in
@@ -848,11 +848,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         self.columns_pre_delete(columns)
         self.pre_delete()
 
-        result = self.backend.delete(self._data[self.id_column_name], self)  # type: ignore
-        # Handle QueryResponse or raw bool result
-        if isinstance(result, QueryResponse):
-            if not result.success:
-                raise RuntimeError(f"Delete operation failed: {result.error}")
+        self.backend.delete(self._data[self.id_column_name], self)
 
         self.columns_post_delete(columns)
         self.post_delete()
@@ -1738,24 +1734,24 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     def __len__(self: Self):  # noqa: D105
         self.no_single_model()
         if self._count is None:
-            result = self.backend.count(self.get_final_query())
-            self._count = self.extract_count_from_result(result)
+            result: CountQueryResult = self.backend.count(self.get_final_query())
+            self._count = result.count
         return self._count
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105
         self.no_single_model()
-        self._next_page_data = {}
-        result = self.backend.records(
-            self.get_final_query(),
-            next_page_data=self._next_page_data,
-        )
-        # Cache the QueryResponse for endpoints to access
-        if isinstance(result, QueryResponse):
-            self._last_query_response = result
-        raw_rows = self.extract_records_from_result(result)
-        if self._next_page_data.get("total_count"):
-            self._count = self._next_page_data["total_count"]
-        return iter([self.model(row) for row in raw_rows])
+        result: RecordsQueryResult = self.backend.records(self.get_final_query())
+        # Cache the QueryResult for endpoints to access
+        self._last_query_result = result
+        # Cache count from QueryResult only if it has a valid total count
+        # (i.e., can_count is True). Otherwise, leave _count as None so that
+        # __len__ will call backend.count() to get the actual total count.
+        if result.can_count:
+            self._count = result.get_count()
+        # Update next_page_data from QueryResult if available
+        if result.next_page_data:
+            self._next_page_data = result.next_page_data
+        return iter([self.model(row) for row in result.records])
 
     def get_final_query(self) -> Query:
         """
@@ -2026,11 +2022,11 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     def next_page_data(self: Self):
         return self._next_page_data
 
-    def last_query_response(self: Self) -> QueryResponse | None:
+    def last_query_result(self: Self) -> QueryResult | None:
         """
-        Return the QueryResponse from the last query execution.
+        Return the QueryResult from the last query execution.
 
-        This allows endpoints and other code to access the full QueryResponse
+        This allows endpoints and other code to access the full QueryResult
         with all its metadata (total_count, total_pages, can_count, next_page_data, etc.)
         after iterating over the model query results.
 
@@ -2039,13 +2035,13 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         for record in users.where("status=active"):
             process(record)
 
-        # Access the full response metadata
-        response = users.last_query_response()
-        if response and response.can_count:
-            print(f"Total records: {response.total_count}")
+        # Access the full result metadata
+        result = users.last_query_result()
+        if result and result.can_count:
+            print(f"Total records: {result.total_count}")
         ```
         """
-        return self._last_query_response
+        return self._last_query_result
 
     def documentation_pagination_next_page_response(self: Self, case_mapping: Callable) -> list[Any]:
         return self.backend.documentation_pagination_next_page_response(case_mapping)
@@ -2067,57 +2063,6 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
             raise ValueError(
                 "You have attempted to execute a query against a model that represents an individual record.  This is not allowed, as it is typically a sign of a bug in your application code.  If this is intentional, call model.as_query() before executing your query."
             )
-
-    def extract_data_from_result(self, result: dict[str, Any] | QueryResponse) -> dict[str, Any]:
-        """
-        Extract record data from a backend result.
-
-        Handles both raw dict returns (backward compatible) and QueryResponse objects.
-        Override this method in subclasses to customize how data is extracted.
-        """
-        if isinstance(result, QueryResponse):
-            if not result.success:
-                raise RuntimeError(f"Backend operation failed: {result.error}")
-            return result.data
-        return result
-
-    def extract_count_from_result(self, result: int | QueryResponse) -> int:
-        """
-        Extract count from a backend result.
-
-        Handles both raw int returns (backward compatible) and QueryResponse objects.
-        Override this method in subclasses to customize how count is extracted.
-        """
-        if isinstance(result, QueryResponse):
-            if not result.success:
-                raise RuntimeError(f"Count operation failed: {result.error}")
-            # For count, the data is the count itself or use total_count
-            if isinstance(result.data, int):
-                return result.data
-            if result.total_count is not None:
-                return result.total_count
-            raise ValueError("QueryResponse for count has no valid count data")
-        return result
-
-    def extract_records_from_result(self, result: list[dict[str, Any]] | QueryResponse) -> list[dict[str, Any]]:
-        """
-        Extract records from a backend result.
-
-        Handles both raw list returns (backward compatible) and QueryResponse objects.
-        Caches count information from QueryResponse if available.
-        Override this method in subclasses to customize how records are extracted.
-        """
-        if isinstance(result, QueryResponse):
-            if not result.success:
-                raise RuntimeError(f"Records operation failed: {result.error}")
-            # Cache count from QueryResponse if available
-            if result.can_count and result.total_count is not None:
-                self._count = result.total_count
-            # Update next_page_data from QueryResponse if available
-            if result.next_page_data:
-                self._next_page_data = result.next_page_data
-            return result.data or []
-        return result
 
 
 class ModelClassReference:

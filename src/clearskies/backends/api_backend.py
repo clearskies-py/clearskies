@@ -14,7 +14,12 @@ from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import json as json_functional
 from clearskies.functional import routing, string
-from clearskies.query_response import QueryResponse
+from clearskies.query.result import (
+    CountQueryResult,
+    RecordQueryResult,
+    RecordsQueryResult,
+    SuccessQueryResult,
+)
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -733,7 +738,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """Return the request method to use for an update request."""
         return "PATCH"
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> QueryResponse:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Update a record."""
         data = {**data}
         url, used_routing_parameters = self.update_url(id, data, model)
@@ -746,7 +751,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         new_record = {**model.get_raw_data(), **data}
         if response.content:
             new_record = {**new_record, **self.map_update_response(response.json(), model)}
-        return QueryResponse(data=new_record)
+        return RecordQueryResult(record=new_record)
 
     def map_update_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         """
@@ -756,7 +761,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         """
         return self.map_record_response(response_data, model.get_columns(), "update")
 
-    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Create a record."""
         data = {**data}
         url, used_routing_parameters = self.create_url(data, model)
@@ -768,39 +773,37 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         json_response = response.json() if response.content else {}
         if response.content:
             record = self.map_create_response(response.json(), model)
-            return QueryResponse(data=record)
-        return QueryResponse(data={})
+            return RecordQueryResult(record=record)
+        return RecordQueryResult(record={})
 
     def map_create_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         return self.map_record_response(response_data, model.get_columns(), "create")
 
-    def delete(self, id: int | str, model: Model) -> QueryResponse:
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
         (url, used_routing_parameters) = self.delete_url(id, model)
         request_method = self.delete_method(id, model)
 
         response = self.execute_request(url, request_method)
-        return QueryResponse(success=True)
+        return SuccessQueryResult()
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
+    def records(self, query: Query) -> RecordsQueryResult:
         self.check_query(query)
-        response_next_page_data: dict[str, str | int] = {}
         (url, method, body, headers) = self.build_records_request(query)
         response = self.execute_request(url, method, json=body, headers=headers)
         records = self.map_records_response(response.json(), query)
-        self.set_next_page_data_from_response(response_next_page_data, query, response)
+        response_next_page_data = self.get_next_page_data_from_response(query, response)
 
-        # Extract count info if available (keep in dict for backward compatibility)
+        # Extract count info if available from the response
         raw_total_count = response_next_page_data.get("total_count")
         raw_total_pages = response_next_page_data.get("total_pages")
         total_count = int(raw_total_count) if raw_total_count is not None else None
         total_pages = int(raw_total_pages) if raw_total_pages is not None else None
 
-        return QueryResponse(
-            data=records,
+        return RecordsQueryResult(
+            records=records,
             next_page_data=response_next_page_data if response_next_page_data else None,
             total_count=total_count,
             total_pages=total_pages,
-            can_count=total_count is not None,
         )
 
     def build_records_request(self, query: Query) -> tuple[str, str, dict[str, Any], dict[str, str]]:
@@ -1029,32 +1032,23 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return self._response_to_model_map
 
-    def set_next_page_data_from_response(
+    def get_next_page_data_from_response(
         self,
-        next_page_data: dict[str, Any],
         query: Query,
         response: requests.Response,  # type: ignore
-    ) -> None:
+    ) -> dict[str, Any]:
         """
-        Update the next_page_data dictionary with the appropriate data needed to fetch the next page of records.
+        Extract pagination data from the API response needed to fetch the next page of records.
 
         This method has a very important job, which is to inform clearskies about how to make another API call to fetch the next
-        page of records.  The way this happens is by updating the `next_page_data` dictionary in place with whatever pagination
-        information is necessary.  Note that this relies on next_page_data being passed by reference, hence the need to update
-        it in place.  That means that you can do this:
+        page of records.  It returns a dictionary with whatever pagination information is necessary.
 
-        ```python
-        next_page_data["some_key"] = "some_value"
-        ```
-
-        but if you do this:
-
-        ```python
-        next_page_data = {"some_key": "some_value"}
-        ```
-
-        Then things simply won't work.
+        Returns:
+            A dictionary containing pagination data (e.g., cursor, page number, total counts).
+            Returns an empty dict if there is no next page.
         """
+        next_page_data: dict[str, Any] = {}
+
         # Different APIs generally have completely different ways of communicating pagination data, but one somewhat common
         # approach is to use a link header, so let's support that in the base class.
         # Extract total count from headers if available
@@ -1066,10 +1060,10 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             if total_pages is not None:
                 next_page_data["total_pages"] = total_pages
         if "link" not in response.headers:
-            return
+            return next_page_data
         next_link = [rel for rel in response.headers["link"].split(",") if 'rel="next"' in rel]
         if not next_link:
-            return
+            return next_page_data
         parsed_next_link = urllib.parse.urlparse(next_link[0].split(";")[0].strip(" <>"))
         query_parameters = urllib.parse.parse_qs(parsed_next_link.query)
         if self.pagination_parameter_name not in query_parameters:
@@ -1078,6 +1072,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
                 + parsed_next_link.geturl()
             )
         next_page_data[self.pagination_parameter_name] = query_parameters[self.pagination_parameter_name][0]
+        return next_page_data
 
     def extract_count_from_response(
         self,
@@ -1133,7 +1128,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         return None
 
-    def count(self, query: Query) -> QueryResponse:
+    def count(self, query: Query) -> CountQueryResult:
         raise NotImplementedError(
             f"The {self.__class__.__name__} backend does not support count operations, so you can't use the `len` or `bool` function for any models using it."
         )

@@ -1,5 +1,5 @@
 """
-QueryResponse - A flexible response wrapper for backend and model operations.
+QueryResult - A flexible result wrapper for backend and model operations.
 
 This class wraps backend operation results (records, create, update, delete, count)
 to provide a consistent interface with support for:
@@ -10,17 +10,17 @@ to provide a consistent interface with support for:
 - Type-safe configuration via clearskies config descriptors
 
 The primary motivation is to improve how record counts are communicated across backends.
-When ``records()`` is called and the response contains count headers, the QueryResponse
+When ``records()`` is called and the response contains count headers, the QueryResult
 caches this information so that ``count()`` can return the cached value instead of making
 a separate request.
 
 Example usage:
 
 ```python
-import clearskies
+from clearskies.query.result import QueryResult
 
-# Creating a QueryResponse for a records query
-response = clearskies.QueryResponse(
+# Creating a QueryResult for a records query
+result = QueryResult(
     data=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
     success=True,
     total_count=100,
@@ -30,15 +30,15 @@ response = clearskies.QueryResponse(
 )
 
 # Iterating over records
-for record in response:
+for record in result:
     print(record["name"])
 
 # Checking if count is available
-if response.can_count:
-    print(f"Total records: {response.get_count()}")
+if result.can_count:
+    print(f"Total records: {result.get_count()}")
 
 # Using as a generator for memory efficiency
-for record in response.as_generator():
+for record in result.as_generator():
     process(record)
 ```
 """
@@ -53,14 +53,14 @@ from clearskies import configurable, decorators, loggable
 from clearskies.configs import Any, Boolean, Callable, IntegerOrNone
 
 
-class QueryResponse(
+class QueryResult(
     loggable.Loggable,
     configurable.Configurable,
 ):
     """
-    A flexible response wrapper for backend and model operations.
+    A flexible result wrapper for backend and model operations.
 
-    QueryResponse wraps the results from backend operations (records, create, update, delete, count)
+    QueryResult wraps the results from backend operations (records, create, update, delete, count)
     to provide a consistent interface for accessing data, pagination info, and count caching.
     This is particularly useful for API backends where count information may be returned in
     response headers alongside record data.
@@ -79,22 +79,22 @@ class QueryResponse(
     - None if the operation had no data to return
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
-    # Records response
-    response = clearskies.QueryResponse(
+    # Records result
+    result = QueryResult(
         data=[{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}],
     )
-    for record in response:
+    for record in result:
         print(record["name"])
 
-    # Single record response
-    response = clearskies.QueryResponse(
+    # Single record result
+    result = QueryResult(
         data={"id": 1, "name": "Alice"},
     )
 
-    # Delete response
-    response = clearskies.QueryResponse(data=True)
+    # Delete result
+    result = QueryResult(data=True)
     ```
     """
     data = Any(default=None)
@@ -103,22 +103,20 @@ class QueryResponse(
     Boolean indicating whether the operation was successful.
 
     Defaults to ``True``. Set to ``False`` when the operation failed.
-    Use ``QueryResponse.from_error()`` to create an error response.
+    Use ``FailedQueryResult`` to create an error result.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult, FailedQueryResult
 
-    # Success response
-    success_response = clearskies.QueryResponse(
+    # Success result
+    success_result = QueryResult(
         data=[{"id": 1}],
         success=True,
     )
 
-    # Error response
-    error_response = clearskies.QueryResponse.from_error(
-        "Database connection failed"
-    )
-    print(error_response.success)  # False
+    # Error result
+    error_result = FailedQueryResult(error="Database connection failed")
+    print(error_result.success)  # False
     ```
     """
     success = Boolean(default=True)
@@ -130,34 +128,34 @@ class QueryResponse(
     Typically set when ``success`` is ``False``.
 
     ```python
-    import clearskies
+    from clearskies.query.result import FailedQueryResult
 
-    response = clearskies.QueryResponse.from_error({
+    result = FailedQueryResult(error={
         "message": "Record not found",
         "code": 404
     })
-    print(response.error)  # {"message": "Record not found", "code": 404}
+    print(result.error_msg)  # {"message": "Record not found", "code": 404}
     ```
     """
     error = Any(default=None)
 
     """
-    Total count of records available (not just those returned in this response).
+    Total count of records available (not just those returned in this result).
 
     This is typically populated from API response headers like ``x-total-count``.
     When set along with ``can_count=True``, allows the model to return cached count
     information without making additional API calls.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
     # API returned 10 records but indicated 100 total exist
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         data=[{"id": i} for i in range(10)],
         total_count=100,
         can_count=True,
     )
-    print(response.get_count())  # 100 (from cache, not len(data))
+    print(result.get_count())  # 100 (from cache, not len(data))
     ```
     """
     total_count = IntegerOrNone(default=None)
@@ -170,9 +168,9 @@ class QueryResponse(
     to fetch all data.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         data=[{"id": i} for i in range(10)],
         total_count=100,
         total_pages=10,
@@ -190,17 +188,17 @@ class QueryResponse(
     extracts count information from response headers or body.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
-    # Response with count info from headers
-    response = clearskies.QueryResponse(
+    # Result with count info from headers
+    result = QueryResult(
         data=[{"id": 1}],
         total_count=50,
         can_count=True,
     )
 
-    if response.can_count:
-        print(f"Total: {response.get_count()}")  # Uses cached count
+    if result.can_count:
+        print(f"Total: {result.get_count()}")  # Uses cached count
     ```
     """
     can_count = Boolean(default=False)
@@ -212,20 +210,20 @@ class QueryResponse(
     The format depends on the backend's pagination style (offset, cursor, etc.).
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
     # Offset-based pagination
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         data=[{"id": i} for i in range(10)],
         next_page_data={"start": 10},
     )
 
-    if response.has_more_pages():
+    if result.has_more_pages():
         # Use next_page_data to fetch more results
-        print(response.next_page_data)  # {"start": 10}
+        print(result.next_page_data)  # {"start": 10}
 
     # Cursor-based pagination
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         data=[{"id": i} for i in range(10)],
         next_page_data={"cursor": "eyJpZCI6MTB9"},
     )
@@ -241,21 +239,21 @@ class QueryResponse(
     large result sets without loading everything into memory.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
 
     def fetch_records_lazily():
         for i in range(1000):
             yield {"id": i, "name": f"Record {i}"}
 
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         generator=fetch_records_lazily,
     )
 
-    for record in response.as_generator():
+    for record in result.as_generator():
         print(record["name"])  # Records fetched one at a time
     ```
     """
-    generator = Callable(default=None)
+    generator: CallableType[[], Generator[AnyType, None, None]] | None = Callable(default=None)  # type: ignore[assignment]
 
     """
     Optional async function for asynchronous data access.
@@ -264,22 +262,22 @@ class QueryResponse(
     This is useful for async backends or when data needs to be fetched on-demand.
 
     ```python
-    import clearskies
+    from clearskies.query.result import QueryResult
     import asyncio
 
     async def fetch_data_async():
         await asyncio.sleep(0.1)  # Simulate async operation
         return [{"id": 1}, {"id": 2}]
 
-    response = clearskies.QueryResponse(
+    result = QueryResult(
         async_data=fetch_data_async,
     )
 
     # In async context:
-    # data = await response.as_async()
+    # data = await result.as_async()
     ```
     """
-    async_data = Callable(default=None)
+    async_data: CallableType[[], AnyType] | None = Callable(default=None)  # type: ignore[assignment]
 
     @decorators.parameters_to_properties
     def __init__(
@@ -294,7 +292,7 @@ class QueryResponse(
         generator: CallableType[[], Generator[AnyType, None, None]] | None = None,
         async_data: CallableType[[], AnyType] | None = None,
     ) -> None:
-        """Initialize QueryResponse with provided configuration values."""
+        """Initialize QueryResult with provided configuration values."""
         self.finalize_and_validate_configuration()
 
     def as_generator(self) -> Generator[AnyType, None, None]:
@@ -315,15 +313,15 @@ class QueryResponse(
         """Allow direct iteration over data."""
         if isinstance(self.data, (list, tuple)):
             return iter(self.data)
-        raise TypeError("QueryResponse data is not iterable")
+        raise TypeError("QueryResult data is not iterable")
 
     def __repr__(self) -> str:
-        """Return string representation of QueryResponse."""
+        """Return string representation of QueryResult."""
         data_preview = self.data
         if isinstance(self.data, list) and len(self.data) > 3:
             data_preview = f"[{len(self.data)} items]"
         return (
-            f"QueryResponse("
+            f"QueryResult("
             f"data={data_preview}, "
             f"success={self.success}, "
             f"total_count={self.total_count}, "
@@ -346,8 +344,3 @@ class QueryResponse(
     def has_more_pages(self) -> bool:
         """Check if there are more pages of data available."""
         return self.next_page_data is not None and bool(self.next_page_data)
-
-    @classmethod
-    def from_error(cls, error: AnyType, **kwargs: AnyType) -> "QueryResponse":
-        """Create a QueryResponse representing an error."""
-        return cls(data=None, success=False, error=error, **kwargs)

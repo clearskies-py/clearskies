@@ -8,7 +8,12 @@ from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
-from clearskies.query_response import QueryResponse
+from clearskies.query.result import (
+    CountQueryResult,
+    RecordQueryResult,
+    RecordsQueryResult,
+    SuccessQueryResult,
+)
 
 if TYPE_CHECKING:
     from clearskies import Model
@@ -500,26 +505,73 @@ class MemoryBackend(Backend, InjectableProperties):
         self.create_table(model_class)
         return self.get_table(model_class).create(data)
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> QueryResponse:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
+        """
+        Update the record with the given id with the information from the data dictionary.
+
+        The update is performed in-place in the memory store. The result contains the
+        updated record accessible via the `record` property:
+
+        ```python
+        result = backend.update(user_id, {"name": "Jane"}, user_model)
+        updated_record = result.record  # {"id": user_id, "name": "Jane", ...}
+        ```
+        """
         self.create_table(model.__class__)
         record = self.get_table(model.__class__).update(id, data)
-        return QueryResponse(data=record)
+        return RecordQueryResult(record=record)
 
-    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
+        """
+        Create a record with the information from the data dictionary.
+
+        The record is stored in the memory store. If no id is provided, an auto-incrementing
+        integer id will be assigned. The result contains the created record accessible via
+        the `record` property:
+
+        ```python
+        result = backend.create({"name": "Jane"}, user_model)
+        new_record = result.record  # {"id": 1, "name": "Jane", ...}
+        ```
+        """
         self.create_table(model.__class__)
         record = self.get_table(model.__class__).create(data)
-        return QueryResponse(data=record)
+        return RecordQueryResult(record=record)
 
-    def delete(self, id: int | str, model: Model) -> QueryResponse:
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
+        """
+        Delete the record with the given id.
+
+        The record is marked as deleted in the memory store (set to None). The result
+        indicates success via the `success` property:
+
+        ```python
+        result = backend.delete(user_id, user_model)
+        assert result.success  # True
+        ```
+        """
         self.create_table(model.__class__)
         self.get_table(model.__class__).delete(id)
-        return QueryResponse(success=True)
+        return SuccessQueryResult()
 
-    def count(self, query: Query) -> QueryResponse:
+    def count(self, query: Query) -> CountQueryResult:
+        """
+        Return the number of records which match the given query configuration.
+
+        Counts records in the memory store that match the query conditions. Supports
+        joins for more complex queries.
+
+        The result contains the count accessible via the `count` property:
+
+        ```python
+        result = backend.count(query)
+        total = result.count  # e.g., 42
+        ```
+        """
         self.check_query(query)
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
-                return QueryResponse(data=0, total_count=0, can_count=True)
+                return CountQueryResult(count=0)
 
             raise ValueError(
                 f"Attempt to count records for model '{query.model_class.__name__}' that hasn't yet been loaded into the MemoryBackend"
@@ -528,19 +580,39 @@ class MemoryBackend(Backend, InjectableProperties):
         # this is easy if we have no joins, so just return early so I don't have to think about it
         if not query.joins:
             count = self.get_table(query.model_class).count(query)
-            return QueryResponse(data=count, total_count=count, can_count=True)
+            return CountQueryResult(count=count)
 
         # we can ignore left joins when counting
         query.joins = [join for join in query.joins if join.join_type != "LEFT"]
         count = len(self.rows_with_joins(query))
-        return QueryResponse(data=count, total_count=count, can_count=True)
+        return CountQueryResult(count=count)
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
+    def records(self, query: Query) -> RecordsQueryResult:
+        """
+        Return a list of records that match the given query configuration.
+
+        Fetches records from the memory store that match the query conditions, sorts,
+        limits, and pagination settings. Supports joins for more complex queries.
+
+        The result contains the records accessible via the `records` property, and
+        pagination info in `next_page_data` if there are more results:
+
+        ```python
+        result = backend.records(query)
+        for record in result.records:
+            print(record["name"])
+
+        # Check for more pages
+        if result.next_page_data:
+            next_query = query.set_pagination(result.next_page_data)
+            next_result = backend.records(next_query)
+        ```
+        """
         self.check_query(query)
         response_next_page_data: dict[str, str | int] = {}
         if not self.has_table(query.model_class):
             if self._silent_on_missing_tables:
-                return QueryResponse(data=[])
+                return RecordsQueryResult(records=[])
 
             raise ValueError(
                 f"Attempt to fetch records for model '{query.model_class.__name__} that hasn't yet been loaded into the MemoryBackend"
@@ -551,8 +623,8 @@ class MemoryBackend(Backend, InjectableProperties):
             records = self.get_table(query.model_class).rows(
                 query, query.conditions, next_page_data=response_next_page_data
             )
-            return QueryResponse(
-                data=records, next_page_data=response_next_page_data if response_next_page_data else None
+            return RecordsQueryResult(
+                records=records, next_page_data=response_next_page_data if response_next_page_data else None
             )
         rows = self.rows_with_joins(query)
 
@@ -577,7 +649,9 @@ class MemoryBackend(Backend, InjectableProperties):
             rows = rows[start:end]
             if end < number_rows:
                 response_next_page_data["start"] = start + query.limit
-        return QueryResponse(data=rows, next_page_data=response_next_page_data if response_next_page_data else None)
+        return RecordsQueryResult(
+            records=rows, next_page_data=response_next_page_data if response_next_page_data else None
+        )
 
     def rows_with_joins(self, query: Query) -> list[dict[str, Any]]:
         joins = [*query.joins]

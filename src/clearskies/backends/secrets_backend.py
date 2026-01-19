@@ -4,7 +4,7 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import inject
 from clearskies.query import Condition, Query
-from clearskies.query_response import QueryResponse
+from clearskies.query.result import RecordQueryResult, RecordsQueryResult, SuccessQueryResult
 
 if TYPE_CHECKING:
     from clearskies import Model
@@ -36,8 +36,21 @@ class SecretsBackend(Backend):
         if not query.conditions:
             raise KeyError(f"You must search by an id when using the secrets backend.")
 
-    def update(self, id: str, data: dict[str, Any], model: Model) -> QueryResponse:  # type: ignore[override]
-        """Update the record with the given id with the information from the data dictionary."""
+    def update(self, id: str, data: dict[str, Any], model: Model) -> RecordQueryResult:  # type: ignore[override]
+        """
+        Update the record with the given id with the information from the data dictionary.
+
+        Updates each key in the data dictionary as a separate secret in the secrets provider.
+        The secrets are stored under a folder path based on the model's table name and the
+        record id.
+
+        The result contains the updated record accessible via the `record` property:
+
+        ```python
+        result = backend.update("user-123", {"api_key": "new-key"}, user_model)
+        updated_record = result.record  # {"id": "user-123", "api_key": "new-key", ...}
+        ```
+        """
         folder_path = self._make_folder_path(model, id)
         for key, value in data.items():
             if key == model.id_column_name:
@@ -46,25 +59,62 @@ class SecretsBackend(Backend):
 
         # and now query again to fetch the updated record.
         records_response = self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))
-        return QueryResponse(data=records_response.data[0])
+        return RecordQueryResult(record=records_response.data[0])
 
-    def create(self, data: dict[str, Any], model: Model) -> QueryResponse:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
+        """
+        Create a record with the information from the data dictionary.
+
+        Creates secrets in the secrets provider for each key in the data dictionary.
+        The id column must be provided in the data dictionary since the secrets backend
+        cannot auto-generate ids.
+
+        The result contains the created record accessible via the `record` property:
+
+        ```python
+        result = backend.create({"id": "user-123", "api_key": "secret"}, user_model)
+        new_record = result.record  # {"id": "user-123", "api_key": "secret"}
+        ```
+        """
         if not model.id_column_name in data:
             raise ValueError(
                 f"You must provide '{model.id_column_name}' when creating a record with the secrets backend"
             )
         return self.update(data[model.id_column_name], data, model)
 
-    def delete(self, id: str, model: Model) -> QueryResponse:  # type: ignore[override]
+    def delete(self, id: str, model: Model) -> SuccessQueryResult:  # type: ignore[override]
         """
         Delete the record with the given id.
 
-        Note that this isn't implemented yet, and always returns True.
-        """
-        return QueryResponse(success=True)
+        Note: This operation is not yet implemented and always returns success without
+        actually deleting any secrets. Full implementation would require deleting all
+        secrets under the record's folder path.
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
-        """Return a list of records that match the given query configuration."""
+        The result indicates success via the `success` property:
+
+        ```python
+        result = backend.delete("user-123", user_model)
+        assert result.success  # True (but no actual deletion occurs)
+        ```
+        """
+        return SuccessQueryResult()
+
+    def records(self, query: Query) -> RecordsQueryResult:
+        """
+        Return a list of records that match the given query configuration.
+
+        Fetches secrets from the secrets provider based on the query conditions. The query
+        must include a condition on the id column using the equals operator. All secrets
+        under the record's folder path are retrieved and combined into a single record.
+
+        The result contains the records accessible via the `records` property:
+
+        ```python
+        result = backend.records(query)
+        for record in result.records:
+            print(record["api_key"])
+        ```
+        """
         self.check_query(query)
         for condition in query.conditions:
             if condition.operator != "=":
@@ -81,7 +131,7 @@ class SecretsBackend(Backend):
         data = {query.model_class.id_column_name: id}
         for path in self.secrets.list_secrets(folder_path):
             data[path[len(folder_path) :]] = self.secrets.get(path)
-        return QueryResponse(data=[data])
+        return RecordsQueryResult(records=[data])
 
     def _make_folder_path(self, model, id):
         return model.table_name().rstrip("/") + "/" + id.strip("/") + "/"

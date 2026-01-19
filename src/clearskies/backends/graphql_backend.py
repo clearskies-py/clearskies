@@ -10,7 +10,12 @@ from clearskies.backends.backend import Backend
 from clearskies.clients import graphql_client as client
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional.string import swap_casing
-from clearskies.query_response import QueryResponse
+from clearskies.query.result import (
+    CountQueryResult,
+    RecordQueryResult,
+    RecordsQueryResult,
+    SuccessQueryResult,
+)
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -248,7 +253,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         if hasattr(column, "wants_n_plus_one") and column.wants_n_plus_one:
             return True
 
-        # Fallback: class name inspection for backwards compatibility
+        # Fallback: class name inspection for columns without wants_n_plus_one flag
         column_type = column.__class__.__name__
         return column_type in ["BelongsTo", "HasMany", "ManyToMany", "BelongsToId", "BelongsToModel"]
 
@@ -796,7 +801,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
 
         return mutation_str, variables
 
-    def update(self, id: int | str, data: dict[str, Any], model: "Model") -> QueryResponse:
+    def update(self, id: int | str, data: dict[str, Any], model: "Model") -> RecordQueryResult:
         """Update a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("update", model, data, id)
         try:
@@ -805,11 +810,11 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             if not records:
                 raise Exception("No data returned from update mutation")
             record = self._map_record(records[0], model.get_columns())
-            return QueryResponse(data=record)
+            return RecordQueryResult(record=record)
         except Exception as e:
             raise Exception(f"GraphQL update failed: {e}")
 
-    def create(self, data: dict[str, Any], model: "Model") -> QueryResponse:
+    def create(self, data: dict[str, Any], model: "Model") -> RecordQueryResult:
         """Create a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("create", model, data)
         try:
@@ -818,20 +823,20 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             if not records:
                 raise Exception("No data returned from create mutation")
             record = self._map_record(records[0], model.get_columns())
-            return QueryResponse(data=record)
+            return RecordQueryResult(record=record)
         except Exception as e:
             raise Exception(f"GraphQL create failed: {e}")
 
-    def delete(self, id: int | str, model: "Model") -> QueryResponse:
+    def delete(self, id: int | str, model: "Model") -> SuccessQueryResult:
         """Delete a record via GraphQL mutation."""
         mutation_str, variables = self._build_mutation("delete", model, {}, id)
         try:
             self.client.execute(mutation_str, variable_values=variables)
-            return QueryResponse(success=True)
+            return SuccessQueryResult()
         except Exception as e:
             raise Exception(f"GraphQL delete failed: {e}")
 
-    def count(self, query: "Query") -> QueryResponse:
+    def count(self, query: "Query") -> CountQueryResult:
         """
         Return the count of records matching the query.
 
@@ -852,7 +857,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             data = response.get("data", {})
             if f"{root_field}Count" in data:
                 count = int(data[f"{root_field}Count"])
-                return QueryResponse(data=count, total_count=count, can_count=True)
+                return CountQueryResult(count=count)
         except Exception:
             # Count query not supported, fall back to fetching and counting
             pass
@@ -862,11 +867,11 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         try:
             response = self.client.execute(query_str, variable_values=variables)
             count = len(self._extract_records(response))
-            return QueryResponse(data=count, total_count=count, can_count=True)
+            return CountQueryResult(count=count)
         except Exception as e:
             raise Exception(f"GraphQL count failed: {e}")
 
-    def records(self, query: "Query", next_page_data: dict[str, str | int] | None = None) -> QueryResponse:
+    def records(self, query: "Query") -> RecordsQueryResult:
         """
         Fetch records matching the query.
 
@@ -881,7 +886,7 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
             pre_loaded = query._pre_loaded_records  # type: ignore[attr-defined]
             # Clear the pre-loaded data to avoid reuse
             delattr(query, "_pre_loaded_records")
-            return QueryResponse(data=pre_loaded)
+            return RecordsQueryResult(records=pre_loaded)
 
         response_next_page_data: dict[str, str | int] = {}
         query_str, variables = self._build_query(query)
@@ -917,8 +922,8 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
                 if limit and len(records) == limit:
                     response_next_page_data["start"] = int(start) + int(limit)
 
-            return QueryResponse(
-                data=mapped, next_page_data=response_next_page_data if response_next_page_data else None
+            return RecordsQueryResult(
+                records=mapped, next_page_data=response_next_page_data if response_next_page_data else None
             )
         except Exception as e:
             self.logger.error(f"GraphQL records failed: {e}")
