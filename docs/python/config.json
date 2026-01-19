@@ -119,8 +119,8 @@
             "source": "clearskies.cursors.port_forwarding.PortForwarder",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
-                "clearskies.cursors.port_forwarding.SSHCert",
-                "clearskies.cursors.port_forwarding.SSHPrivateKey"
+                "clearskies.cursors.port_forwarding.SshCert",
+                "clearskies.cursors.port_forwarding.SshPrivateKey"
             ]
         },
         {
