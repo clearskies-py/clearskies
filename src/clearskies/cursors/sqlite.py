@@ -1,7 +1,9 @@
+from sqlite3 import Connection as SQLiteConnection
 from sqlite3 import Cursor as SQLiteCursor
 from types import ModuleType
+from typing import cast
 
-import clearskies.configs
+from clearskies import configs
 from clearskies.cursors.cursor import Cursor
 from clearskies.di import inject
 
@@ -39,12 +41,12 @@ class Sqlite(Cursor):
     """
     Path or name of the SQLite database file.
     """
-    database = clearskies.configs.String(default="example.db")
+    database = configs.String(default="example.db")
 
     """
     Connection timeout in seconds.
     """
-    connect_timeout = clearskies.configs.Float(default=2.0)  # type: ignore[assignment]
+    connect_timeout = configs.Float(default=2.0)  # type: ignore[assignment]
     value_placeholder = "?"
     sys = inject.ByName("sys")
 
@@ -75,25 +77,35 @@ class Sqlite(Cursor):
         return self._factory
 
     @property
+    def connection(self) -> SQLiteConnection:
+        """Get or create a database connection instance."""
+        if hasattr(self, "_connection"):
+            return cast(SQLiteConnection, self._connection)
+
+        def dict_factory(cursor, row):
+            fields = [column[0] for column in cursor.description]
+            return dict(zip(fields, row))
+
+        self._connection: SQLiteConnection = cast(
+            SQLiteConnection,
+            self.factory.connect(
+                database=self.database,
+                timeout=self.connect_timeout,
+            ),
+        )
+        self._connection.row_factory = dict_factory
+        if self.autocommit:
+            self._connection.isolation_level = None  # Enable autocommit for sqlite3
+        else:
+            if self.sys.version_info > (3, 12):  # noqa: UP036
+                self._connection.autocommit = False  # type: ignore[attr-defined]
+            else:
+                self._connection.isolation_level = "DEFERRED"  # Disable autocommit
+        return self._connection  # type: ignore[return-value]
+
+    @property
     def cursor(self) -> SQLiteCursor:
         """Get or create a database cursor instance."""
         if not hasattr(self, "_cursor"):
-
-            def dict_factory(cursor, row):
-                fields = [column[0] for column in cursor.description]
-                return dict(zip(fields, row))
-
-            connection = self.factory.connect(
-                database=self.database,
-                timeout=2.0,
-            )
-            connection.row_factory = dict_factory
-            if self.autocommit:
-                connection.isolation_level = None  # Enable autocommit for sqlite3
-            else:
-                if self.sys.version_info > (3, 12):  # noqa: UP036
-                    connection.autocommit = False
-                else:
-                    connection.isolation_level = "DEFERRED"  # Disable autocommit
-            self._cursor = connection.cursor()
+            self._cursor = self.connection.cursor()
         return self._cursor  # type: ignore[return-value]
