@@ -158,8 +158,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def fetch_user(users: User, user_repos: UserRepo):
         # If we execute this models query:
         some_repos = (
-            user_repos
-            .where("login=cmancone")
+            user_repos.where("login=cmancone")
             .sort_by("created", "desc")
             .where("type=owner")
             .pagination(page=2)
