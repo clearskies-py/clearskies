@@ -33,6 +33,7 @@ jobs:
           enable-cache: true
       - name: Publish
         run: |
+          export PYTHONPATH="$PWD/src"
           cd docs/python
           uv run build.py
           sudo apt update
