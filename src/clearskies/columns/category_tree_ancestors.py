@@ -42,7 +42,7 @@ class CategoryTreeAncestors(CategoryTreeChildren):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type:  ignore
+            return self  # type: ignore
 
         # this makes sure we're initialized
         if "name" not in self._config:  # type: ignore

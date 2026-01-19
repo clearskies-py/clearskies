@@ -33,7 +33,7 @@ class ListTest(TestBase):
                 ]
             },
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert response_data["data"] == [
             {"id": "1-2-3-4", "name": "Bob"},
@@ -89,7 +89,7 @@ class ListTest(TestBase):
                 ],
             },
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert response_data["data"] == [
             {"id": "1-2-3-4", "name": "Bob", "grade": 5},

@@ -19,7 +19,7 @@ class MemoryBackendTest(unittest.TestCase):
                 clearskies.backends.CursorBackend: clearskies.backends.MemoryBackend(),
             },
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert len(response["data"]) == 36
 
@@ -70,7 +70,7 @@ class MemoryBackendTest(unittest.TestCase):
                 ],
             },
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == [
             {"id": "a-b-c-d", "name": "Fido", "species": "Dog", "owner": {"id": "1-2-3-4", "name": "John Doe"}},
             {

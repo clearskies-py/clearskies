@@ -20,11 +20,11 @@ class SecretBearerTest(unittest.TestCase):
                 "environment": SimpleNamespace(get=get_environment),
             },
         )
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "SUPERSECRET"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         print(response_data)
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "supersecret"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "supersecret"})
         assert status_code == 401
 
     def test_secret_key(self):
@@ -44,10 +44,10 @@ class SecretBearerTest(unittest.TestCase):
                 "secrets": fake_secret_manager,
             },
         )
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "SUPERSECRET"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "supersecret"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "supersecret"})
         assert status_code == 401
 
     def test_alternate_secret_key(self):
@@ -72,13 +72,13 @@ class SecretBearerTest(unittest.TestCase):
                 "secrets": fake_secret_manager,
             },
         )
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "SUPERSECRET"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "ALSOOKAY"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "ALSOOKAY"})
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "supersecret"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "supersecret"})
         assert status_code == 401
 
     def test_alternate_environment_key(self):
@@ -101,13 +101,13 @@ class SecretBearerTest(unittest.TestCase):
                 "environment": SimpleNamespace(get=get_environment),
             },
         )
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "SUPERSECRET"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "ALSOOKAY"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "ALSOOKAY"})
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "supersecret"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "supersecret"})
         assert status_code == 401
 
     def test_header_prefix(self):
@@ -127,15 +127,15 @@ class SecretBearerTest(unittest.TestCase):
                 "environment": SimpleNamespace(get=get_environment),
             },
         )
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_headers={"Authorization": "SECRET-TOKEN SUPERSECRET"}
         )
         assert status_code == 200
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_headers={"Authorization": "SECRET_TOKENSUPERSECRET"}
         )
         assert status_code == 401
 
-        (status_code, response_data, response_headers) = context(request_headers={"Authorization": "SUPERSECRET"})
+        status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         assert status_code == 401

@@ -35,7 +35,7 @@ class TimestampTest(TestBase):
             classes=[Pet],
             utcnow=utcnow,
         )
-        (status_code, response_data, response_header) = context()
+        status_code, response_data, response_header = context()
 
         assert response_data["data"]["last_fed"] == utcnow.isoformat()
         assert response_data["data"]["raw_data"] == utcnow.timestamp()

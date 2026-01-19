@@ -41,7 +41,7 @@ class BelongsToTest(TestBase):
             clearskies.endpoints.Callable(test_belongs_to),
             classes=[Category, Product],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == {
             "ball_category": "Toys",
             "fidget_spinner_category": "Toys",
@@ -66,7 +66,7 @@ class BelongsToTest(TestBase):
             clearskies.endpoints.Callable(test_belongs_to),
             classes=[belongs_to_test_module.Category, belongs_to_test_module.Product],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == {
             "products": ["My First Product", "My Second Product"],
             "category": "My Category",
@@ -121,7 +121,7 @@ class BelongsToTest(TestBase):
             },
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["data"] == [
             {"id": "a-b-c-d", "name": "Fido", "owner": {"id": "1-2-3-4", "name": "John Doe"}},

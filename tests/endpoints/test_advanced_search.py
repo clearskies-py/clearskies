@@ -71,21 +71,21 @@ class AdvancedSearchTest(TestBase):
             },
         )
 
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert ["bobbrown", "curious", "greg", "janedoe"] == [record["username"] for record in response_data["data"]]
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"limit": 2, "start": 1, "sort": [{"column": "name", "direction": "desc"}]}
         )
         assert ["greg", "curious"] == [record["username"] for record in response_data["data"]]
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={"sort": [{"column": "company.name", "direction": "desc"}, {"column": "age", "direction": "asc"}]},
         )
         assert ["curious", "greg", "janedoe", "bobbrown"] == [record["username"] for record in response_data["data"]]
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={
                 "where": [

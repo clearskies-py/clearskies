@@ -20,7 +20,7 @@ class JsonTest(TestBase):
             classes=[MyModel],
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"my_data": {"count": [1, 2, 3, 4, {"thing": True}]}}
         )
         assert response_data["data"]["my_data"] == {"count": [1, 2, 3, 4, {"thing": True}]}

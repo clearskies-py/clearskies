@@ -30,7 +30,7 @@ class DeleteTest(TestBase):
             },
         )
 
-        (status_code, response_data, response_headers) = context(url="/1-2-3-5", request_method="DELETE")
+        status_code, response_data, response_headers = context(url="/1-2-3-5", request_method="DELETE")
         assert response_data["status"] == "success"
 
         users = context.build(User)

@@ -28,5 +28,5 @@ class CreatedByAuthorizationDataTest(TestBase):
             ),
             classes=[MyModel],
         )
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"name": "Bob"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": "Bob"})
         assert response_data["data"]["organization_id"] == "my-super-awesome-organization"

@@ -16,7 +16,7 @@ classifiers = [
 
 [project.optional-dependencies]
 secrets = ['akeyless (>=4.0.0,<5.0.0)', 'akeyless-cloud-id (>=0.2.3,<0.3.0)']
-mysql = ['pymysql (>=1.1.0,<2.0.0)']
+mysql = ['pymysql (>=1.1.0,<2.0.0)', 'mygrations (>=1.0.0,<2.0.0)']
 jwcrypto = ['jwcrypto (>=1.5.6,<2.0.0)']
 pgsql = ['psycopg[binary] (>=3.1.10,<4.0.0)']
 graphql = [
@@ -32,7 +32,6 @@ Changelog = "https://github.com/clearskies-py/clearskies/blob/main/CHANGELOG.md"
 # This is the dedicated section for uv"s configuration
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
     "mypy>=1.16.1",
     "pre-commit>=4.3.0",
     "pytest>=8.4.1",

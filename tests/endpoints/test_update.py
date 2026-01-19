@@ -32,7 +32,7 @@ class UpdateTest(TestBase):
             },
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="PATCH",
             body={"name": "Bobby Brown", "username": "bobbybrown"},
             url="/1-2-3-4",
@@ -43,7 +43,7 @@ class UpdateTest(TestBase):
             "username": "bobbybrown",
         }
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="PATCH",
             body={"name": 12345, "username": ""},
             url="/1-2-3-4",

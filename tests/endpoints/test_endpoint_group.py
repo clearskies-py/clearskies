@@ -112,7 +112,7 @@ class EndpointGroupTest(TestBase):
 
         context = clearskies.contexts.Context(clearskies.EndpointGroup([users_api, companies_api]))
 
-        (status, response_data, response_headers) = context(
+        status, response_data, response_headers = context(
             url="/companies",
             request_method="POST",
             body={"name": "Box Store"},
@@ -120,20 +120,20 @@ class EndpointGroupTest(TestBase):
         assert response_data["data"]["name"] == "Box Store"
         company_id = response_data["data"]["id"]
 
-        (status, response_data, response_headers) = context(
+        status, response_data, response_headers = context(
             url="/users",
             request_method="POST",
             body={"name": "Bob Brown", "username": "bobbrown", "age": 25, "company_id": company_id},
         )
         assert response_data["data"]["name"] == "Bob Brown"
 
-        (status, response_data, response_headers) = context(
+        status, response_data, response_headers = context(
             url="/users",
             request_method="POST",
             body={"name": "Jane Doe", "username": "janedoe", "age": 32, "company_id": company_id},
         )
         assert response_data["data"]["name"] == "Jane Doe"
 
-        (status, response_data, response_headers) = context(url="users")
+        status, response_data, response_headers = context(url="users")
         assert [user["username"] for user in response_data["data"]] == ["bobbrown", "janedoe"]
         assert [user["company"]["name"] for user in response_data["data"]] == ["Box Store", "Box Store"]

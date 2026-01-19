@@ -187,7 +187,7 @@ class CursorBackend(Backend, InjectableProperties):
         return True
 
     def count(self, query: Query) -> int:
-        (sql, parameters) = self.as_count_sql(query)
+        sql, parameters = self.as_count_sql(query)
         self.cursor.execute(sql, parameters)
         for row in self.cursor:
             return row[0] if type(row) == tuple else row["count"]
@@ -196,7 +196,7 @@ class CursorBackend(Backend, InjectableProperties):
     def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         # I was going to get fancy and have this return an iterator, but since I'm going to load up
         # everything into a list anyway, I may as well just return the list, right?
-        (sql, parameters) = self.as_sql(query)
+        sql, parameters = self.as_sql(query)
         self.cursor.execute(sql, parameters)
         records = [row for row in self.cursor]
         if type(next_page_data) == dict:
@@ -210,7 +210,7 @@ class CursorBackend(Backend, InjectableProperties):
         escape = self.cursor.column_escape_character
         table_name = query.model_class.destination_name()
         self.logger.debug(f"Generating SQL for table: {table_name} from model: {query.model_class.__name__}")
-        (wheres, parameters) = self.conditions_as_wheres_and_parameters(
+        wheres, parameters = self.conditions_as_wheres_and_parameters(
             query.conditions, query.model_class.destination_name()
         )
         select_parts = []
@@ -249,7 +249,7 @@ class CursorBackend(Backend, InjectableProperties):
     def as_count_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.cursor.column_escape_character
         # note that this won't work if we start including a HAVING clause
-        (wheres, parameters) = self.conditions_as_wheres_and_parameters(
+        wheres, parameters = self.conditions_as_wheres_and_parameters(
             query.conditions, query.model_class.destination_name()
         )
         # we also don't currently support parameters in the join clause - I'll probably need that though

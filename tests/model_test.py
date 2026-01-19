@@ -26,7 +26,7 @@ class ModelTest(TestBase):
             }
 
         context = clearskies.contexts.Context(my_application, classes=[User])
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
 
         assert response == {"all_are_user_models": True}
 
@@ -59,7 +59,7 @@ class ModelTest(TestBase):
                 "some_date": datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
             },
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == True
 
     def test_where(self):
@@ -83,7 +83,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == ["Jane"]
 
     def test_first(self):
@@ -114,7 +114,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"user_id": "Jane", "total": 35}
 
     def test_find(self):
@@ -145,7 +145,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"user_id": "Jane", "total": 35}
 
     def test_sort_by(self):
@@ -174,7 +174,7 @@ class ModelTest(TestBase):
             ),
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == [
             {"user_id": "Alice", "total": 30},
             {"user_id": "Alice", "total": 15},
@@ -208,7 +208,7 @@ class ModelTest(TestBase):
             ),
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert len(response["data"]) == 2
         assert response["pagination"]["limit"] == 2
 
@@ -238,7 +238,7 @@ class ModelTest(TestBase):
             ),
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == [{"user_id": "Bob", "total": 26}, {"user_id": "Alice", "total": 30}]
 
         with raises(ValueError) as exception:
@@ -277,7 +277,7 @@ class ModelTest(TestBase):
             ),
             classes=[Order],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert len(response["data"]) == 4
 
     def test_join(self):
@@ -331,7 +331,7 @@ class ModelTest(TestBase):
             ),
             classes=[Order, User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert [order["total"] for order in response["data"]] == [15, 25, 30]
 
     def test_has_query(self):
@@ -365,7 +365,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
 
         assert not response["jane_instance_has_query"]
         assert response["some_search_has_query"]
@@ -395,7 +395,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"Alice": "Alice", "Bob": "Bob"}
 
     def test_delete(self):
@@ -421,7 +421,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["name"] == "Alice"
         assert response["pre"] == True
         assert response["post"] == True
@@ -451,7 +451,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert len(response["alice_id"]) == 36
         assert response["blank_id"] == None
 
@@ -477,7 +477,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["name"] == "Jane Doe"
 
     def test_was_changed(self):
@@ -500,7 +500,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"name_changed": True, "age_changed": False}
 
     def test_previous_data(self):
@@ -520,7 +520,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"name": "Jane Doe", "previous_name": "Jane"}
 
     def test_pre_save(self):
@@ -560,7 +560,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {
             "is_anonymous_after_create": False,
             "is_anonymous_after_first_update": True,
@@ -605,7 +605,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User, History],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == [
             "My name is Jane and I am 25 years old",
             "My name is Jane and I am 26 years old",
@@ -648,7 +648,7 @@ class ModelTest(TestBase):
             my_application,
             classes=[User, History],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == [
             "My name is Jane and I am 25 years old",
             "My name is Jane and I am 26 years old",
@@ -696,6 +696,6 @@ class ModelTest(TestBase):
                 ]
             },
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
 
         assert [user["name"] for user in response["data"]] == ["Bob", "Greg"]

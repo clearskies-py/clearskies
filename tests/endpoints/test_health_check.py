@@ -8,7 +8,7 @@ class HealthCheckTest(unittest.TestCase):
         context = clearskies.contexts.Context(
             clearskies.endpoints.HealthCheck(),
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert status_code == 200
         assert response_data["status"] == "success"
@@ -17,7 +17,7 @@ class HealthCheckTest(unittest.TestCase):
         context = clearskies.contexts.Context(
             clearskies.endpoints.HealthCheck(dependency_injection_names=["non_existent"]),
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert status_code == 500
         assert response_data["status"] == "failure"
@@ -30,7 +30,7 @@ class HealthCheckTest(unittest.TestCase):
         context = clearskies.contexts.Context(
             clearskies.endpoints.HealthCheck(classes_to_build=[MyClass]),
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert status_code == 500
         assert response_data["status"] == "failure"
@@ -44,7 +44,7 @@ class HealthCheckTest(unittest.TestCase):
                 callables=[my_function],
             ),
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert status_code == 500
         assert response_data["status"] == "failure"

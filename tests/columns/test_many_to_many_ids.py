@@ -62,6 +62,6 @@ class ManyToManyIdsTest(TestBase):
             ),
             classes=[Widget, Thingy, ThingyToWidget],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert [record["name"] for record in response_data["data"]] == ["Thing 2", "Thing 3"]

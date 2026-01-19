@@ -67,8 +67,8 @@ class Float(Column):
     ```
     """
 
-    default = configs.Float()  #  type: ignore
-    setable = configs.FloatOrCallable(default=None)  #  type: ignore
+    default = configs.Float()  # type: ignore
+    setable = configs.FloatOrCallable(default=None)  # type: ignore
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
     auto_doc_class: type[AutoDocSchema] = AutoDocNumber
     _descriptor_config_map = None

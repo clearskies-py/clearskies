@@ -31,8 +31,8 @@ class Boolean(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocBoolean
 
     _allowed_search_operators = ["="]
-    default = configs.Boolean()  #  type: ignore
-    setable = configs.BooleanOrCallable()  #  type: ignore
+    default = configs.Boolean()  # type: ignore
+    setable = configs.BooleanOrCallable()  # type: ignore
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties

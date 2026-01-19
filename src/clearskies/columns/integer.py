@@ -67,8 +67,8 @@ class Integer(Column):
     ```
     """
 
-    default = configs.Integer(default=None)  #  type: ignore
-    setable = configs.IntegerOrCallable(default=None)  #  type: ignore
+    default = configs.Integer(default=None)  # type: ignore
+    setable = configs.IntegerOrCallable(default=None)  # type: ignore
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
 
     auto_doc_class: type[AutoDocSchema] = AutoDocInteger

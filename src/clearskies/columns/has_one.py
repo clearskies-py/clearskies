@@ -16,6 +16,6 @@ class HasOne(HasMany):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type:  ignore
+            return self  # type: ignore
 
         return super().__get__(model, cls).first()

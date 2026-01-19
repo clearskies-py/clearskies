@@ -491,7 +491,7 @@ class List(Endpoint):
         ]
 
         for parameter in self.model.documentation_pagination_parameters(self.auto_case_internal_column_name):
-            (schema, description) = parameter
+            schema, description = parameter
             url_parameters.append(autodoc.request.URLParameter(schema, description=description))
 
         return url_parameters  # type: ignore
@@ -530,7 +530,7 @@ class List(Endpoint):
         ]
 
         for parameter in self.model.documentation_pagination_parameters(self.auto_case_internal_column_name):
-            (schema, description) = parameter
+            schema, description = parameter
             json_parameters.append(autodoc.request.JSONBody(schema, description=description))
 
         return json_parameters  # type: ignore

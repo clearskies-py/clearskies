@@ -19,14 +19,14 @@ class EndpointTest(TestBase):
                 response_headers=custom_headers,
             )
         )
-        (status_code, response, headers) = context()
+        status_code, response, headers = context()
         assert status_code == 200
         assert response["status"] == "success"
         assert response["data"] == {"hello": "world"}
         assert headers.content_type == "application/custom"
         assert headers.x_custom == "no"
 
-        (status_code, response, headers) = context(query_parameters={"stuff": "1"})
+        status_code, response, headers = context(query_parameters={"stuff": "1"})
         assert headers.x_custom == "yes"
 
     def test_routing_simple(self):
@@ -37,12 +37,12 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, headers) = context(url="/hello/world")
+        status_code, response, headers = context(url="/hello/world")
         assert status_code == 200
         assert response["status"] == "success"
         assert response["data"] == {"hello": "World"}
 
-        (status_code, response, headers) = context(url="/sup")
+        status_code, response, headers = context(url="/sup")
         assert status_code == 404
         assert response["status"] == "client_error"
         assert response["data"] == []
@@ -55,7 +55,7 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, headers) = context(url="/hello/bob/brown")
+        status_code, response, headers = context(url="/hello/bob/brown")
         assert status_code == 200
         assert response["status"] == "success"
         assert response["data"] == {"hello": "bob brown"}
@@ -68,11 +68,11 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, headers) = context(request_method="POST")
+        status_code, response, headers = context(request_method="POST")
         assert status_code == 200
         assert response["data"] == {"hello": "world"}
 
-        (status_code, response, headers) = context(request_method="GET")
+        status_code, response, headers = context(request_method="GET")
         assert status_code == 404
 
     def test_output_map(self):
@@ -124,7 +124,7 @@ class EndpointTest(TestBase):
                 ]
             },
         )
-        (status_code, response, response_headers) = context(url="jane")
+        status_code, response, response_headers = context(url="jane")
 
         assert status_code == 200
         this_year = datetime.datetime.now(datetime.timezone.utc).year
@@ -166,7 +166,7 @@ class EndpointTest(TestBase):
             },
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["data"] == [
             {"id": "1-2-3-4", "name": "Bob"},
@@ -191,14 +191,14 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context(
+        status_code, response, response_headers = context(
             request_method="POST",
             body={"name": "Jane", "date_of_birth": "01/01/1990"},
         )
         assert status_code == 200
         assert response["data"] == {"name": "Jane", "date_of_birth": "01/01/1990"}
 
-        (status_code, response, response_headers) = context(
+        status_code, response, response_headers = context(
             request_method="POST",
             body={"name": "", "date_of_birth": "this is not a date", "id": "hey"},
         )
@@ -225,13 +225,13 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context(body={"name": "sup"})
+        status_code, response, response_headers = context(body={"name": "sup"})
         assert status_code == 200
         assert response["input_errors"] == {
             "name": "This is a privacy-preserving system, so please don't tell us your name",
         }
 
-        (status_code, response, response_headers) = context(body={"hello": "world"})
+        status_code, response, response_headers = context(body={"hello": "world"})
         assert status_code == 200
         assert response["data"] == {"hello": "world"}
 
@@ -254,7 +254,7 @@ class EndpointTest(TestBase):
             classes=[User],
         )
 
-        (status_code, response, response_headers) = thing()
+        status_code, response, response_headers = thing()
         assert response == {
             "Status": "Success",
             "Error": "",
@@ -276,7 +276,7 @@ class EndpointTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context(request_method="OPTIONS")
+        status_code, response, response_headers = context(request_method="OPTIONS")
         assert response_headers.access_control_allow_methods == "PATCH, POST"
         assert response_headers.access_control_allow_headers == "Authorization"
         assert response_headers.access_control_max_age == "5"
@@ -295,7 +295,7 @@ class EndpointTest(TestBase):
         )
 
         # Without route_from_request_data, placeholder remains in routing_data
-        (status_code, response, headers) = context_without(
+        status_code, response, headers = context_without(
             url="/groups/{group_id}/members",
             body={"group_id": "abc-123"},
         )
@@ -312,7 +312,7 @@ class EndpointTest(TestBase):
             route_from_request_data=True,
         )
 
-        (status_code, response, headers) = context_with(
+        status_code, response, headers = context_with(
             url="/groups/{group_id}/members",
             body={"group_id": "abc-123"},
         )
@@ -330,7 +330,7 @@ class EndpointTest(TestBase):
             route_from_request_data=True,
         )
 
-        (status_code, response, headers) = context(
+        status_code, response, headers = context(
             url="/groups/:group_id/members/:member_id",
             body={"group_id": "group-456", "member_id": "member-789"},
         )
@@ -354,7 +354,7 @@ class EndpointTest(TestBase):
             route_from_request_data=True,
         )
 
-        (status_code, response, headers) = context(
+        status_code, response, headers = context(
             url="/groups/{group_id}/members",
             body={"group_id": "abc-123", "page_data": {"page": 2, "per_page": 50}},
         )
@@ -379,7 +379,7 @@ class EndpointTest(TestBase):
             request_data_route_key="url",
         )
 
-        (status_code, response, headers) = context(
+        status_code, response, headers = context(
             body={"url": "/groups/{group_id}/members", "group_id": "abc-123", "page_data": {"page": 2, "per_page": 50}},
         )
         print(response)
@@ -404,7 +404,7 @@ class EndpointTest(TestBase):
         )
 
         # Try to override routing_data from body - should not work
-        (status_code, response, headers) = context(
+        status_code, response, headers = context(
             url="/groups/{group_id}/members",
             body={
                 "group_id": "abc-123",

@@ -34,7 +34,7 @@ class RestfulApiTest(TestBase):
             )
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={"name": "Bob", "username": "bob", "age": 25},
             url="users",
@@ -43,7 +43,7 @@ class RestfulApiTest(TestBase):
         assert response_data["data"]["name"] == "Bob"
         assert response_data["data"]["age"] == 25
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={"name": "Alice", "username": "alice", "age": 22},
             url="users",
@@ -52,13 +52,13 @@ class RestfulApiTest(TestBase):
         assert response_data["data"]["age"] == 22
         alice_id = response_data["data"]["id"]
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             url=f"users/{bob_id}",
         )
         assert response_data["data"]["name"] == "Bob"
         assert response_data["data"]["age"] == 25
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="PATCH",
             body={"name": "Alice Smith", "age": 23},
             url=f"users/{alice_id}",
@@ -66,14 +66,14 @@ class RestfulApiTest(TestBase):
         assert response_data["data"]["name"] == "Alice Smith"
         assert response_data["data"]["age"] == 23
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="DELETE",
             url=f"users/{bob_id}",
         )
         assert not response_data["data"]
         assert response_data["status"] == "success"
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             url="users",
         )
         assert response_data["status"] == "success"

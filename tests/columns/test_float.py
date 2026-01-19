@@ -20,9 +20,9 @@ class FloatTest(TestBase):
             classes=[MyModel],
         )
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"score": 15.2})
+        status_code, response_data, response_headers = context(request_method="POST", body={"score": 15.2})
         assert response_data["data"]["score"] == 15.2
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"score": "15.2"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"score": "15.2"})
         assert "score" not in response_data["data"]
         assert "score" in response_data["input_errors"]

@@ -2,8 +2,7 @@ from abc import ABC
 from types import ModuleType
 from typing import Protocol
 
-import clearskies.configs
-from clearskies import configurable, decorators, loggable
+from clearskies import configs, configurable, decorators, loggable
 from clearskies.cursors.port_forwarding.port_forwarder import PortForwarder
 from clearskies.di import InjectableProperties, inject
 
@@ -93,22 +92,22 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     """
     Name of the database to connect to.
     """
-    database = clearskies.configs.String(default="example")
+    database = configs.String(default="example")
 
     """
     Whether to automatically commit transactions.
     """
-    autocommit = clearskies.configs.Boolean(default=True)
+    autocommit = configs.Boolean(default=True)
 
     """
     Optional port forwarding configuration (can be a PortForwarder instance).
     """
-    port_forwarding = clearskies.configs.Any(default=None)
+    port_forwarding = configs.Any(default=None)
 
     """
     Connection timeout in seconds.
     """
-    connect_timeout = clearskies.configs.Integer(default=2)
+    connect_timeout = configs.Integer(default=2)
 
     """Dependency injection container.a"""
     di = inject.Di()
@@ -151,6 +150,15 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         if hasattr(self, "_cursor"):
             return self._cursor
 
+        self._cursor = self.connection.cursor()
+        return self._cursor
+
+    @property
+    def connection(self) -> DBAPIConnection:
+        """Get or create a database connection instance."""
+        if hasattr(self, "_connection"):
+            return self._connection
+
         connection_kwargs = self.build_connection_kwargs()
 
         if self.port_forwarding:
@@ -183,9 +191,8 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
         self._connection = self.factory.connect(
             **connection_kwargs,
         )
-        self._cursor = self._connection.cursor()
 
-        return self._cursor
+        return self._connection
 
     def close(self) -> None:
         """Close cursor, connection, and port forwarding."""

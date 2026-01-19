@@ -19,17 +19,17 @@ class PhoneTest(TestBase):
                 readable_column_names=["id", "name", "phone"],
             ),
         )
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "phone": "+1 (555) 451-1234"}
         )
         assert response_data["data"]["phone"] == "15554511234"
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "phone": "555 451-1234"}
         )
         assert response_data["data"]["phone"] == "5554511234"
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "phone": "555 451-12341"}
         )
         assert "phone" not in response_data["data"]

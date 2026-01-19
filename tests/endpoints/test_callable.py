@@ -29,7 +29,7 @@ class CallableTest(TestBase):
             classes=[User],
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         users = context.di.build("users")
         jane = users.find("first_name=Jane")
         assert status_code == 200
@@ -53,13 +53,13 @@ class CallableTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context(
+        status_code, response, response_headers = context(
             body={"first_name": "Jane", "last_name": "Doe", "age": 1}, request_method="POST"
         )
         assert status_code == 200
         assert response["data"] == {"first_name": "Jane", "last_name": "Doe", "age": 1}
 
-        (status_code, response, response_headers) = context(
+        status_code, response, response_headers = context(
             body={"last_name": 10, "age": -1, "check": "cool"}, request_method="POST"
         )
         assert status_code == 200
@@ -78,7 +78,7 @@ class CallableTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == {"hello": "world"}
 
         context = Context(
@@ -88,5 +88,5 @@ class CallableTest(TestBase):
             )
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response == {"hello": "world"}

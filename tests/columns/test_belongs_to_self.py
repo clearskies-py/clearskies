@@ -31,7 +31,7 @@ class BelongsToSelfTest(TestBase):
             clearskies.endpoints.Callable(test_self_relationship),
             classes=[Category],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"] == {
             "root_from_child": "Root",
             "subsubs_from_sub": ["Sub Sub 1", "Sub Sub 2"],
