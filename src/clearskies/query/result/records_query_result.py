@@ -48,21 +48,8 @@ class RecordsQueryResult(QueryResult):
         generator: CallableType[[], Generator[AnyType, None, None]] | None = None,
         async_data: CallableType[[], AnyType] | None = None,
     ) -> None:
-        """
-        Initialize RecordsQueryResult.
-
-        Args:
-            records: List of record dictionaries returned by the query.
-            total_count: Total count of records available (for pagination).
-            total_pages: Total number of pages available.
-            next_page_data: Data needed to fetch the next page of results.
-            generator: Optional generator function for lazy iteration.
-            async_data: Optional async function for async data access.
-        """
-        # Set properties directly without calling super().__init__ to avoid decorator recursion
+        """Initialize RecordsQueryResult."""
         self.data = records or []
-        self.success = True
-        self.error = None
         self.total_count = total_count
         self.total_pages = total_pages
         self.can_count = total_count is not None

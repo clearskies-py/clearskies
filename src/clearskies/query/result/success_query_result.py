@@ -27,16 +27,6 @@ class SuccessQueryResult(QueryResult):
 
     def __init__(self) -> None:
         """Initialize SuccessQueryResult."""
-        # Set properties directly without calling super().__init__ to avoid decorator recursion
-        self.data = None
-        self.success = True
-        self.error = None
-        self.total_count = None
-        self.total_pages = None
-        self.can_count = False
-        self.next_page_data = None
-        self.generator = None
-        self.async_data = None
         self.finalize_and_validate_configuration()
 
     def __bool__(self) -> bool:

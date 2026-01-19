@@ -39,24 +39,10 @@ class RecordQueryResult(QueryResult):
         self,
         record: dict[str, AnyType] | None = None,
     ) -> None:
-        """
-        Initialize RecordQueryResult.
-
-        Args:
-            record: The record dictionary returned by the create/update operation.
-        """
+        """Initialize RecordQueryResult."""
         # Store in private attribute first to avoid recursion in __bool__
         self._record_data = record or {}
-        # Set properties directly without calling super().__init__ to avoid decorator recursion
         self.data = self._record_data
-        self.success = True
-        self.error = None
-        self.total_count = None
-        self.total_pages = None
-        self.can_count = False
-        self.next_page_data = None
-        self.generator = None
-        self.async_data = None
         self.finalize_and_validate_configuration()
 
     @property

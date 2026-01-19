@@ -35,24 +35,12 @@ class CountQueryResult(QueryResult):
         self,
         count: int,
     ) -> None:
-        """
-        Initialize CountQueryResult.
-
-        Args:
-            count: The count value returned by the query.
-        """
+        """Initialize CountQueryResult."""
         # Store locally first to avoid recursion in __bool__
         self._count_value = count
-        # Set properties directly without calling super().__init__ to avoid decorator recursion
         self.data = count
-        self.success = True
-        self.error = None
         self.total_count = count
-        self.total_pages = None
         self.can_count = True
-        self.next_page_data = None
-        self.generator = None
-        self.async_data = None
         self.finalize_and_validate_configuration()
 
     @property
