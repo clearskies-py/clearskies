@@ -45,7 +45,7 @@ class CategoryTreeTest(TestBase):
             clearskies.endpoints.Callable(test_category_tree),
             classes=[Category, Tree],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert response_data["data"] == {
             "descendants_of_root_1": ["Sub 1 of Root 1", "Sub 2 of Root 1", "Sub Sub"],
             "children_of_root_1": ["Sub 1 of Root 1", "Sub 2 of Root 1"],

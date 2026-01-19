@@ -20,11 +20,11 @@ class EmailTest(TestBase):
             classes=[MyModel],
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"email": "test@example.com"}
         )
         assert response_data["data"]["email"] == "test@example.com"
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"email": "Bob"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"email": "Bob"})
         assert "email" not in response_data["data"]
         assert "email" in response_data["input_errors"]

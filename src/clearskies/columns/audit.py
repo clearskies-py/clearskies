@@ -301,6 +301,6 @@ class Audit(HasMany):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type:  ignore
+            return self  # type: ignore
 
         return super().__get__(model, cls).where(f"class_name={self.model_class.__name__}")

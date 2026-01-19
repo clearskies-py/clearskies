@@ -12,7 +12,6 @@ from clearskies.di.inject.subprocess import Subprocess
 from clearskies.di.inject.utcnow import Utcnow
 from clearskies.di.inject.uuid import Uuid
 
-
 __all__ = [
     "ByClass",
     "ByName",

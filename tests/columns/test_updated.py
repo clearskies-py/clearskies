@@ -26,5 +26,5 @@ class SelectTest(TestBase):
             classes=[MyModel],
             utcnow=now,
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert response_data["data"] == now.isoformat()

@@ -20,7 +20,7 @@ class CreatedByHeaderTest(TestBase):
             ),
             classes=[MyModel],
         )
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob"}, request_headers={"my_custom_header": "some_value"}
         )
         assert response_data["data"]["custom_header"] == "some_value"

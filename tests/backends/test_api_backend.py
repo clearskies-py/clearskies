@@ -107,7 +107,7 @@ class ApiBackendTest(unittest.TestCase):
             classes=[User, UserRepo],
             bindings={"requests": requests},
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["data"] == {
             "id": 1,
@@ -163,7 +163,7 @@ class ApiBackendTest(unittest.TestCase):
             bindings={"requests": requests},
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["data"] == [
             {"id": 4, "login": "eijerei", "html_url": "https://github.com/eijerei"},
@@ -230,7 +230,7 @@ class ApiBackendTest(unittest.TestCase):
             bindings={"requests": requests},
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["Status"] == "Success"
         assert response["Data"] == [
@@ -291,7 +291,7 @@ class ApiBackendTest(unittest.TestCase):
             bindings={"requests": requests},
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["status"] == "success"
         assert response["data"] == [
@@ -344,7 +344,7 @@ class ApiBackendTest(unittest.TestCase):
             bindings={"requests": requests},
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["status"] == "success"
         assert response["data"] == [

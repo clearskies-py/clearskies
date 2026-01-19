@@ -166,8 +166,8 @@ class ManyToManyIds(Column):
     """ The list of columns to be loaded from the related models when we are converted to JSON. """
     readable_related_column_names = configs.ReadableModelColumns("related_model_class")
 
-    default = configs.StringList(default=None)  #  type: ignore
-    setable = configs.StringListOrCallable(default=None)  #  type: ignore
+    default = configs.StringList(default=None)  # type: ignore
+    setable = configs.StringListOrCallable(default=None)  # type: ignore
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 

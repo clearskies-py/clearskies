@@ -254,7 +254,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         return f"{singular}s"
 
     def supports_n_plus_one(self: Self):
-        return self.backend.supports_n_plus_one  #  type: ignore
+        return self.backend.supports_n_plus_one  # type: ignore
 
     def __bool__(self: Self) -> bool:  # noqa: D105
         if self._query:

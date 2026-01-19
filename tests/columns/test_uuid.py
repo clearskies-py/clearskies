@@ -19,7 +19,7 @@ class StringTest(TestBase):
             ),
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={"name": "Spot"},
         )

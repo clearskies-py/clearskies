@@ -21,17 +21,17 @@ class DateTest(TestBase):
             classes=[MyModel],
         )
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "my_date": "May 13th 2025"}
         )
         assert response_data["data"]["my_date"] == "2025-05-13"
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "my_date": "2025-05-13"}
         )
         assert response_data["data"]["my_date"] == "2025-05-13"
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "Bob", "my_date": "not a date"}
         )
         assert "my_date" not in response_data["data"]

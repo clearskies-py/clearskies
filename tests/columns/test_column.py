@@ -21,7 +21,7 @@ class ColumnTest(TestBase):
             ),
             classes=[Widget],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"]["name"] == "Jane Doe"
 
     def test_setable(self):
@@ -49,7 +49,7 @@ class ColumnTest(TestBase):
             classes=[Pet],
             now=datetime.datetime(2025, 5, 3, 0, 0, 0),
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"]["name"] == "Spot"
         assert response["data"]["age"] == 5
         assert response["data"]["date_of_birth"] == "2020-05-03"
@@ -78,7 +78,7 @@ class ColumnTest(TestBase):
             ),
             classes=[Pet],
         )
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert response["data"]["age"] == 5
         assert response["data"]["date_of_birth"] == None
 
@@ -104,21 +104,21 @@ class ColumnTest(TestBase):
                 readable_column_names=["id", "name", "date_of_birth", "created"],
             ),
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert status_code == 404
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"date_of_birth": "asdf"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"date_of_birth": "asdf"})
         assert list(response_data["input_errors"].keys()) == ["name", "date_of_birth"]
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"name": "asdf"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": "asdf"})
         assert list(response_data["input_errors"].keys()) == ["name"]
 
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST", body={"name": "longer", "date_of_birth": "2050-05-03"}
         )
         assert list(response_data["input_errors"].keys()) == ["date_of_birth"]
 
-        (status_code, response_data, response_headers) = context(request_method="POST", body={"name": "Long Enough"})
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": "Long Enough"})
         assert response_data["data"]["name"] == "Long Enough"
         assert response_data["data"]["date_of_birth"] == None
 
@@ -146,10 +146,10 @@ class ColumnTest(TestBase):
             utcnow=utcnow,
         )
         context()
-        (status_code, response_data, response_headers) = context(body={"status": "Open"}, request_method="POST")
+        status_code, response_data, response_headers = context(body={"status": "Open"}, request_method="POST")
         assert response_data["data"]["fulfilled_at"] == None
 
-        (status_code, response_data, response_headers) = context(body={"status": "Fulfilled"}, request_method="POST")
+        status_code, response_data, response_headers = context(body={"status": "Fulfilled"}, request_method="POST")
         assert bool(response_data["data"]["fulfilled_at"])
 
     def test_post_save(self):
@@ -196,7 +196,7 @@ class ColumnTest(TestBase):
             ),
             classes=[Order, OrderHistory],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
 
         assert [record["event"] for record in response_data["data"]] == [
             "Order status changed to Open",
@@ -225,7 +225,7 @@ class ColumnTest(TestBase):
                 url="/:account_id",
             ),
         )
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             url="/1-2-3-4", request_method="POST", body={"name": "Bob"}
         )
         assert response_data["data"]["name"] == "Bob"

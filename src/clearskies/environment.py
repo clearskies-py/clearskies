@@ -50,7 +50,7 @@ class Environment:
             line_number = 0
             for line in env_file.readlines():
                 line_number += 1
-                (key, value) = self._parse_env_line(line, line_number)
+                key, value = self._parse_env_line(line, line_number)
                 if key is None:
                     continue
 

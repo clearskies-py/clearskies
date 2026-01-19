@@ -43,7 +43,7 @@ class HasManyTest(TestBase):
             ),
             classes=[Category, Product],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert ["Ball", "Crayon", "Fidget Spinner"] == [product["name"] for product in response_data["data"]]
 
     def test_foreign_column_name(self):
@@ -79,7 +79,7 @@ class HasManyTest(TestBase):
             ),
             classes=[Category, Product],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert ["Ball", "Fidget Spinner"] == [product["name"] for product in response_data["data"]]
 
     def test_readable_child_column_names(self):
@@ -124,5 +124,5 @@ class HasManyTest(TestBase):
             ),
             classes=[Order, User],
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert [125] == [order["total"] for order in response_data["data"]]

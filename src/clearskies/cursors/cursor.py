@@ -1,6 +1,6 @@
 from abc import ABC
 from types import ModuleType
-from typing import Any, Protocol
+from typing import Protocol
 
 from clearskies import configs, configurable, decorators, loggable
 from clearskies.cursors.port_forwarding.port_forwarder import PortForwarder

@@ -39,7 +39,7 @@ class CursorBackendTest(unittest.TestCase):
             },
         )
 
-        (status_code, response, response_headers) = context()
+        status_code, response, response_headers = context()
         assert status_code == 200
         assert response["data"] == "1-2-3-4"
         cursor.execute.assert_has_calls(

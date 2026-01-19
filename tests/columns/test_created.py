@@ -23,5 +23,5 @@ class CreatedTest(TestBase):
             classes=[MyModel],
             utcnow=utcnow,
         )
-        (status_code, response_data, response_headers) = context()
+        status_code, response_data, response_headers = context()
         assert response_data["data"]["created"] == utcnow.isoformat(timespec="seconds")

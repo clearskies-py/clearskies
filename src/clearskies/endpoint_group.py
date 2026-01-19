@@ -285,7 +285,7 @@ class EndpointGroup(
         incoming_url = input_output.get_full_path().strip("/")
         if not expected_url and not incoming_url:
             return True
-        (matches, routing_data) = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
+        matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
         return matches
 
     def populate_routing_data(self, input_output: InputOutput) -> Any:

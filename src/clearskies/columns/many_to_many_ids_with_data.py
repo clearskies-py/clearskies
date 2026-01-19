@@ -146,8 +146,8 @@ class ManyToManyIdsWithData(ManyToManyIds):
     """
     persist_unique_lookup_column_to_pivot_table = configs.Boolean(default=False)
 
-    default = configs.ListAnyDict(default=None)  #  type: ignore
-    setable = configs.ListAnyDictOrCallable(default=None)  #  type: ignore
+    default = configs.ListAnyDict(default=None)  # type: ignore
+    setable = configs.ListAnyDictOrCallable(default=None)  # type: ignore
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties

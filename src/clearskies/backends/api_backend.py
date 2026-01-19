@@ -733,7 +733,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
         """Update a record."""
         data = {**data}
-        (url, used_routing_parameters) = self.update_url(id, data, model)
+        url, used_routing_parameters = self.update_url(id, data, model)
         request_method = self.update_method(id, data, model)
         for parameter in used_routing_parameters:
             del data[parameter]
@@ -756,7 +756,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
     def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
         """Create a record."""
         data = {**data}
-        (url, used_routing_parameters) = self.create_url(data, model)
+        url, used_routing_parameters = self.create_url(data, model)
         request_method = self.create_method(data, model)
         for parameter in used_routing_parameters:
             del data[parameter]
@@ -771,7 +771,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         return self.map_record_response(response_data, model.get_columns(), "create")
 
     def delete(self, id: int | str, model: Model) -> bool:
-        (url, used_routing_parameters) = self.delete_url(id, model)
+        url, used_routing_parameters = self.delete_url(id, model)
         request_method = self.delete_method(id, model)
 
         response = self.execute_request(url, request_method)
@@ -779,7 +779,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
     def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
         self.check_query(query)
-        (url, method, body, headers) = self.build_records_request(query)
+        url, method, body, headers = self.build_records_request(query)
         response = self.execute_request(url, method, json=body, headers=headers)
         records = self.map_records_response(response.json(), query)
         if isinstance(next_page_data, dict):
@@ -787,13 +787,13 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         return records
 
     def build_records_request(self, query: Query) -> tuple[str, str, dict[str, Any], dict[str, str]]:
-        (url, used_routing_parameters) = self.records_url(query)
+        url, used_routing_parameters = self.records_url(query)
 
-        (condition_route_id, condition_url_parameters, condition_body_parameters) = (
-            self.conditions_to_request_parameters(query, used_routing_parameters)
+        condition_route_id, condition_url_parameters, condition_body_parameters = self.conditions_to_request_parameters(
+            query, used_routing_parameters
         )
-        (pagination_url_parameters, pagination_body_parameters) = self.pagination_to_request_parameters(query)
-        (sort_url_parameters, sort_body_parameters) = self.sorts_to_request_parameters(query)
+        pagination_url_parameters, pagination_body_parameters = self.pagination_to_request_parameters(query)
+        sort_url_parameters, sort_body_parameters = self.sorts_to_request_parameters(query)
 
         url_parameters = {
             **condition_url_parameters,

@@ -120,7 +120,7 @@ class Mygrations(Endpoint):
 
     def handle(self, input_output: InputOutput):
         try:
-            from mygrations.core.commands import commands, execute
+            from mygrations.core.commands import execute
         except ModuleNotFoundError as e:
             raise ValueError("mygrations is not installed.")
 

@@ -95,7 +95,7 @@ class MemoryTable:
     _id_index: dict[int | str, int] = {}
     id_column_name: str = ""
     _next_id: int = 1
-    _model_class: type[Model] = None  # type:  ignore
+    _model_class: type[Model] = None  # type: ignore
 
     # here be dragons.  This is not a 100% drop-in replacement for the equivalent SQL operators
     # https://codereview.stackexchange.com/questions/259198/in-memory-table-filtering-in-python

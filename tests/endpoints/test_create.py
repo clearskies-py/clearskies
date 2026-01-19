@@ -33,7 +33,7 @@ class CreateTest(TestBase):
             ),
             utcnow=utcnow,
         )
-        (status_code, response_data, response_headers) = context(
+        status_code, response_data, response_headers = context(
             request_method="POST",
             body={"name": "Example", "email": "test@example.com", "some_number": 5, "expires_at": "2024-12-31"},
         )
