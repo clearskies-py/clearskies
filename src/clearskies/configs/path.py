@@ -6,7 +6,12 @@ from clearskies.configs import config
 
 
 class Path(config.Config):
-    def __set__(self, instance, value: PathType | str):
+    def __init__(self, required=False, default=None, check_for_existence: bool = True):
+        self.required = required
+        self.default = default
+        self.check_for_existence = check_for_existence
+
+    def __set__(self, instance, value: PathType | str) -> None:
         if not isinstance(value, (PathType, str)):
             error_prefix = self._error_prefix(instance)
             raise TypeError(
@@ -14,7 +19,7 @@ class Path(config.Config):
             )
         if isinstance(value, str):
             value = PathType(value)
-        if not value.exists():
+        if self.check_for_existence and not value.exists():
             error_prefix = self._error_prefix(instance)
             raise ValueError(f"{error_prefix} path '{value}' does not exist")
 
@@ -24,3 +29,17 @@ class Path(config.Config):
         if not instance:
             return self  # type: ignore
         return instance._get_config(self)
+
+    def finalize_and_validate_configuration(self, instance):
+        # The Configurable class sets the default value directly in _config,
+        # bypassing __set__. We need to convert string values to Path objects here.
+        try:
+            current_value = instance._get_config(self)
+            if isinstance(current_value, str):
+                path_value = PathType(current_value)
+                if self.check_for_existence and not path_value.exists():
+                    error_prefix = self._error_prefix(instance)
+                    raise ValueError(f"{error_prefix} path '{path_value}' does not exist")
+                instance._set_config(self, path_value)
+        except KeyError:
+            pass

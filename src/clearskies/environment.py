@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from clearskies import configs, configurable, loggable
@@ -81,7 +82,7 @@ class Environment(loggable.Loggable, configurable.Configurable, injectable_prope
     Defaults to `.env` in the current working directory. This can be overridden
     when constructing the Environment instance.
     """
-    env_file_path = configs.Path(default=".env")
+    env_file_path = configs.Path(default=".env", required=False, check_for_existence=False)
 
     """
     The os.environ dictionary, injected for accessing environment variables.
@@ -90,7 +91,7 @@ class Environment(loggable.Loggable, configurable.Configurable, injectable_prope
     """
     os_environ = inject.ByStandardLib("os.environ")
 
-    def __init__(self, env_file_path):
+    def __init__(self, env_file_path: str | Path):
         self.env_file_path = env_file_path
         self._resolved_values = {}
         self._overrides = {}
@@ -174,6 +175,9 @@ class Environment(loggable.Loggable, configurable.Configurable, injectable_prope
     def load_env_file(self):
         """Load up the .env file if it has not already been loaded."""
         if self._env_file_config is not None:
+            return
+
+        if not self.env_file_path.exists():
             return
 
         self._env_file_config = {}
