@@ -917,7 +917,7 @@ class Di:
         return sys
 
     def provide_environment(self):
-        return Environment(os.getcwd() + "/.env", os.environ, {})
+        return Environment(os.getcwd() + "/.env")
 
     def provide_grahpql_client(self):
         from clearskies.clients import GraphQLClient

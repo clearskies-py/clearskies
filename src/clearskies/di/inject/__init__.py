@@ -1,5 +1,6 @@
 from clearskies.di.inject.by_class import ByClass
 from clearskies.di.inject.by_name import ByName
+from clearskies.di.inject.by_standard_lib import ByStandardLib
 from clearskies.di.inject.di import Di
 from clearskies.di.inject.environment import Environment
 from clearskies.di.inject.input_output import InputOutput
@@ -15,6 +16,7 @@ from clearskies.di.inject.uuid import Uuid
 __all__ = [
     "ByClass",
     "ByName",
+    "ByStandardLib",
     "Di",
     "Environment",
     "InputOutput",

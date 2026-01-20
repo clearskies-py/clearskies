@@ -97,6 +97,7 @@ from .model_column import ModelColumn
 from .model_columns import ModelColumns
 from .model_destination_name import ModelDestinationName
 from .model_to_id_column import ModelToIdColumn
+from .path import Path
 from .readable_model_column import ReadableModelColumn
 from .readable_model_columns import ReadableModelColumns
 from .schema import Schema
@@ -151,6 +152,7 @@ __all__ = [
     "ModelColumns",
     "ModelToIdColumn",
     "ModelDestinationName",
+    "Path",
     "ReadableModelColumn",
     "ReadableModelColumns",
     "Schema",

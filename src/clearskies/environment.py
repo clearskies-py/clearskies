@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import os.path
 from typing import Any
 
+from clearskies import configs, configurable, loggable
+from clearskies.di import inject, injectable_properties
 
-class Environment:
+
+class Environment(loggable.Loggable, configurable.Configurable, injectable_properties.InjectableProperties):
     """
     This loads up the environment configuration for the application.
 
@@ -17,18 +19,21 @@ class Environment:
     is assumed to be a string.
     """
 
-    _env_file_config: dict[str, Any] = None  # type: ignore
+    _env_file_config: dict[str, Any] = {}
     _resolved_values: dict[str, Any] = {}
-    os_environ: dict[str, Any] = {}
 
-    def __init__(self, env_file_path, os_environ, secrets):
-        self._env_file_path = env_file_path
-        self.os_environ = os_environ
-        self.secrets = secrets
+    secrets = inject.ByName("secrets")
+    os = inject.ByStandardLib("os")
+    env_file_path = configs.Path(default=".env")
+    os_environ = inject.ByStandardLib("os.environ")
+
+    def __init__(self, env_file_path):
+        self.env_file_path = env_file_path
         self._resolved_values = {}
 
-    def get(self, name, silent=False) -> Any:
-        self._load_env_file()
+    def get(self, name: str, silent: bool = False) -> Any:
+        """Get an environment configuration value by name."""
+        self.load_env_file()
         if name in self.os_environ:
             return self.resolve_value(self.os_environ[name])
         if name in self._env_file_config:
@@ -38,15 +43,14 @@ class Environment:
             raise KeyError(f"Could not find environment config '{name}' in environment or .env file")
         return None
 
-    def _load_env_file(self):
+    def load_env_file(self):
+        """Load up the .env file if it has not already been loaded."""
         if self._env_file_config is not None:
             return
 
         self._env_file_config = {}
-        if not os.path.isfile(self._env_file_path):
-            return
 
-        with open(self._env_file_path, "r") as env_file:
+        with open(self.env_file_path, "r") as env_file:
             line_number = 0
             for line in env_file.readlines():
                 line_number += 1
@@ -56,7 +60,7 @@ class Environment:
 
                 self._env_file_config[key] = value
 
-    def _parse_env_line(self, line, line_number):
+    def _parse_env_line(self, line: str, line_number: int) -> tuple[str | None, Any]:
         line = line.strip()
         if not line:
             return (None, None)
@@ -89,7 +93,8 @@ class Environment:
             pass
         return (key, value)
 
-    def resolve_value(self, value):
+    def resolve_value(self, value: str | Any) -> Any:
+        """Resolve a value, looking up secrets as needed."""
         if type(value) != str or value[:9] != "secret://":
             return value
 
