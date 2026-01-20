@@ -231,6 +231,11 @@
             "source": "clearskies.di.injectable_properties.InjectableProperties",
             "builder": "clearskies_doc_builder.builders.SingleClass",
             "parent": "Dependency Injection"
+        },
+        {
+            "title": "Environment",
+            "source": "clearskies.environment.Environment",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
         }
     ]
 }
