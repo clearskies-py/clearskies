@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.34] - 2026-01-20
+
+### Added
+- Add mygrations by @cmancone in [#50](https://github.com/clearskies-py/clearskies/pull/50)
+
+### Changed
+- Typing for cursor classes
+- Find the latest clearskies by @cmancone in [#57](https://github.com/clearskies-py/clearskies/pull/57)
+- Broken doc build by @cmancone in [#56](https://github.com/clearskies-py/clearskies/pull/56)
+- Broken doc build by @cmancone
+
+### Fixed
+- For contexts without an url by @cmancone in [#53](https://github.com/clearskies-py/clearskies/pull/53)
+- For contexts without an url
+
 ## [2.0.33] - 2026-01-14
 
 ### Added
@@ -12,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add routing by request data
 
 ### Changed
+- Bump version to v2.0.33 by @github-actions[bot]
 - Route request data alt approach by @cmancone in [#52](https://github.com/clearskies-py/clearskies/pull/52)
 - Minimalist approach by @cmancone
 
@@ -1018,6 +1034,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.34]: https://github.com/clearskies-py/clearskies/compare/v2.0.33..v2.0.34
 [2.0.33]: https://github.com/clearskies-py/clearskies/compare/v2.0.32..v2.0.33
 [2.0.32]: https://github.com/clearskies-py/clearskies/compare/v2.0.31..v2.0.32
 [2.0.31]: https://github.com/clearskies-py/clearskies/compare/v2.0.30..v2.0.31
