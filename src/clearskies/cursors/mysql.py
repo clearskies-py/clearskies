@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from types import ModuleType
 
 import clearskies.configs
@@ -87,15 +88,15 @@ class Mysql(Cursor):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        hostname="localhost",
-        username="root",
-        password="",
-        database="example",
-        autocommit=True,
-        connect_timeout=2,
-        port=3306,
-        cert_path=None,
-        port_forwarding=None,
+        hostname: str | None = "localhost",
+        username: str | None = "root",
+        password: str | None = "",
+        database: str | None = "example",
+        autocommit: bool | None = True,
+        connect_timeout: int | None = 2,
+        port: int | None = 3306,
+        cert_path: str | None = None,
+        port_forwarding: Callable | None = None,
     ):
         self.finalize_and_validate_configuration()
 

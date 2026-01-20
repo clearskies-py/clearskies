@@ -1,4 +1,5 @@
 from abc import ABC
+from collections.abc import Callable
 from types import ModuleType
 from typing import Protocol
 
@@ -123,10 +124,10 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
     @decorators.parameters_to_properties
     def __init__(
         self,
-        database="example",
-        autocommit=True,
-        port_forwarding=None,
-        connect_timeout=2,
+        database: str | None = "example",
+        autocommit: bool | None = True,
+        port_forwarding: Callable | None = None,
+        connect_timeout: int | None = 2,
     ):
         self._di = None  # Ensure _di exists to avoid AttributeError
         self.finalize_and_validate_configuration()

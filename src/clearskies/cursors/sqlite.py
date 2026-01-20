@@ -52,9 +52,9 @@ class Sqlite(Cursor):
 
     def __init__(
         self,
-        database="example.db",
-        autocommit=True,
-        connect_timeout=2.0,
+        database: str = "example.db",
+        autocommit: bool = True,
+        connect_timeout: float = 2.0,
     ):
         self.autocommit = autocommit
         self.database = database

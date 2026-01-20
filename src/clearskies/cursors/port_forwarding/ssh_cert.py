@@ -49,10 +49,10 @@ class SshCert(port_forwarder.PortForwarder):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        ssh_user="root",
-        cert_path=None,
-        local_host="127.0.0.1",
-        local_port=0,
+        ssh_user: str | None = "root",
+        cert_path: str | None = None,
+        local_host: str | None = "127.0.0.1",
+        local_port: int | None = 0,
     ):
         self._proc = None
         self.finalize_and_validate_configuration()
@@ -105,7 +105,7 @@ class SshCert(port_forwarder.PortForwarder):
                 test_sock.close()
                 break
             except Exception:
-                if self._proc.poll() is not None:
+                if self._proc and self._proc.poll() is not None:
                     raise RuntimeError("SSH process exited unexpectedly")
                 if time.time() - start > 10:
                     raise TimeoutError(f"Timeout waiting for port {self.local_port} to open")

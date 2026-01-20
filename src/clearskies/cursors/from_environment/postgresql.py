@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import clearskies.configs
 from clearskies import decorators
 from clearskies.cursors.postgresql import Postgresql as PostgresqlBase
@@ -95,14 +97,14 @@ class Postgresql(PostgresqlBase):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        hostname_environment_key="DATABASE_HOST",
-        username_environment_key="DATABASE_USERNAME",
-        password_environment_key="DATABASE_PASSWORD",
-        database_environment_key="DATABASE_NAME",
-        port_environment_key="DATABASE_PORT",
-        cert_path_environment_key="DATABASE_CERT_PATH",
-        autocommit_environment_key="DATABASE_AUTOCOMMIT",
-        port_forwarding=None,
+        hostname_environment_key: str | None = "DATABASE_HOST",
+        username_environment_key: str | None = "DATABASE_USERNAME",
+        password_environment_key: str | None = "DATABASE_PASSWORD",
+        database_environment_key: str | None = "DATABASE_NAME",
+        port_environment_key: str | None = "DATABASE_PORT",
+        cert_path_environment_key: str | None = "DATABASE_CERT_PATH",
+        autocommit_environment_key: str | None = "DATABASE_AUTOCOMMIT",
+        port_forwarding: Callable | None = None,
     ):
         self.finalize_and_validate_configuration()
 

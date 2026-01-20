@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from types import ModuleType
 
 import clearskies.configs
@@ -86,15 +87,15 @@ class Postgresql(Cursor):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        hostname="localhost",
-        username="root",
-        password="",
-        database="example",
-        autocommit=True,
-        connect_timeout=2,
-        port=None,
-        cert_path=None,
-        port_forwarding=None,
+        hostname: str = "localhost",
+        username: str = "root",
+        password: str = "",
+        database: str = "example",
+        autocommit: bool = True,
+        connect_timeout: int = 2,
+        port: int | None = None,
+        cert_path: str | None = None,
+        port_forwarding: Callable | None = None,
     ):
         self.finalize_and_validate_configuration()
 

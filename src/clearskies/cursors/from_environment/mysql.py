@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from clearskies import decorators
 from clearskies.configs import String
 from clearskies.cursors.mysql import Mysql as MysqlBase
@@ -103,7 +105,7 @@ class Mysql(MysqlBase):
         cert_path_environment_key: str | None = "DATABASE_CERT_PATH",
         autocommit_environment_key: str | None = "DATABASE_AUTOCOMMIT",
         connect_timeout_environment_key: str | None = "DATABASE_CONNECT_TIMEOUT",
-        port_forwarding=None,
+        port_forwarding: Callable | None = None,
     ):
         self.finalize_and_validate_configuration()
 

@@ -49,10 +49,10 @@ class SshPrivateKey(port_forwarder.PortForwarder):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        ssh_user="root",
-        private_key_path=None,
-        local_host="127.0.0.1",
-        local_port=0,
+        ssh_user: str | None = "root",
+        private_key_path: str | None = None,
+        local_host: str | None = "127.0.0.1",
+        local_port: int | None = 0,
     ):
         self._proc = None
         self.finalize_and_validate_configuration()

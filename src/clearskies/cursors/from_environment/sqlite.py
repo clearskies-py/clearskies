@@ -52,9 +52,9 @@ class Sqlite(SqliteBase):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        database_environment_key="DATABASE_NAME",
-        autocommit_environment_key="DATABASE_AUTOCOMMIT",
-        connect_timeout_environment_key="DATABASE_CONNECT_TIMEOUT",
+        database_environment_key: str | None = "DATABASE_NAME",
+        autocommit_environment_key: str | None = "DATABASE_AUTOCOMMIT",
+        connect_timeout_environment_key: str | None = "DATABASE_CONNECT_TIMEOUT",
     ):
         self.finalize_and_validate_configuration()
 
