@@ -1,4 +1,5 @@
 import datetime
+import os
 import unittest
 
 import requests
@@ -6,6 +7,7 @@ import requests
 import clearskies.configs
 import clearskies.decorators
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
+from clearskies.exceptions import MissingDependency
 
 
 class SomeClass:
@@ -221,3 +223,95 @@ class DiTest(unittest.TestCase):
         assert my_other_class.reusable.my_value() == 100
 
         assert isinstance(my_class.reusable.my_other_thing.now, datetime.datetime)
+
+    def test_build_standard_lib_simple_module(self):
+        """Test that build_standard_lib can import simple modules like 'os' and 'sys'."""
+        di = Di()
+
+        # Test importing 'os' module
+        os_module = di.build_standard_lib("os")
+        assert os_module is not None
+        assert hasattr(os_module, "environ")
+        assert hasattr(os_module, "path")
+
+        # Test importing 'sys' module
+        sys_module = di.build_standard_lib("sys")
+        assert sys_module is not None
+        assert hasattr(sys_module, "version")
+
+    def test_build_standard_lib_dotted_attribute(self):
+        """Test that build_standard_lib can handle dotted names like 'os.environ'."""
+        di = Di()
+
+        # Test getting os.environ
+        environ = di.build_standard_lib("os.environ")
+        assert environ is not None
+        assert environ is os.environ
+        assert isinstance(environ, os._Environ)
+
+        # Test getting os.path
+        path_module = di.build_standard_lib("os.path")
+        assert path_module is not None
+        assert hasattr(path_module, "join")
+        assert hasattr(path_module, "exists")
+
+    def test_build_standard_lib_caches_result(self):
+        """Test that build_standard_lib caches the result when cache=True."""
+        di = Di()
+
+        # First call should import and cache
+        environ1 = di.build_standard_lib("os.environ", cache=True)
+        # Second call should return cached value
+        environ2 = di.build_standard_lib("os.environ", cache=True)
+
+        assert environ1 is environ2
+        assert environ1 is os.environ
+
+    def test_build_standard_lib_raises_for_invalid_module(self):
+        """Test that build_standard_lib raises MissingDependency for invalid modules."""
+        di = Di()
+
+        with self.assertRaises(MissingDependency):
+            di.build_standard_lib("nonexistent_module_xyz")
+
+    def test_build_standard_lib_raises_for_invalid_attribute(self):
+        """Test that build_standard_lib raises MissingDependency for invalid attributes."""
+        di = Di()
+
+        with self.assertRaises(MissingDependency):
+            di.build_standard_lib("os.nonexistent_attribute_xyz")
+
+    def test_build_standard_lib_deep_dotted_path(self):
+        """Test that build_standard_lib can handle deeper dotted paths."""
+        di = Di()
+
+        # Test getting os.path.join (a function)
+        join_func = di.build_standard_lib("os.path.join")
+        assert join_func is not None
+        assert callable(join_func)
+        assert join_func("a", "b") == os.path.join("a", "b")
+
+    def test_inject_by_standard_lib_with_dotted_name(self):
+        """Test that ByStandardLib injectable works with dotted names like 'os.environ'."""
+
+        class MyClassWithEnv(InjectableProperties):
+            os_environ = inject.ByStandardLib("os.environ")
+
+        di = Di()
+        my_instance = di.build_class(MyClassWithEnv)
+
+        assert my_instance.os_environ is os.environ
+        assert isinstance(my_instance.os_environ, os._Environ)
+
+    def test_inject_by_standard_lib_with_simple_module(self):
+        """Test that ByStandardLib injectable works with simple module names."""
+
+        class MyClassWithOs(InjectableProperties):
+            os_module = inject.ByStandardLib("os")
+
+        di = Di()
+        my_instance = di.build_class(MyClassWithOs)
+
+        assert my_instance.os_module is not None
+        assert hasattr(my_instance.os_module, "environ")
+        assert hasattr(my_instance.os_module, "path")

@@ -776,7 +776,8 @@ class Di:
         Build a standard library type.
 
         This method exists to allow for future expansion of the DI system to handle standard library
-        types.
+        types. It supports both module names (e.g., "os", "sys") and dotted attribute access
+        (e.g., "os.environ", "os.path").
         """
         try:
             instance = self.build_from_name(name, context, cache)
@@ -786,10 +787,23 @@ class Di:
         except MissingDependency:
             pass
         try:
-            library = importlib.import_module(name)
-            self.add_binding(name, library)
-            return library
-        except ImportError:
+            # Handle dotted names like "os.environ" by importing the base module
+            # and then getting the attribute
+            if "." in name:
+                parts = name.split(".")
+                module_name = parts[0]
+                library = importlib.import_module(module_name)
+                # Navigate through the attribute chain
+                result = library
+                for attr in parts[1:]:
+                    result = getattr(result, attr)
+                self.add_binding(name, result)
+                return result
+            else:
+                library = importlib.import_module(name)
+                self.add_binding(name, library)
+                return library
+        except (ImportError, AttributeError):
             context_note = f" for {context}" if context else ""
             raise MissingDependency(
                 f"I was asked to build {name}{context_note} but there is no dependency available, configured binding, "
