@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.36] - 2026-01-21
+
+### Fixed
+- Di by-standard-lib sub items by @tnijboer in [#59](https://github.com/clearskies-py/clearskies/pull/59)
+
 ## [2.0.35] - 2026-01-21
 
 ### Added
@@ -13,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add option to set environment items
 
 ### Changed
+- Bump version to v2.0.35 by @github-actions[bot]
 - Environment by @cmancone in [#58](https://github.com/clearskies-py/clearskies/pull/58)
 - Move Environment to configurable
 
@@ -1046,6 +1052,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.36]: https://github.com/clearskies-py/clearskies/compare/v2.0.35..v2.0.36
 [2.0.35]: https://github.com/clearskies-py/clearskies/compare/v2.0.34..v2.0.35
 [2.0.34]: https://github.com/clearskies-py/clearskies/compare/v2.0.33..v2.0.34
 [2.0.33]: https://github.com/clearskies-py/clearskies/compare/v2.0.32..v2.0.33
