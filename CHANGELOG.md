@@ -5,12 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.35] - 2026-01-21
+
+### Added
+- Add configs and environment to the docs
+- Add non existing path
+- Add option to set environment items
+
+### Changed
+- Environment by @cmancone in [#58](https://github.com/clearskies-py/clearskies/pull/58)
+- Move Environment to configurable
+
 ## [2.0.34] - 2026-01-20
 
 ### Added
 - Add mygrations by @cmancone in [#50](https://github.com/clearskies-py/clearskies/pull/50)
 
 ### Changed
+- Bump version to v2.0.34 by @github-actions[bot]
 - Typing for cursor classes
 - Find the latest clearskies by @cmancone in [#57](https://github.com/clearskies-py/clearskies/pull/57)
 - Broken doc build by @cmancone in [#56](https://github.com/clearskies-py/clearskies/pull/56)
@@ -1034,6 +1046,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.35]: https://github.com/clearskies-py/clearskies/compare/v2.0.34..v2.0.35
 [2.0.34]: https://github.com/clearskies-py/clearskies/compare/v2.0.33..v2.0.34
 [2.0.33]: https://github.com/clearskies-py/clearskies/compare/v2.0.32..v2.0.33
 [2.0.32]: https://github.com/clearskies-py/clearskies/compare/v2.0.31..v2.0.32
