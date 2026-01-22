@@ -931,6 +931,7 @@ class Di:
         return sys
 
     def provide_environment(self):
+        self.inject_properties(Environment)
         return Environment(os.getcwd() + "/.env")
 
     def provide_grahpql_client(self):

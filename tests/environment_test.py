@@ -108,3 +108,22 @@ class EnvironmentWithRealOsEnvironTest(unittest.TestCase):
 
         result = environment.get("NONEXISTENT_KEY_XYZ_12345", silent=True)
         self.assertIsNone(result)
+
+    def test_environment_built_via_di_has_injectable_properties(self):
+        """Test that Environment built via di.build() has injectable properties initialized."""
+        test_key = "CLEARSKIES_TEST_DI_BUILD_VAR"
+        test_value = "test_value_from_di_build"
+        os.environ[test_key] = test_value
+
+        try:
+            di = Di()
+            # Build environment via DI - this should call inject_properties automatically
+            environment = di.build("environment", cache=True)
+            environment._env_file_config = {}
+
+            # The environment should be able to read from os.environ without raising
+            # "injectable hasn't been properly initialized" error
+            result = environment.get(test_key)
+            self.assertEqual(test_value, result)
+        finally:
+            del os.environ[test_key]
