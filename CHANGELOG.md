@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.37] - 2026-01-22
+
+### Added
+- Add subclasses for the query results
+- Add query response
+- Add test for model._count for x-total*
+- Add totals to next_page_data
+
+### Changed
+- Pagination count query response by @cmancone in [#55](https://github.com/clearskies-py/clearskies/pull/55)
+- Retrieve count from next-page-data
+
+### Fixed
+- Inject environment
+- Formatting
+- Fix pytest with retry by @tnijboer in [#61](https://github.com/clearskies-py/clearskies/pull/61)
+
+### Removed
+- Remove unused arguments
+
 ## [2.0.36] - 2026-01-21
+
+### Changed
+- Bump version to v2.0.36 by @github-actions[bot]
 
 ### Fixed
 - Di by-standard-lib sub items by @tnijboer in [#59](https://github.com/clearskies-py/clearskies/pull/59)
@@ -1052,6 +1075,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.37]: https://github.com/clearskies-py/clearskies/compare/v2.0.36..v2.0.37
 [2.0.36]: https://github.com/clearskies-py/clearskies/compare/v2.0.35..v2.0.36
 [2.0.35]: https://github.com/clearskies-py/clearskies/compare/v2.0.34..v2.0.35
 [2.0.34]: https://github.com/clearskies-py/clearskies/compare/v2.0.33..v2.0.34
