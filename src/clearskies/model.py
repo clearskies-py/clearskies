@@ -7,6 +7,7 @@ from clearskies import loggable
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import string
 from clearskies.query import Condition, Join, Query, Sort
+from clearskies.query.result import CountQueryResult, QueryResult, RecordQueryResult, RecordsQueryResult
 from clearskies.schema import Schema
 
 if TYPE_CHECKING:
@@ -200,6 +201,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     _query_executed: bool = False
     _count: int | None = None
     _next_page_data: dict[str, Any] | None = None
+    _last_query_result: QueryResult | None = None
 
     id_column_name: str = ""
     backend: Backend = None  # type: ignore
@@ -232,6 +234,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         self._query_executed = False
         self._count = None
         self._next_page_data = None
+        self._last_query_result = None
 
     @classmethod
     def destination_name(cls: type[Self]) -> str:
@@ -504,9 +507,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         [to_save, temporary_data] = self.columns_to_backend(data, save_columns)
         to_save = self.to_backend(to_save, save_columns)
         if self:
-            new_data = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
+            result: RecordQueryResult = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
         else:
-            new_data = self.backend.create(to_save, self)  # type: ignore
+            result: RecordQueryResult = self.backend.create(to_save, self)  # type: ignore
+        new_data = result.record
         id = self.backend.column_from_backend(save_columns[self.id_column_name], new_data[self.id_column_name])  # type: ignore
 
         # if we had any temporary columns add them back in
@@ -844,7 +848,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         self.columns_pre_delete(columns)
         self.pre_delete()
 
-        self.backend.delete(self._data[self.id_column_name], self)  # type: ignore
+        self.backend.delete(self._data[self.id_column_name], self)
 
         self.columns_post_delete(columns)
         self.post_delete()
@@ -1730,17 +1734,24 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     def __len__(self: Self):  # noqa: D105
         self.no_single_model()
         if self._count is None:
-            self._count = self.backend.count(self.get_final_query())
+            result: CountQueryResult = self.backend.count(self.get_final_query())
+            self._count = result.count
         return self._count
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105
         self.no_single_model()
-        self._next_page_data = {}
-        raw_rows = self.backend.records(
-            self.get_final_query(),
-            next_page_data=self._next_page_data,
-        )
-        return iter([self.model(row) for row in raw_rows])
+        result: RecordsQueryResult = self.backend.records(self.get_final_query())
+        # Cache the QueryResult for endpoints to access
+        self._last_query_result = result
+        # Cache count from QueryResult only if it has a valid total count
+        # (i.e., can_count is True). Otherwise, leave _count as None so that
+        # __len__ will call backend.count() to get the actual total count.
+        if result.can_count:
+            self._count = result.get_count()
+        # Update next_page_data from QueryResult if available
+        if result.next_page_data:
+            self._next_page_data = result.next_page_data
+        return iter([self.model(row) for row in result.records])
 
     def get_final_query(self) -> Query:
         """
@@ -2010,6 +2021,27 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     def next_page_data(self: Self):
         return self._next_page_data
+
+    def last_query_result(self: Self) -> QueryResult | None:
+        """
+        Return the QueryResult from the last query execution.
+
+        This allows endpoints and other code to access the full QueryResult
+        with all its metadata (total_count, total_pages, can_count, next_page_data, etc.)
+        after iterating over the model query results.
+
+        Example:
+        ```python
+        for record in users.where("status=active"):
+            process(record)
+
+        # Access the full result metadata
+        result = users.last_query_result()
+        if result and result.can_count:
+            print(f"Total records: {result.total_count}")
+        ```
+        """
+        return self._last_query_result
 
     def documentation_pagination_next_page_response(self: Self, case_mapping: Callable) -> list[Any]:
         return self.backend.documentation_pagination_next_page_response(case_mapping)

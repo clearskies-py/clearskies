@@ -89,6 +89,7 @@ from .float_or_callable import FloatOrCallable
 from .headers import Headers
 from .integer import Integer
 from .integer_or_callable import IntegerOrCallable
+from .integer_or_none import IntegerOrNone
 from .joins import Joins
 from .list_any_dict import ListAnyDict
 from .list_any_dict_or_callable import ListAnyDictOrCallable
@@ -145,6 +146,7 @@ __all__ = [
     "Joins",
     "Integer",
     "IntegerOrCallable",
+    "IntegerOrNone",
     "ListAnyDict",
     "ListAnyDictOrCallable",
     "ModelClass",

@@ -7,7 +7,13 @@ from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
-from clearskies.query import Condition, Query
+from clearskies.query import Condition, ParsedCondition, Query
+from clearskies.query.result import (
+    CountQueryResult,
+    RecordQueryResult,
+    RecordsQueryResult,
+    SuccessQueryResult,
+)
 
 if TYPE_CHECKING:
     from clearskies import Model
@@ -149,7 +155,20 @@ class CursorBackend(Backend, InjectableProperties):
             + self.cursor.table_escape_character
         )
 
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
+        """
+        Update the record with the given id with the information from the data dictionary.
+
+        The updated record is fetched from the database after the update to ensure the returned
+        data reflects any database-side changes (triggers, defaults, etc.).
+
+        The result contains the updated record accessible via the `record` property:
+
+        ```python
+        result = backend.update(user_id, {"name": "Jane"}, user_model)
+        updated_record = result.record  # {"id": user_id, "name": "Jane", ...}
+        ```
+        """
         query_parts = []
         parameters = []
         for key, val in data.items():
@@ -163,9 +182,26 @@ class CursorBackend(Backend, InjectableProperties):
         self.cursor.execute(f"UPDATE {table_name} SET {updates} WHERE {id_equals}", tuple([*parameters, id]))
 
         # and now query again to fetch the updated record.
-        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))[0]
+        records_response = self.records(
+            Query(model.__class__, conditions=[ParsedCondition(model.id_column_name, "=", [str(id)])])
+        )
+        records = records_response.data
+        return RecordQueryResult(record=records[0])
 
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
+        """
+        Create a record with the information from the data dictionary.
+
+        The created record is fetched from the database after insertion to ensure the returned
+        data includes any auto-generated values (auto-increment IDs, default values, etc.).
+
+        The result contains the created record accessible via the `record` property:
+
+        ```python
+        result = backend.create({"name": "Jane"}, user_model)
+        new_record = result.record  # {"id": "auto-generated-id", "name": "Jane", ...}
+        ```
+        """
         escape = self.cursor.column_escape_character
         columns = escape + f"{escape}, {escape}".join(data.keys()) + escape
         placeholders = ", ".join([self.cursor.value_placeholder for i in range(len(data))])
@@ -178,33 +214,82 @@ class CursorBackend(Backend, InjectableProperties):
         if not new_id:
             raise ValueError("I can't figure out what the id is for a newly created record :(")
 
-        return self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={new_id}")]))[0]
+        records_response = self.records(
+            Query(model.__class__, conditions=[ParsedCondition(model.id_column_name, "=", [new_id])])
+        )
+        records = records_response.data
+        return RecordQueryResult(record=records[0])
 
-    def delete(self, id: int | str, model: Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
+        """
+        Delete the record with the given id.
+
+        Executes a DELETE statement against the database for the record matching the given id.
+        Raises an exception if the delete fails.
+
+        The result indicates success via the `success` property:
+
+        ```python
+        result = backend.delete(user_id, user_model)
+        assert result.success  # True
+        ```
+        """
         table_name = self._finalize_table_name(model.destination_name())
         id_equals = self.cursor.column_equals_with_placeholder(model.id_column_name)
         self.cursor.execute(f"DELETE FROM {table_name} WHERE {id_equals}", (id,))
-        return True
+        return SuccessQueryResult()
 
-    def count(self, query: Query) -> int:
-        sql, parameters = self.as_count_sql(query)
+    def count(self, query: Query) -> CountQueryResult:
+        """
+        Return the number of records which match the given query configuration.
+
+        Executes a COUNT(*) query against the database with the conditions from the query.
+
+        The result contains the count accessible via the `count` property:
+
+        ```python
+        result = backend.count(query)
+        total = result.count  # e.g., 42
+        ```
+        """
+        (sql, parameters) = self.as_count_sql(query)
         self.cursor.execute(sql, parameters)
+        count = 0
         for row in self.cursor:
-            return row[0] if type(row) == tuple else row["count"]
-        return 0
+            count = row[0] if type(row) == tuple else row["count"]
+            break
+        return CountQueryResult(count=count)
 
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query) -> RecordsQueryResult:
+        """
+        Return a list of records that match the given query configuration.
+
+        Executes a SELECT query against the database with the conditions, joins, sorting,
+        and pagination from the query.
+
+        The result contains the records accessible via the `records` property, and pagination
+        information in `next_page_data` if there are more results available:
+
+        ```python
+        result = backend.records(query)
+        for record in result.records:
+            print(record["name"])
+
+        if result.has_more_pages():
+            next_query = query.pagination(**result.next_page_data)
+        ```
+        """
         # I was going to get fancy and have this return an iterator, but since I'm going to load up
         # everything into a list anyway, I may as well just return the list, right?
         sql, parameters = self.as_sql(query)
         self.cursor.execute(sql, parameters)
         records = [row for row in self.cursor]
-        if type(next_page_data) == dict:
-            limit = query.limit
-            start = query.pagination.get("start", 0)
-            if limit and len(records) == limit:
-                next_page_data["start"] = int(start) + int(limit)
-        return records
+        next_page_data = None
+        limit = query.limit
+        start = query.pagination.get("start", 0)
+        if limit and len(records) == limit:
+            next_page_data = {"start": int(start) + int(limit)}
+        return RecordsQueryResult(records=records, next_page_data=next_page_data)
 
     def as_sql(self, query: Query) -> tuple[str, tuple[Any]]:
         escape = self.cursor.column_escape_character

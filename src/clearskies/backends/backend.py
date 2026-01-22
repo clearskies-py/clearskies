@@ -9,6 +9,12 @@ from clearskies.autodoc.schema import Schema as AutoDocSchema
 if TYPE_CHECKING:
     from clearskies import Column, Model
     from clearskies.query import Query
+    from clearskies.query.result import (
+        CountQueryResult,
+        RecordQueryResult,
+        RecordsQueryResult,
+        SuccessQueryResult,
+    )
 
 
 class Backend(ABC, loggable.Loggable):
@@ -29,33 +35,31 @@ class Backend(ABC, loggable.Loggable):
     can_count = True
 
     @abstractmethod
-    def update(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Update the record with the given id with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def create(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+    def create(self, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Create a record with the information from the data dictionary."""
         pass
 
     @abstractmethod
-    def delete(self, id: int | str, model: Model) -> bool:
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
         """Delete the record with the given id."""
         pass
 
     @abstractmethod
-    def count(self, query: Query) -> int:
+    def count(self, query: Query) -> CountQueryResult:
         """Return the number of records which match the given query configuration."""
         pass
 
     @abstractmethod
-    def records(self, query: Query, next_page_data: dict[str, str | int] | None = None) -> list[dict[str, Any]]:
+    def records(self, query: Query) -> RecordsQueryResult:
         """
         Return a list of records that match the given query configuration.
 
-        next_page_data is used to return data to the caller.  Pass in an empty dictionary, and it will be populated
-        with the data needed to return the next page of results.  If it is still an empty dictionary when returned,
-        then there is no additional data.
+        The QueryResult includes next_page_data for pagination information.
         """
         pass
 
@@ -107,6 +111,44 @@ class Backend(ABC, loggable.Loggable):
         should look like
         """
         pass
+
+    def extract_count_from_response(
+        self,
+        response_headers: dict[str, str] | None = None,
+        response_data: Any = None,
+    ) -> tuple[int | None, int | None] | None:
+        """
+        Extract count information from backend response.
+
+        This hook allows backends to extract total count and total pages from
+        response metadata (e.g., HTTP headers, response envelope data). Override
+        in backends that can extract count from response headers/data, such as
+        API backends with X-Total-Count headers.
+
+        This enables count caching in QueryResult - when records() returns,
+        the count can be cached from the response headers so that a subsequent
+        count() call doesn't need to make a separate request.
+
+        Returns a tuple of (total_count, total_pages) or None if count is not available.
+
+        Example implementation for an API backend:
+
+        ```python
+        def extract_count_from_response(
+            self,
+            response_headers: dict[str, str] | None = None,
+            response_data: Any = None,
+        ) -> tuple[int | None, int | None] | None:
+            if not response_headers:
+                return None
+            total_count = response_headers.get("X-Total-Count")
+            total_pages = response_headers.get("X-Total-Pages")
+            if total_count is not None:
+                return (int(total_count), int(total_pages) if total_pages else None)
+            return None
+        ```
+        """
+        return None
 
     def column_from_backend(self, column: Column, value: Any) -> Any:
         """
