@@ -9,6 +9,7 @@ from clearskies import configs, secrets
 from clearskies.decorators import parameters_to_properties
 from clearskies.di import inject
 from clearskies.functional.json import get_nested_attribute
+from clearskies.secrets.cache_storage.secret_cache import SecretCache
 from clearskies.secrets.exceptions import PermissionsError
 
 if TYPE_CHECKING:
@@ -22,6 +23,51 @@ class Akeyless(secrets.Secrets):
     This class provides integration with Akeyless vault services, allowing you to store, retrieve,
     and manage secrets. It supports different types of secrets (static, dynamic, rotated) and
     includes authentication mechanisms for AWS IAM, SAML, and JWT.
+
+    ### Cache Storage
+
+    The `cache_storage` parameter (inherited from `Secrets`) accepts an instance of a subclass of
+    [`SecretCache`](src/clearskies/secrets/cache_storage/secret_cache.py:1).
+    This enables caching secrets in external stores like AWS Parameter Store, AWS Secrets Manager,
+    Redis, etc.
+
+    #### Example: Using Cache Storage
+
+    ```python
+    from clearskies.secrets.cache_storage import SecretCache
+    import clearskies
+
+
+    class MyCache(SecretCache):
+        def get(self, path: str) -> str | None:
+            # Retrieve from your cache
+            return None
+
+        def set(self, path: str, value: str, ttl: int | None = None) -> None:
+            # Store in your cache
+            pass
+
+        def delete(self, path: str) -> None:
+            # Remove from your cache
+            pass
+
+        def clear(self) -> None:
+            # Clear all cached secrets
+            pass
+
+
+    secrets = clearskies.secrets.Akeyless(
+        access_id="p-abc123",
+        access_type="aws_iam",
+        cache_storage=MyCache(),
+    )
+    # First call fetches from Akeyless and caches
+    secret_value = secrets.get("/path/to/secret")
+    # Subsequent calls return from cache
+    secret_value = secrets.get("/path/to/secret")
+    # Force refresh from Akeyless
+    secret_value = secrets.get("/path/to/secret", refresh=True)
+    ```
     """
 
     """
@@ -106,6 +152,7 @@ class Akeyless(secrets.Secrets):
         api_host: str | None = None,
         profile: str | None = None,
         auto_guess_type: bool = False,
+        cache_storage: SecretCache | None = None,
     ):
         """
         Initialize the Akeyless backend with the specified configuration.
@@ -149,65 +196,101 @@ class Akeyless(secrets.Secrets):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
         res = self.api.create_secret(self.akeyless.CreateSecret(name=path, value=str(value), token=self._get_token()))
+
+        # Update cache with new value
+        if self.cache_storage:
+            self.cache_storage.set(path, str(value))
+
         return True
 
     def get(
         self,
         path: str,
         silent_if_not_found: bool = False,
+        refresh: bool = False,
         json_attribute: str | None = None,
         args: dict[str, Any] | None = None,
     ) -> str:
         """
         Get the secret at the given path.
 
+        When cache_storage is configured and refresh is False, this method first checks the cache
+        for the secret. If found, it returns the cached value. If not found or refresh is True,
+        it fetches from Akeyless and stores in the cache.
+
         When auto_guess_type is enabled, this method automatically determines if the secret is static,
         dynamic, or rotated and calls the appropriate method to retrieve it. If silent_if_not_found is
         True, returns an empty string when the secret is not found. If json_attribute is provided,
         treats the secret as JSON and returns the specified attribute.
         """
+        # Check cache first if not forcing refresh
+        if not refresh and self.cache_storage:
+            cached_value = self.cache_storage.get(path)
+            if cached_value is not None:
+                return cached_value
+
+        # Fetch from Akeyless - sub-methods handle caching, so we don't need to cache here
         if not self.auto_guess_type:
-            return self.get_static_secret(path, silent_if_not_found=silent_if_not_found, json_attribute=json_attribute)
-
-        try:
-            secret = self.describe_secret(path)
-        except Exception as e:
-            if e.status == 404:  # type: ignore
-                if silent_if_not_found:
-                    return ""
-                raise e
-            else:
-                raise ValueError(
-                    f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}"
-                )
-
-        self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
-        match secret.item_type.lower():
-            case "dynamic_secret":
-                return str(
-                    self.get_dynamic_secret(
-                        path,
-                        json_attribute=json_attribute,
-                        args=args,
+            return self.get_static_secret(
+                path, silent_if_not_found=silent_if_not_found, json_attribute=json_attribute, refresh=True
+            )
+        else:
+            try:
+                secret = self.describe_secret(path)
+            except Exception as e:
+                if e.status == 404:  # type: ignore
+                    if silent_if_not_found:
+                        return ""
+                    raise e
+                else:
+                    raise ValueError(
+                        f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}"
                     )
-                )
-            case "rotated_secret":
-                return str(self.get_rotated_secret(path, json_attribute=json_attribute, args=args))
-            case "static_secret":
-                return self.get_static_secret(
-                    path, json_attribute=json_attribute, silent_if_not_found=silent_if_not_found
-                )
-            case _:
-                raise ValueError(f"Unsupported secret type for auto-detection: '{secret.item_type}'")
 
-    def get_static_secret(self, path: str, silent_if_not_found: bool = False, json_attribute: str | None = None) -> str:
+            self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
+            match secret.item_type.lower():
+                case "dynamic_secret":
+                    return str(
+                        self.get_dynamic_secret(
+                            path,
+                            json_attribute=json_attribute,
+                            args=args,
+                            refresh=True,
+                        )
+                    )
+                case "rotated_secret":
+                    return str(self.get_rotated_secret(path, json_attribute=json_attribute, args=args, refresh=True))
+                case "static_secret":
+                    return self.get_static_secret(
+                        path, json_attribute=json_attribute, silent_if_not_found=silent_if_not_found, refresh=True
+                    )
+                case _:
+                    raise ValueError(f"Unsupported secret type for auto-detection: '{secret.item_type}'")
+
+    def get_static_secret(
+        self,
+        path: str,
+        silent_if_not_found: bool = False,
+        refresh: bool = False,
+        json_attribute: str | None = None,
+    ) -> str:
         """
         Get a static secret from the given path.
+
+        When cache_storage is configured and refresh is False, this method first checks the cache
+        for the secret. If found, it returns the cached value. If not found or refresh is True,
+        it fetches from Akeyless and stores in the cache.
 
         Checks permissions before retrieving the secret and raises PermissionsError if the user doesn't
         have read permission. If silent_if_not_found is True, returns an empty string when the secret
         is not found. If json_attribute is provided, treats the secret as JSON and returns the specified attribute.
         """
+        # Check cache first if not forcing refresh
+        if not refresh and self.cache_storage:
+            cached_value = self.cache_storage.get(path)
+            if cached_value is not None:
+                return cached_value
+
         if not "read" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
@@ -223,21 +306,43 @@ class Akeyless(secrets.Secrets):
                     return ""
                 raise KeyError(f"Secret '{path}' not found")
             raise e
+
         if json_attribute:
-            return get_nested_attribute(res[path], json_attribute)  # type: ignore
-        return str(res[path])
+            value = get_nested_attribute(res[path], json_attribute)  # type: ignore
+        else:
+            value = str(res[path])
+
+        # Store in cache if configured and we got a value
+        if value and self.cache_storage:
+            self.cache_storage.set(path, value)
+
+        return value
 
     def get_dynamic_secret(
-        self, path: str, json_attribute: str | None = None, args: dict[str, Any] | None = None
+        self,
+        path: str,
+        json_attribute: str | None = None,
+        args: dict[str, Any] | None = None,
+        refresh: bool = False,
     ) -> Any:
         """
         Get a dynamic secret from the given path.
+
+        When cache_storage is configured and refresh is False, this method first checks the cache
+        for the secret. If found, it returns the cached value. If not found or refresh is True,
+        it fetches from Akeyless and stores in the cache.
 
         Dynamic secrets are generated on-demand, such as database credentials. Checks permissions
         before retrieving the secret and raises PermissionsError if the user doesn't have read
         permission. If json_attribute is provided, treats the result as JSON and returns the
         specified attribute.
         """
+        # Check cache first if not forcing refresh
+        if not refresh and self.cache_storage:
+            cached_value = self.cache_storage.get(path)
+            if cached_value is not None:
+                return cached_value
+
         if not "read" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
@@ -248,21 +353,43 @@ class Akeyless(secrets.Secrets):
         if args:
             kwargs["args"] = args  # type: ignore
         res: dict[str, Any] = self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))  # type: ignore
+
         if json_attribute:
-            return get_nested_attribute(res, json_attribute)
-        return res
+            value = get_nested_attribute(res, json_attribute)
+        else:
+            value = res
+
+        # Store in cache if configured and we got a value
+        if value and self.cache_storage:
+            self.cache_storage.set(path, str(value) if not isinstance(value, str) else value)
+
+        return value
 
     def get_rotated_secret(
-        self, path: str, json_attribute: str | None = None, args: dict[str, Any] | None = None
+        self,
+        path: str,
+        json_attribute: str | None = None,
+        args: dict[str, Any] | None = None,
+        refresh: bool = False,
     ) -> Any:
         """
         Get a rotated secret from the given path.
+
+        When cache_storage is configured and refresh is False, this method first checks the cache
+        for the secret. If found, it returns the cached value. If not found or refresh is True,
+        it fetches from Akeyless and stores in the cache.
 
         Rotated secrets are automatically replaced on a schedule. Checks permissions before
         retrieving the secret and raises PermissionsError if the user doesn't have read
         permission. If json_attribute is provided, treats the result as JSON and returns the
         specified attribute.
         """
+        # Check cache first if not forcing refresh
+        if not refresh and self.cache_storage:
+            cached_value = self.cache_storage.get(path)
+            if cached_value is not None:
+                return cached_value
+
         if not "read" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
@@ -275,9 +402,17 @@ class Akeyless(secrets.Secrets):
             kwargs["args"] = args  # type: ignore
 
         res: dict[str, str] = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))["value"]  # type: ignore
+
         if json_attribute:
-            return get_nested_attribute(res, json_attribute)
-        return res
+            value = get_nested_attribute(res, json_attribute)
+        else:
+            value = res
+
+        # Store in cache if configured and we got a value
+        if value and self.cache_storage:
+            self.cache_storage.set(path, str(value) if not isinstance(value, str) else value)
+
+        return value
 
     def describe_secret(self, path: str) -> Any:
         """
@@ -318,6 +453,7 @@ class Akeyless(secrets.Secrets):
 
         Checks permissions before updating the secret and raises PermissionsError if the user
         doesn't have write permission for the path. The value is converted to a string before storage.
+        Also updates the cache if cache_storage is configured.
         """
         if not "write" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
@@ -326,12 +462,17 @@ class Akeyless(secrets.Secrets):
             self.akeyless.UpdateSecretVal(name=path, value=str(value), token=self._get_token())
         )
 
+        # Update cache with new value
+        if self.cache_storage:
+            self.cache_storage.set(path, str(value))
+
     def upsert(self, path: str, value: Any) -> None:
         """
         Create or update a secret.
 
         This method attempts to update an existing secret, and if that fails, it tries to create
         a new one. The value is converted to a string before storage.
+        Also updates the cache if cache_storage is configured.
         """
         try:
             self.update(path, value)
