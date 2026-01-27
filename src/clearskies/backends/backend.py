@@ -116,7 +116,7 @@ class Backend(ABC, loggable.Loggable):
         self,
         response_headers: dict[str, str] | None = None,
         response_data: Any = None,
-    ) -> tuple[int | None, int | None] | None:
+    ) -> tuple[int | None, int | None]:
         """
         Extract count information from backend response.
 
@@ -129,7 +129,8 @@ class Backend(ABC, loggable.Loggable):
         the count can be cached from the response headers so that a subsequent
         count() call doesn't need to make a separate request.
 
-        Returns a tuple of (total_count, total_pages) or None if count is not available.
+        Returns a tuple of (total_count, total_pages). Both values will be None
+        if count is not available.
 
         Example implementation for an API backend:
 
@@ -138,17 +139,17 @@ class Backend(ABC, loggable.Loggable):
             self,
             response_headers: dict[str, str] | None = None,
             response_data: Any = None,
-        ) -> tuple[int | None, int | None] | None:
+        ) -> tuple[int | None, int | None]:
             if not response_headers:
-                return None
+                return (None, None)
             total_count = response_headers.get("X-Total-Count")
             total_pages = response_headers.get("X-Total-Pages")
             if total_count is not None:
                 return (int(total_count), int(total_pages) if total_pages else None)
-            return None
+            return (None, None)
         ```
         """
-        return None
+        return (None, None)
 
     def column_from_backend(self, column: Column, value: Any) -> Any:
         """

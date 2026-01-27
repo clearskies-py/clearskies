@@ -393,11 +393,12 @@ class ApiBackendTest(unittest.TestCase):
 
         (status_code, response, response_headers) = context()
         assert status_code == 200
+        # total_count is metadata stored in RecordsQueryResult, not in next_page_data
+        # The endpoint should expose it separately if needed, not in next_page
         assert response["pagination"] == {
             "limit": 10,
             "next_page": {
                 "since": "5",
-                "total_count": 100,
             },
             "number_results": None,
         }
@@ -445,11 +446,11 @@ class ApiBackendTest(unittest.TestCase):
 
         (status_code, response, response_headers) = context()
         assert status_code == 200
+        # total_count is metadata stored in RecordsQueryResult, not in next_page_data
         assert response["pagination"] == {
             "limit": 10,
             "next_page": {
                 "since": "5",
-                "total_count": 50,
             },
             "number_results": None,
         }
@@ -497,11 +498,11 @@ class ApiBackendTest(unittest.TestCase):
 
         (status_code, response, response_headers) = context()
         assert status_code == 200
+        # total_pages is metadata stored in RecordsQueryResult, not in next_page_data
         assert response["pagination"] == {
             "limit": 10,
             "next_page": {
                 "since": "5",
-                "total_pages": 10,
             },
             "number_results": None,
         }
@@ -550,17 +551,18 @@ class ApiBackendTest(unittest.TestCase):
 
         (status_code, response, response_headers) = context()
         assert status_code == 200
+        # total_count and total_pages are metadata stored in RecordsQueryResult, not in next_page_data
         assert response["pagination"] == {
             "limit": 10,
             "next_page": {
                 "since": "5",
-                "total_count": 100,
-                "total_pages": 10,
             },
             "number_results": None,
         }
 
     def test_pagination_x_total_count_takes_precedence_over_x_total(self):
+        """Test that x-total-count header takes precedence over x-total for total_count in RecordsQueryResult."""
+
         class User(clearskies.Model):
             id_column_name = "login"
             backend = clearskies.backends.ApiBackend(
@@ -590,21 +592,24 @@ class ApiBackendTest(unittest.TestCase):
         )
         requests.request = MagicMock(return_value=response)
 
+        # Test that the count is correctly extracted and cached in the model
+        def test_count(users: User):
+            query = users.limit(10)
+            results = list(query)
+            # After iteration, len() should use the cached total_count from x-total-count header
+            count = len(query)
+            return {"count": count, "results_returned": len(results)}
+
         context = Context(
-            clearskies.endpoints.List(
-                model_class=User,
-                readable_column_names=["id", "login", "html_url"],
-                sortable_column_names=["id"],
-                default_sort_column_name=None,
-                default_limit=10,
-            ),
+            clearskies.endpoints.Callable(test_count),
             classes=[User],
             bindings={"requests": requests},
         )
 
         (status_code, response, response_headers) = context()
         assert status_code == 200
-        assert response["pagination"]["next_page"]["total_count"] == 100
+        # x-total-count (100) should take precedence over x-total (50)
+        assert response["data"]["count"] == 100
 
         class User(clearskies.Model):
             id_column_name = "login"

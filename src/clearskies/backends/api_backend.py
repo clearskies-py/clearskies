@@ -792,11 +792,8 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         records = self.map_records_response(response.json(), query)
         response_next_page_data = self.get_next_page_data_from_response(query, response)
 
-        # Extract count info if available from the response
-        raw_total_count = response_next_page_data.get("total_count")
-        raw_total_pages = response_next_page_data.get("total_pages")
-        total_count = int(raw_total_count) if raw_total_count is not None else None
-        total_pages = int(raw_total_pages) if raw_total_pages is not None else None
+        # Extract count info directly from response headers (not from next_page_data)
+        total_count, total_pages = self.extract_count_from_response(dict(response.headers), None)
 
         return RecordsQueryResult(
             records=records,
@@ -1050,14 +1047,6 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
 
         # Different APIs generally have completely different ways of communicating pagination data, but one somewhat common
         # approach is to use a link header, so let's support that in the base class.
-        # Extract total count from headers if available
-        count_info = self.extract_count_from_response(dict(response.headers), None)
-        if count_info:
-            total_count, total_pages = count_info
-            if total_count is not None:
-                next_page_data["total_count"] = total_count
-            if total_pages is not None:
-                next_page_data["total_pages"] = total_pages
         if "link" not in response.headers:
             return next_page_data
         next_link = [rel for rel in response.headers["link"].split(",") if 'rel="next"' in rel]
@@ -1077,7 +1066,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         self,
         response_headers: dict[str, str] | None = None,
         response_data: Any = None,
-    ) -> tuple[int | None, int | None] | None:
+    ) -> tuple[int | None, int | None]:
         """
         Extract count information from API response headers.
 
@@ -1092,19 +1081,19 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
             self,
             response_headers: dict[str, str] | None = None,
             response_data: Any = None,
-        ) -> tuple[int | None, int | None] | None:
+        ) -> tuple[int | None, int | None]:
             if not response_headers:
-                return None
+                return (None, None)
             # Custom header names for your API
             total = response_headers.get("X-My-Api-Total")
             pages = response_headers.get("X-My-Api-Pages")
             if total is not None:
                 return (int(total), int(pages) if pages else None)
-            return None
+            return (None, None)
         ```
         """
         if not response_headers:
-            return None
+            return (None, None)
 
         # Normalize header keys to lowercase for case-insensitive lookup
         headers_lower = {k.lower(): v for k, v in response_headers.items()}
@@ -1122,10 +1111,7 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         if "x-total-pages" in headers_lower:
             total_pages = int(headers_lower["x-total-pages"])
 
-        if total_count is not None or total_pages is not None:
-            return (total_count, total_pages)
-
-        return None
+        return (total_count, total_pages)
 
     def count(self, query: Query) -> CountQueryResult:
         raise NotImplementedError(
