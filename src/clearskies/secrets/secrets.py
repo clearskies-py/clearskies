@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import clearskies.configurable
 from clearskies import configs, loggable
 from clearskies.di import inject
 from clearskies.di.injectable_properties import InjectableProperties
+
+if TYPE_CHECKING:
+    from clearskies.secrets.cache_storage.secret_cache import SecretCache
 
 
 class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties, loggable.Loggable):
@@ -69,6 +72,21 @@ class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties, l
 
     """Dependency injection container."""
     di = inject.Di()
+
+    """
+    Whether cache_storage has been initialized with DI
+    """
+    _cache_storage_active: bool = False
+
+    @property
+    def cache(self) -> SecretCache | None:
+        """Get the cache storage instance."""
+        if self._cache_storage_active and self.cache_storage:
+            return self.cache_storage
+        if self.cache_storage and hasattr(self.cache_storage, "injectable_properties"):
+            self.cache_storage.injectable_properties(di=self.di)
+        self._cache_storage_active = True
+        return self.cache_storage
 
     def create(self, path: str, value: str) -> bool:
         raise NotImplementedError(

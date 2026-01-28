@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+from clearskies.di import Di
 from clearskies.secrets.akeyless import Akeyless
 from clearskies.secrets.cache_storage import SecretCache
 
@@ -48,14 +49,19 @@ class AkeylessCacheStorageTest(unittest.TestCase):
         # Mock auth to return a token
         self.mock_api.auth.return_value = MagicMock(token="test-token")
 
+        # Create DI container with mocked akeyless module
+        self.di = Di(bindings={"akeyless_sdk": self.mock_akeyless_module})
+
     def _create_akeyless(self, cache_storage=None):
-        """Create an Akeyless instance with mocked dependencies."""
+        """Create an Akeyless instance with mocked dependencies using DI."""
+        # Create the Akeyless instance through DI
         akeyless = Akeyless(
             access_id="p-test123",
             access_type="aws_iam",
             cache_storage=cache_storage,
         )
-        akeyless.akeyless = self.mock_akeyless_module
+        # Initialize injectable properties with DI
+        akeyless.injectable_properties(self.di)
         akeyless._api = self.mock_api
         # Pre-set a token to avoid authentication calls
         akeyless._token = "test-token"

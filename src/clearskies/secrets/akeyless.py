@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
@@ -161,7 +160,6 @@ class Akeyless(secrets.Secrets):
         one of "aws_iam", "saml", or "jwt". If using JWT authentication, jwt_env_key must be provided.
         """
         self.finalize_and_validate_configuration()
-        self.logger = logging.getLogger(self.__class__.__name__)
 
     def configure(self) -> None:
         """
@@ -198,8 +196,8 @@ class Akeyless(secrets.Secrets):
         res = self.api.create_secret(self.akeyless.CreateSecret(name=path, value=str(value), token=self._get_token()))
 
         # Update cache with new value
-        if self.cache_storage:
-            self.cache_storage.set(path, str(value))
+        if self.cache:
+            self.cache.set(path, str(value))
 
         return True
 
@@ -224,8 +222,8 @@ class Akeyless(secrets.Secrets):
         treats the secret as JSON and returns the specified attribute.
         """
         # Check cache first if not forcing refresh
-        if not refresh and self.cache_storage:
-            cached_value = self.cache_storage.get(path)
+        if not refresh and self.cache:
+            cached_value = self.cache.get(path)
             if cached_value is not None:
                 return cached_value
 
@@ -286,8 +284,8 @@ class Akeyless(secrets.Secrets):
         is not found. If json_attribute is provided, treats the secret as JSON and returns the specified attribute.
         """
         # Check cache first if not forcing refresh
-        if not refresh and self.cache_storage:
-            cached_value = self.cache_storage.get(path)
+        if not refresh and self.cache:
+            cached_value = self.cache.get(path)
             if cached_value is not None:
                 return cached_value
 
@@ -313,8 +311,8 @@ class Akeyless(secrets.Secrets):
             value = str(res[path])
 
         # Store in cache if configured and we got a value
-        if value and self.cache_storage:
-            self.cache_storage.set(path, value)
+        if value and self.cache:
+            self.cache.set(path, value)
 
         return value
 
@@ -338,8 +336,8 @@ class Akeyless(secrets.Secrets):
         specified attribute.
         """
         # Check cache first if not forcing refresh
-        if not refresh and self.cache_storage:
-            cached_value = self.cache_storage.get(path)
+        if not refresh and self.cache:
+            cached_value = self.cache.get(path)
             if cached_value is not None:
                 return cached_value
 
@@ -360,8 +358,8 @@ class Akeyless(secrets.Secrets):
             value = res
 
         # Store in cache if configured and we got a value
-        if value and self.cache_storage:
-            self.cache_storage.set(path, str(value) if not isinstance(value, str) else value)
+        if value and self.cache:
+            self.cache.set(path, str(value) if not isinstance(value, str) else value)
 
         return value
 
@@ -385,8 +383,8 @@ class Akeyless(secrets.Secrets):
         specified attribute.
         """
         # Check cache first if not forcing refresh
-        if not refresh and self.cache_storage:
-            cached_value = self.cache_storage.get(path)
+        if not refresh and self.cache:
+            cached_value = self.cache.get(path)
             if cached_value is not None:
                 return cached_value
 
@@ -409,8 +407,8 @@ class Akeyless(secrets.Secrets):
             value = res
 
         # Store in cache if configured and we got a value
-        if value and self.cache_storage:
-            self.cache_storage.set(path, str(value) if not isinstance(value, str) else value)
+        if value and self.cache:
+            self.cache.set(path, str(value) if not isinstance(value, str) else value)
 
         return value
 
@@ -463,8 +461,8 @@ class Akeyless(secrets.Secrets):
         )
 
         # Update cache with new value
-        if self.cache_storage:
-            self.cache_storage.set(path, str(value))
+        if self.cache:
+            self.cache.set(path, str(value))
 
     def upsert(self, path: str, value: Any) -> None:
         """
@@ -530,8 +528,8 @@ class Akeyless(secrets.Secrets):
         delete = self.api.delete_item(self.akeyless.DeleteItem(name=path, token=self._get_token()))
 
         # Remove from cache
-        if self.cache_storage:
-            self.cache_storage.delete(path)
+        if self.cache:
+            self.cache.delete(path)
 
         return delete.item_name == path
 
