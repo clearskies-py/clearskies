@@ -516,6 +516,25 @@ class Akeyless(secrets.Secrets):
 
         return res.data  # type: ignore
 
+    def delete(self, path: str) -> bool:
+        """
+        Delete a secret at the given path.
+
+        Checks permissions before deleting and raises PermissionsError if the user doesn't
+        have delete permission for the path. Also removes the secret from cache if cache_storage
+        is configured.
+        """
+        if not "delete" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission to delete the secret '{path}'")
+
+        delete = self.api.delete_item(self.akeyless.DeleteItem(name=path, token=self._get_token()))
+
+        # Remove from cache
+        if self.cache_storage:
+            self.cache_storage.delete(path)
+
+        return delete.item_name == path
+
     def _get_token(self) -> str:
         """
         Get an authentication token for Akeyless API calls.

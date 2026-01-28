@@ -99,3 +99,8 @@ class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties, l
         raise NotImplementedError(
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
         )
+
+    def delete(self, path: str) -> bool:
+        raise NotImplementedError(
+            "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
+        )

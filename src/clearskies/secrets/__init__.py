@@ -1,10 +1,9 @@
 from clearskies.secrets.secrets import Secrets
 from clearskies.secrets.akeyless import Akeyless
-from clearskies.secrets.cache_storage import MemoryCache, SecretCache
+from clearskies.secrets import cache_storage
 
 __all__ = [
     "Secrets",
     "Akeyless",
-    "MemoryCache",
-    "SecretCache",
+    "cache_storage",
 ]
