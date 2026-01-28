@@ -164,23 +164,25 @@
             ]
         },
         {
-            "title": "Cursors from Environment",
+            "title": "From environment",
             "source": "clearskies.cursors.Cursor",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.cursors.from_environment.Sqlite",
                 "clearskies.cursors.from_environment.Mysql",
                 "clearskies.cursors.from_environment.Postgresql"
-            ]
+            ],
+            "parent": "Cursors"
         },
          {
-            "title": "Cursors Port Forwarder",
+            "title": "Port Forwarders",
             "source": "clearskies.cursors.port_forwarding.PortForwarder",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.cursors.port_forwarding.SshCert",
                 "clearskies.cursors.port_forwarding.SshPrivateKey"
-            ]
+            ],
+            "parent": "Cursors"
         },
         {
             "title": "Endpoints",
@@ -210,7 +212,7 @@
         },
         {
             "title": "Input Validators",
-            "source": "clearskies.Validator",
+            "source": "clearskies.validator.Validator",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.validators.AfterColumn",
@@ -232,7 +234,7 @@
         },
         {
             "title": "Security Headers",
-            "source": "clearskies.endpoint.Endpoint",
+            "source": "clearskies.security_header.SecurityHeader",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.security_headers.CacheControl",
@@ -295,6 +297,23 @@
             "title": "Environment",
             "source": "clearskies.environment.Environment",
             "builder": "clearskies_doc_builder.builders.SingleClass"
+        },
+        {
+            "title": "Secrets",
+            "source": "clearskies.secrets.Secrets",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "classes": [
+                "clearskies.secrets.Akeyless"
+            ]
+        },
+        {
+            "title": "Secret Cache",
+            "source": "clearskies.secrets.cache_storage.SecretCache",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "classes": [
+                "clearskies.secrets.cache_storage.MemoryCache"
+            ],
+            "parent": "Secrets"
         }
     ]
 }

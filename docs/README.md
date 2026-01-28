@@ -14,7 +14,7 @@ This lives in the main clearskies repo because the documentation for clearskies 
 
 ```
 cd python
-poetry run python build.py
+uv run python build.py
 cd ../build
 bundle exec jekyll serve
 ```
