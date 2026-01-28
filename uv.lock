@@ -451,14 +451,14 @@ test = [{ name = "pytest-postgresql", specifier = ">=7.0.2" }]
 
 [[package]]
 name = "clear-skies-doc-builder"
-version = "2.0.6"
+version = "2.0.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "clear-skies" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/c9/d27ebf7c4c36298e85be256e5c88663ca452598405c7a107e89fe94e1503/clear_skies_doc_builder-2.0.6.tar.gz", hash = "sha256:3d3fd4dfb537f4845fd5561ae2b2d4fe1dce44395bb5f2f0b452f30c0bfd2a28", size = 74796, upload-time = "2026-01-28T08:36:54.317Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/ba/95134887be48552ba8ec17bf8f333e568e1e83501e5511af6dd99eac92f9/clear_skies_doc_builder-2.0.8.tar.gz", hash = "sha256:a832ad5ab4e5079f1f9607a667e04b6ade671dd562a024ec841c8f477479b20e", size = 76770, upload-time = "2026-01-28T10:31:30.362Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/a3/d972dc3074e32333a8517dfe3b5a436ff9c71df25f67d7dd515f2bb758b2/clear_skies_doc_builder-2.0.6-py3-none-any.whl", hash = "sha256:d73acfccb1d40baa349f50d7f50a3054149396cc7ddc717304256083031a6aab", size = 25294, upload-time = "2026-01-28T08:36:55.268Z" },
+    { url = "https://files.pythonhosted.org/packages/31/ba/e6ad441304961ad5e54a441bbdb9ab871ac1f9fbfc1d4f22d343ff8fe74e/clear_skies_doc_builder-2.0.8-py3-none-any.whl", hash = "sha256:ab5ed70422d2b2f7b4eac96dcf1713df3ee8601edcfb33122562d508a8cbd659", size = 27435, upload-time = "2026-01-28T10:31:29.085Z" },
 ]
 
 [[package]]
