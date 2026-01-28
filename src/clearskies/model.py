@@ -1734,8 +1734,13 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     def __len__(self: Self):  # noqa: D105
         self.no_single_model()
         if self._count is None:
-            result: CountQueryResult = self.backend.count(self.get_final_query())
-            self._count = result.count
+            # If we have a cached query result with count data, use it
+            if self._last_query_result is not None and self._last_query_result.can_count:
+                self._count = self._last_query_result.get_count()
+            else:
+                # Fall back to explicit count query
+                count_result: CountQueryResult = self.backend.count(self.get_final_query())
+                self._count = count_result.count
         return self._count
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105

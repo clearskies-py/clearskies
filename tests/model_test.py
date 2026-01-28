@@ -699,3 +699,127 @@ class ModelTest(TestBase):
         status_code, response, response_headers = context()
 
         assert [user["name"] for user in response["data"]] == ["Bob", "Greg"]
+
+    def test_len_uses_cached_count_from_iter(self):
+        """Test that __len__ uses count from cached RecordsQueryResult after __iter__ is called."""
+        from unittest.mock import patch
+        from clearskies.query.result import RecordsQueryResult
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            # Create some records
+            users.create({"name": "Alice"})
+            users.create({"name": "Bob"})
+            users.create({"name": "Charlie"})
+
+            # Get a query
+            query = users.where("name is not null")
+
+            # Mock the backend.records to return a RecordsQueryResult with count data
+            original_records = query.backend.records
+
+            def mock_records(q):
+                result = original_records(q)
+                # Return a RecordsQueryResult with can_count=True and total_count set
+                return RecordsQueryResult(
+                    records=result.records,
+                    total_count=len(result.records),
+                    next_page_data=result.next_page_data,
+                )
+
+            # Track if count() is called
+            count_called = []
+            original_count = query.backend.count
+
+            def mock_count(q):
+                count_called.append(True)
+                return original_count(q)
+
+            with patch.object(query.backend, "records", mock_records):
+                with patch.object(query.backend, "count", mock_count):
+                    # First iterate (this populates _last_query_result with count data)
+                    for _ in query:
+                        pass
+                    # Then call len() - this should use the cached count
+                    length = len(query)
+
+            return {
+                "count_called": len(count_called) > 0,
+                "length": length,
+            }
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        status_code, response, response_headers = context()
+
+        # The key assertion: count() should NOT have been called because
+        # __iter__ populated _last_query_result with can_count=True
+        assert response["count_called"] == False, "backend.count() should not be called when RecordsQueryResult has count data"
+        assert response["length"] == 3
+
+    def test_list_falls_back_to_count_when_no_count_data(self):
+        """Test that list() falls back to backend.count() when RecordsQueryResult doesn't have count data."""
+        from unittest.mock import patch
+        from clearskies.query.result import RecordsQueryResult
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        def my_application(users):
+            # Create some records
+            users.create({"name": "Alice"})
+            users.create({"name": "Bob"})
+
+            # Get a query
+            query = users.where("name is not null")
+
+            # Mock the backend.records to return a RecordsQueryResult WITHOUT count data
+            original_records = query.backend.records
+
+            def mock_records(q):
+                result = original_records(q)
+                # Return a RecordsQueryResult with can_count=False (no total_count)
+                return RecordsQueryResult(
+                    records=result.records,
+                    next_page_data=result.next_page_data,
+                )
+
+            # Track if count() is called
+            count_called = []
+            original_count = query.backend.count
+
+            def mock_count(q):
+                count_called.append(True)
+                return original_count(q)
+
+            with patch.object(query.backend, "records", mock_records):
+                with patch.object(query.backend, "count", mock_count):
+                    # Call list() which triggers __len__ then __iter__
+                    result = list(query)
+
+            return {
+                "count_called": len(count_called) > 0,
+                "result_length": len(result),
+            }
+
+        context = clearskies.contexts.Context(
+            my_application,
+            classes=[User],
+        )
+        status_code, response, response_headers = context()
+
+        # When RecordsQueryResult doesn't have count data, count() should be called
+        assert response["count_called"] == True, "backend.count() should be called when RecordsQueryResult has no count data"
+        assert response["result_length"] == 2
