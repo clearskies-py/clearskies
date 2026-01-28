@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.40] - 2026-01-28
+
+### Fixed
+- Secret cache di
+- Fix dependencies
+
 ## [2.0.39] - 2026-01-28
 
 ### Added
 - Add cache for secrets by @tnijboer in [#62](https://github.com/clearskies-py/clearskies/pull/62)
 
 ### Changed
+- Bump version to v2.0.39 by @github-actions[bot]
 - Update to latest doc builder
 
 ## [2.0.38] - 2026-01-27
@@ -1092,6 +1099,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.40]: https://github.com/clearskies-py/clearskies/compare/v2.0.39..v2.0.40
 [2.0.39]: https://github.com/clearskies-py/clearskies/compare/v2.0.38..v2.0.39
 [2.0.38]: https://github.com/clearskies-py/clearskies/compare/v2.0.37..v2.0.38
 [2.0.37]: https://github.com/clearskies-py/clearskies/compare/v2.0.36..v2.0.37
