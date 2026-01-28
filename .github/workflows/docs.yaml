@@ -33,6 +33,7 @@ jobs:
           enable-cache: true
       - name: Publish
         run: |
+          uv sync --locked --all-groups --all-extras
           export PYTHONPATH="$PWD/src"
           cd docs/python
           uv run build.py
