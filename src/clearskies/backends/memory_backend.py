@@ -436,7 +436,26 @@ class MemoryBackend(Backend, InjectableProperties):
     _tables: dict[str, MemoryTable] = {}
     _silent_on_missing_tables: bool = True
 
-    def __init__(self, silent_on_missing_tables=True):
+    def __init__(
+        self,
+        silent_on_missing_tables: bool = True,
+        can_create: bool | None = None,
+        can_update: bool | None = None,
+        can_delete: bool | None = None,
+        can_query: bool | None = None,
+    ):
+        # Only pass permission flags to parent if they are explicitly set (not None)
+        # This allows the parent's default values (True) to be used when not specified
+        parent_kwargs = {}
+        if can_create is not None:
+            parent_kwargs["can_create"] = can_create
+        if can_update is not None:
+            parent_kwargs["can_update"] = can_update
+        if can_delete is not None:
+            parent_kwargs["can_delete"] = can_delete
+        if can_query is not None:
+            parent_kwargs["can_query"] = can_query
+        super().__init__(**parent_kwargs)
         self.__class__._tables = {}
         self._silent_on_missing_tables = silent_on_missing_tables
 

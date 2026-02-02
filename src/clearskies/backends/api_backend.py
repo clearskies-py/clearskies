@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import requests
 
-from clearskies import columns, configs, configurable, decorators
+from clearskies import columns, configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from clearskies.query import Query
 
 
-class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
+class ApiBackend(Backend, InjectableProperties):
     """
     Fetch and store data from an API endpoint.
 
@@ -601,6 +601,10 @@ class ApiBackend(configurable.Configurable, Backend, InjectableProperties):
         pagination_parameter_name: str = "start",
         pagination_parameter_type: str = "str",
         limit_parameter_name: str = "limit",
+        can_create: bool | None = True,
+        can_update: bool | None = True,
+        can_delete: bool | None = True,
+        can_query: bool | None = True,
     ):
         self.finalize_and_validate_configuration()
 

@@ -5,6 +5,9 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from clearskies import loggable
 from clearskies.autodoc.schema import Schema as AutoDocSchema
+from clearskies.configs import Boolean
+from clearskies.configurable import Configurable
+from clearskies.decorators import parameters_to_properties
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
@@ -17,7 +20,7 @@ if TYPE_CHECKING:
     )
 
 
-class Backend(ABC, loggable.Loggable):
+class Backend(ABC, Configurable, loggable.Loggable):
     """
     Connecting models to their data since 2020!.
 
@@ -29,10 +32,88 @@ class Backend(ABC, loggable.Loggable):
 
     Of course, not all data sources support all functionality present in the model.  Therefore, you do still need to have
     a fair understanding of how your data sources work.
+
+    ### Permissions
+
+    Backends support permission flags that control what operations are allowed. These can be set as class attributes
+    or passed to the constructor:
+
+    - `can_create`: Whether creating new records is allowed (default: True)
+    - `can_update`: Whether updating existing records is allowed (default: True)
+    - `can_delete`: Whether deleting records is allowed (default: True)
+    - `can_query`: Whether querying/reading records is allowed (default: True)
+
+    When an operation is attempted that is not allowed, a ValueError will be raised with a descriptive message.
+
+    Example of restricting a backend to read-only by subclassing:
+
+    ```python
+    import clearskies
+    from clearskies.configs import Boolean
+
+
+    class ReadOnlyMemoryBackend(clearskies.backends.MemoryBackend):
+        can_create = Boolean(default=False)
+        can_update = Boolean(default=False)
+        can_delete = Boolean(default=False)
+
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = ReadOnlyMemoryBackend()
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+    ```
     """
+
+    _descriptor_config_map = None
 
     supports_n_plus_one = False
     can_count = True
+
+    """
+    Whether creating new records is allowed for this backend.
+
+    When set to False, any attempt to create a record will raise a ValueError.
+    This can be set as a class attribute or passed to the constructor.
+    """
+    can_create = Boolean(default=True)
+
+    """
+    Whether updating existing records is allowed for this backend.
+
+    When set to False, any attempt to update a record will raise a ValueError.
+    This can be set as a class attribute or passed to the constructor.
+    """
+    can_update = Boolean(default=True)
+
+    """
+    Whether deleting records is allowed for this backend.
+
+    When set to False, any attempt to delete a record will raise a ValueError.
+    This can be set as a class attribute or passed to the constructor.
+    """
+    can_delete = Boolean(default=True)
+
+    """
+    Whether querying/reading records is allowed for this backend.
+
+    When set to False, any attempt to query records (via iteration, count, find, etc.)
+    will raise a ValueError. This can be set as a class attribute or passed to the constructor.
+    """
+    can_query = Boolean(default=True)
+
+    @parameters_to_properties
+    def __init__(
+        self,
+        can_create: bool | None = True,
+        can_update: bool | None = True,
+        can_delete: bool | None = True,
+        can_query: bool | None = True,
+    ):
+        """Initialize the backend with optional permission overrides."""
+        self.finalize_and_validate_configuration()
 
     @abstractmethod
     def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
