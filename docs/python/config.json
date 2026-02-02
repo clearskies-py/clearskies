@@ -40,6 +40,19 @@
                         "save_finished",
                         "where_for_request"
                     ]
+                },
+                {
+                    "title": "Permissions",
+                    "attributes": [
+                        "can_delete",
+                        "can_create",
+                        "can_update",
+                        "can_query",
+                        "require_can_delete",
+                        "require_can_create",
+                        "require_can_update",
+                        "require_can_query"
+                    ]
                 }
             ]
         },

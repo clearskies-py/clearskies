@@ -206,6 +206,109 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     id_column_name: str = ""
     backend: Backend = None  # type: ignore
 
+    """
+    Whether or not records of this model can be deleted.
+
+    When set to False, any attempt to call the `delete()` method on a model instance will raise a
+    `ValueError`. This is useful for models that represent immutable data or audit logs that
+    should never be deleted.
+
+    Example:
+    ```python
+    import clearskies
+
+
+    class AuditLog(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        can_delete = False
+
+        id = clearskies.columns.Uuid()
+        message = clearskies.columns.String()
+    ```
+
+    With this configuration, calling `audit_log.delete()` will raise a `ValueError`.
+    """
+    can_delete: bool = True
+
+    """
+    Whether or not new records can be created for this model.
+
+    When set to False, any attempt to create a new record (via `save()` on an empty model or `create()`)
+    will raise a `ValueError`. This is useful for read-only models that pull data from external
+    sources or represent views.
+
+    Example:
+    ```python
+    import clearskies
+
+
+    class ExternalUser(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.ApiBackend()
+        can_create = False
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+    ```
+
+    With this configuration, calling `external_user.create({"name": "Test"})` will raise a `ValueError`.
+    """
+    can_create: bool = True
+
+    """
+    Whether or not existing records of this model can be updated.
+
+    When set to False, any attempt to update an existing record (via `save()` on a model with data)
+    will raise a `ValueError`. This is useful for append-only models like event logs.
+
+    Example:
+    ```python
+    import clearskies
+
+
+    class EventLog(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        can_update = False
+
+        id = clearskies.columns.Uuid()
+        event_type = clearskies.columns.String()
+        payload = clearskies.columns.Json()
+    ```
+
+    With this configuration, calling `event_log.save({"event_type": "new_type"})` on an existing
+    record will raise a `ValueError`.
+    """
+    can_update: bool = True
+
+    """
+    Whether or not records of this model can be queried.
+
+    When set to False, any attempt to query records (via `where()`, `find()`, `first()`, iteration,
+    etc.) will raise a `ValueError`. This is useful for write-only models like message queues
+    or models that should only be accessed through specific methods.
+
+    Example:
+    ```python
+    import clearskies
+
+
+    class OutboundMessage(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        can_query = False
+
+        id = clearskies.columns.Uuid()
+        recipient = clearskies.columns.String()
+        body = clearskies.columns.String()
+    ```
+
+    With this configuration, calling `outbound_messages.where("recipient=test@example.com")` will
+    raise a `ValueError`.
+    """
+    can_query: bool = True
+
     _di = inject.Di()
 
     def __init__(self):
@@ -483,6 +586,13 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         ```
         """
         self.no_queries()
+
+        # Enforce can_create and can_update permissions via overridable hooks
+        if self:
+            self.require_can_update()
+        else:
+            self.require_can_create()
+
         if not data and not self._next_data and not no_data:
             raise ValueError("You have to pass in something to save, or set no_data=True in your call to save/create.")
         if data and self._next_data:
@@ -839,6 +949,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         ```
         """
         self.no_queries()
+
+        # Enforce can_delete permission via overridable hook
+        self.require_can_delete()
+
         if not self:
             if except_if_not_exists:
                 raise ValueError("Cannot delete model that already exists")
@@ -1733,6 +1847,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     def __len__(self: Self):  # noqa: D105
         self.no_single_model()
+        self.require_can_query()
         if self._count is None:
             # If we have a cached query result with count data, use it
             if self._last_query_result is not None and self._last_query_result.can_count:
@@ -1745,6 +1860,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105
         self.no_single_model()
+        self.require_can_query()
         result: RecordsQueryResult = self.backend.records(self.get_final_query())
         # Cache the QueryResult for endpoints to access
         self._last_query_result = result
@@ -2067,6 +2183,50 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         if self._data:
             raise ValueError(
                 "You have attempted to execute a query against a model that represents an individual record.  This is not allowed, as it is typically a sign of a bug in your application code.  If this is intentional, call model.as_query() before executing your query."
+            )
+
+    def require_can_query(self) -> None:
+        """
+        Raise a ValueError if querying is not allowed for this model.
+
+        Override this method to implement custom query permission logic.
+        """
+        if not self.can_query:
+            raise ValueError(
+                f"Querying records is not allowed for model '{self.__class__.__name__}' because can_query is set to False."
+            )
+
+    def require_can_create(self) -> None:
+        """
+        Raise a ValueError if creating records is not allowed for this model.
+
+        Override this method to implement custom create permission logic.
+        """
+        if not self.can_create:
+            raise ValueError(
+                f"Creating records is not allowed for model '{self.__class__.__name__}' because can_create is set to False."
+            )
+
+    def require_can_update(self) -> None:
+        """
+        Raise a ValueError if updating records is not allowed for this model.
+
+        Override this method to implement custom update permission logic.
+        """
+        if not self.can_update:
+            raise ValueError(
+                f"Updates are not allowed for model '{self.__class__.__name__}' because can_update is set to False."
+            )
+
+    def require_can_delete(self) -> None:
+        """
+        Raise a ValueError if deleting records is not allowed for this model.
+
+        Override this method to implement custom delete permission logic.
+        """
+        if not self.can_delete:
+            raise ValueError(
+                f"Deleting records is not allowed for model '{self.__class__.__name__}' because can_delete is set to False."
             )
 
 
