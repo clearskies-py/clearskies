@@ -9,13 +9,13 @@ class Configurable:
     _config: dict[str, Any] | None = None
     _descriptor_config_map: dict[int, str] | None = None
 
-    def _set_config(self, descriptor, value):
+    def _set_config(self, descriptor: config.Config, value: Any) -> None:
         if not self._config:
             self._config = {}
 
         self._config[self._descriptor_to_name(descriptor)] = value
 
-    def _get_config(self, descriptor):
+    def _get_config(self, descriptor: config.Config) -> Any:
         if not self._config:
             self._config = {}
 
@@ -25,15 +25,15 @@ class Configurable:
         return self._config[name]
 
     @classmethod
-    def _get_config_object(cls, attribute_name):
+    def _get_config_object(cls, attribute_name: str) -> config.Config:
         return getattr(cls, attribute_name)
 
     @classmethod
-    def get_descriptor_config_map(cls):
+    def get_descriptor_config_map(cls) -> dict[int, str]:
         if cls._descriptor_config_map:
             return cls._descriptor_config_map
 
-        descriptor_config_map = {}
+        descriptor_config_map: dict[int, str] = {}
         for attribute_name in dir(cls):
             descriptor = getattr(cls, attribute_name)
             if not isinstance(descriptor, config.Config):
@@ -44,7 +44,7 @@ class Configurable:
         cls._descriptor_config_map = descriptor_config_map
         return cls._descriptor_config_map
 
-    def _descriptor_to_name(self, descriptor):
+    def _descriptor_to_name(self, descriptor: config.Config) -> str:
         descriptor_config_map = self.get_descriptor_config_map()
         if id(descriptor) not in descriptor_config_map:
             raise ValueError(
@@ -52,7 +52,7 @@ class Configurable:
             )
         return descriptor_config_map[id(descriptor)]
 
-    def finalize_and_validate_configuration(self):
+    def finalize_and_validate_configuration(self) -> None:
         my_class = self.__class__
         if not self._config:
             self._config = {}
