@@ -115,7 +115,7 @@ class ManyToManyPivots(Column):
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
         many_to_many_column = self.many_to_many_column  # type: ignore
-        columns = many_to_many_column.pivot_columns
+        columns = many_to_many_column.pivot_model_class.get_columns()
         pivot_id_column_name = many_to_many_column.pivot_model_class.id_column_name
         pivot_properties = [columns[pivot_id_column_name].documentation()]
 

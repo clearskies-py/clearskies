@@ -146,7 +146,7 @@ class ManyToManyModels(Column):
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
         many_to_many_column = self.many_to_many_column  # type: ignore
-        columns = many_to_many_column.related_columns
+        columns = many_to_many_column.related_model_class.get_columns()
         related_id_column_name = many_to_many_column.related_model_class.id_column_name
         related_properties = [columns[related_id_column_name].documentation()]
 

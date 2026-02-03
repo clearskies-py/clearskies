@@ -456,14 +456,14 @@ class BelongsToId(String):
         self, name: str | None = None, example: str | None = None, value: str | None = None
     ) -> list[AutoDocSchema]:
         columns = self.parent_columns
-        parent_id_column_name = self.parent_model.id_column_name
-        parent_properties = [columns[parent_id_column_name].documentation()]
+        parent_id_column_name = self.parent_model_class.id_column_name
         parent_id_doc = AutoDocString(name if name is not None else self.name)
 
         readable_parent_columns = self.readable_parent_columns
         if not readable_parent_columns:
             return [parent_id_doc]
 
+        parent_properties: list[AutoDocSchema] = []
         for column_name in readable_parent_columns:
             if column_name == parent_id_column_name:
                 continue
