@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
 from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -431,7 +431,7 @@ class HasMany(Column):
         # this is where we auto-calculate the expected name of our id column in the child model.
         # we can't do it until now because it comes from the model class we are connected to, and
         # we only just get it.
-        foreign_column_name_config = self._get_config_object("foreign_column_name")
+        foreign_column_name_config = cast(configs.ModelToIdColumn, self._get_config_object("foreign_column_name"))
         foreign_column_name_config.set_model_class(self.child_model_class)
         has_value = False
         try:
