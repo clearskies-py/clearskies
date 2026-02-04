@@ -463,10 +463,12 @@ class BelongsToId(String):
         if not readable_parent_columns:
             return [parent_id_doc]
 
+        # The endpoint always adds the id of the parent record to the output, even if the id column
+        # isn't listed in readable_parent_columns. So pre-fill parent_properties with the id column.
+        if parent_id_column_name not in readable_parent_columns:
+            readable_parent_columns = [parent_id_column_name, *readable_parent_columns]
         parent_properties: list[AutoDocSchema] = []
         for column_name in readable_parent_columns:
-            if column_name == parent_id_column_name:
-                continue
             parent_properties.append(columns[column_name].documentation())
 
         return [
