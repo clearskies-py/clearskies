@@ -2,7 +2,7 @@ class Condition:
     """
     Parses a condition string, e.g. "column=value" or "table.column<=other_value".
 
-    Allowed operators: ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null", "is not", "is", "like"]
+    Allowed operators: ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null", "is not", "is", "not like", "like"]
 
     NOTE: Not all backends support all operators, so make sure the condition you are building works for your backend
 
@@ -102,6 +102,7 @@ class Condition:
         "is null",
         "is not",
         "is",
+        "not like",
         "like",
         "not in",
     ]
@@ -119,12 +120,14 @@ class Condition:
         "is null": 8,
         "is not": 8,
         "is": 4,
+        "not like": 10,
         "like": 6,
         "not in": 8,
     }
 
     # some operators require spaces around them
     operators_for_matching: dict[str, str] = {
+        "not like": " not like ",
         "like": " like ",
         "in": " in ",
         "not in": " not in ",
@@ -204,7 +207,12 @@ class Condition:
             return f"{quote}{column}{quote}{upper_case_operator}{placeholder}"
         if lower_case_operator in self.operators_without_placeholders:
             return f"{quote}{column}{quote} {upper_case_operator}"
-        if lower_case_operator == "is" or lower_case_operator == "is not" or lower_case_operator == "like":
+        if (
+            lower_case_operator == "is"
+            or lower_case_operator == "is not"
+            or lower_case_operator == "like"
+            or lower_case_operator == "not like"
+        ):
             return f"{quote}{column}{quote} {upper_case_operator} {placeholder}"
         if lower_case_operator == "not in":
             return f"{quote}{column}{quote} NOT IN ({', '.join([placeholder for i in range(len(values))])})"

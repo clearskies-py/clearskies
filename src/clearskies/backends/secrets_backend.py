@@ -29,8 +29,25 @@ class SecretsBackend(Backend):
 
     can_count: bool = False
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        can_create: bool | None = True,
+        can_update: bool | None = True,
+        can_delete: bool | None = True,
+        can_query: bool | None = True,
+    ):
+        # Only pass permission flags to parent if they are explicitly set (not None)
+        # This allows the parent's default values (True) to be used when not specified
+        parent_kwargs = {}
+        if can_create is not None:
+            parent_kwargs["can_create"] = can_create
+        if can_update is not None:
+            parent_kwargs["can_update"] = can_update
+        if can_delete is not None:
+            parent_kwargs["can_delete"] = can_delete
+        if can_query is not None:
+            parent_kwargs["can_query"] = can_query
+        super().__init__(**parent_kwargs)
 
     def check_query(self, query: Query) -> None:
         if not query.conditions:

@@ -127,7 +127,27 @@ class CursorBackend(Backend, InjectableProperties):
     global_table_prefix = inject.ByName("global_table_prefix")
     di: Di = inject.Di()  # type: ignore[assignment]
 
-    def __init__(self, cursor_dependency_name="cursor", table_prefix=""):
+    def __init__(
+        self,
+        cursor_dependency_name: str = "cursor",
+        table_prefix: str = "",
+        can_create: bool | None = None,
+        can_update: bool | None = None,
+        can_delete: bool | None = None,
+        can_query: bool | None = None,
+    ):
+        # Only pass permission flags to parent if they are explicitly set (not None)
+        # This allows the parent's default values (True) to be used when not specified
+        parent_kwargs = {}
+        if can_create is not None:
+            parent_kwargs["can_create"] = can_create
+        if can_update is not None:
+            parent_kwargs["can_update"] = can_update
+        if can_delete is not None:
+            parent_kwargs["can_delete"] = can_delete
+        if can_query is not None:
+            parent_kwargs["can_query"] = can_query
+        super().__init__(**parent_kwargs)
         self.cursor_dependency_name = cursor_dependency_name
         self.table_prefix = table_prefix
 

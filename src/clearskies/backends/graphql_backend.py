@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import configs, configurable, decorators, loggable
+from clearskies import configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from clearskies.query import Query
 
 
-class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, loggable.Loggable):
+class GraphqlBackend(Backend, InjectableProperties):
     """
     Autonomous backend for integrating clearskies models with GraphQL APIs.
 
@@ -201,6 +201,10 @@ class GraphqlBackend(Backend, configurable.Configurable, InjectableProperties, l
         max_relationship_depth: int = 2,
         relationship_limit: int = 10,
         use_connection_for_relationships: bool = True,
+        can_create: bool = True,
+        can_update: bool = True,
+        can_delete: bool = True,
+        can_query: bool = True,
     ):
         self.finalize_and_validate_configuration()
 

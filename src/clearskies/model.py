@@ -507,8 +507,16 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         [to_save, temporary_data] = self.columns_to_backend(data, save_columns)
         to_save = self.to_backend(to_save, save_columns)
         if self:
+            if not self.backend.can_update:
+                raise ValueError(
+                    f"Updating records is not allowed for model '{self.__class__.__name__}' because the backend has can_update set to False."
+                )
             result: RecordQueryResult = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
         else:
+            if not self.backend.can_create:
+                raise ValueError(
+                    f"Creating records is not allowed for model '{self.__class__.__name__}' because the backend has can_create set to False."
+                )
             result: RecordQueryResult = self.backend.create(to_save, self)  # type: ignore
         new_data = result.record
         id = self.backend.column_from_backend(save_columns[self.id_column_name], new_data[self.id_column_name])  # type: ignore
@@ -848,6 +856,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         self.columns_pre_delete(columns)
         self.pre_delete()
 
+        if not self.backend.can_delete:
+            raise ValueError(
+                f"Deleting records is not allowed for model '{self.__class__.__name__}' because the backend has can_delete set to False."
+            )
         self.backend.delete(self._data[self.id_column_name], self)
 
         self.columns_post_delete(columns)
@@ -1745,6 +1757,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     def __iter__(self: Self) -> Iterator[Self]:  # noqa: D105
         self.no_single_model()
+        if not self.backend.can_query:
+            raise ValueError(
+                f"Querying records is not allowed for model '{self.__class__.__name__}' because the backend has can_query set to False."
+            )
         result: RecordsQueryResult = self.backend.records(self.get_final_query())
         # Cache the QueryResult for endpoints to access
         self._last_query_result = result
