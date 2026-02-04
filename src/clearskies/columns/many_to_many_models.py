@@ -131,11 +131,12 @@ class ManyToManyModels(Column):
         many_to_many_column: ManyToManyIds = self.many_to_many_column  # type: ignore
         columns = many_to_many_column.related_columns
         related_id_column_name = many_to_many_column.related_model_class.id_column_name
+        readable_related_column_names = many_to_many_column.readable_related_column_names or []
         for related in many_to_many_column.get_related_models(model):
             json = OrderedDict()
-            if related_id_column_name not in many_to_many_column.readable_related_column_names:
+            if related_id_column_name not in readable_related_column_names:
                 json[related_id_column_name] = columns[related_id_column_name].to_json(related)
-            for column_name in many_to_many_column.readable_related_column_names:
+            for column_name in readable_related_column_names:
                 column_data = columns[column_name].to_json(related)
                 if type(column_data) == dict:
                     json = {**json, **column_data}  # type: ignore
@@ -148,9 +149,10 @@ class ManyToManyModels(Column):
         many_to_many_column = self.many_to_many_column  # type: ignore
         columns = many_to_many_column.related_model_class.get_columns()
         related_id_column_name = many_to_many_column.related_model_class.id_column_name
-        related_properties = [columns[related_id_column_name].documentation()]
+        related_id_docs = columns[related_id_column_name].documentation()
+        related_properties = related_id_docs if isinstance(related_id_docs, list) else [related_id_docs]
 
-        for column_name in many_to_many_column.readable_related_column_names:
+        for column_name in many_to_many_column.readable_related_column_names or []:
             related_docs = columns[column_name].documentation()
             if not isinstance(related_docs, list):
                 related_docs = [related_docs]
@@ -160,4 +162,4 @@ class ManyToManyModels(Column):
             string.title_case_to_nice(many_to_many_column.related_model_class.__name__),
             related_properties,
         )
-        return AutoDocArray(name if name is not None else self.name, related_object, value=value)
+        return [AutoDocArray(name if name is not None else self.name, related_object, value=value)]

@@ -117,9 +117,10 @@ class ManyToManyPivots(Column):
         many_to_many_column = self.many_to_many_column  # type: ignore
         columns = many_to_many_column.pivot_model_class.get_columns()
         pivot_id_column_name = many_to_many_column.pivot_model_class.id_column_name
-        pivot_properties = [columns[pivot_id_column_name].documentation()]
+        pivot_id_docs = columns[pivot_id_column_name].documentation()
+        pivot_properties = pivot_id_docs if isinstance(pivot_id_docs, list) else [pivot_id_docs]
 
-        for column_name in many_to_many_column.readable_pivot_column_names:
+        for column_name in many_to_many_column.readable_pivot_column_names or []:
             pivot_docs = columns[column_name].documentation()
             if type(pivot_docs) != list:
                 pivot_docs = [pivot_docs]
@@ -129,4 +130,4 @@ class ManyToManyPivots(Column):
             string.title_case_to_nice(many_to_many_column.pivot_model_class.__name__),
             pivot_properties,
         )
-        return AutoDocArray(name if name is not None else self.name, pivot_object, value=value)
+        return [AutoDocArray(name if name is not None else self.name, pivot_object, value=value)]

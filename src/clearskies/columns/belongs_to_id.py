@@ -469,7 +469,11 @@ class BelongsToId(String):
             readable_parent_columns = [parent_id_column_name, *readable_parent_columns]
         parent_properties: list[AutoDocSchema] = []
         for column_name in readable_parent_columns:
-            parent_properties.append(columns[column_name].documentation())
+            column_docs = columns[column_name].documentation()
+            if isinstance(column_docs, list):
+                parent_properties.extend(column_docs)
+            else:
+                parent_properties.append(column_docs)
 
         return [
             parent_id_doc,

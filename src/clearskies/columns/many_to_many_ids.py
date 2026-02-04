@@ -332,4 +332,4 @@ class ManyToManyIds(Column):
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
         related_id_column_name = self.related_model_class.id_column_name
-        return AutoDocArray(name if name is not None else self.name, AutoDocString(related_id_column_name))
+        return [AutoDocArray(name if name is not None else self.name, AutoDocString(related_id_column_name))]
