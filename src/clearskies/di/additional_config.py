@@ -1,4 +1,9 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from clearskies.di.di import Di
 
 
 class AdditionalConfig:
@@ -53,7 +58,7 @@ class AdditionalConfig:
     ```
     """
 
-    def can_cache(self, name: str, di, context: str) -> bool:
+    def can_cache(self, name: str, di: Di, context: str) -> bool:
         """
         Cache control.
 
@@ -106,10 +111,10 @@ class AdditionalConfig:
         """
         return True
 
-    def can_build(self, name):
+    def can_build(self, name: str) -> bool:
         return hasattr(self, f"provide_{name}")
 
-    def build(self, name, di, context=None):
+    def build(self, name: str, di: Di, context: str | None = None) -> Any:
         if not hasattr(self, f"provide_{name}"):
             raise KeyError(
                 f"AdditionalConfig class '{self.__class__.__name__}' cannot build requested dependency, '{name}'"
@@ -121,10 +126,10 @@ class AdditionalConfig:
         """Return True/False to denote if this AdditionalConfig class can provide a given class."""
         return False
 
-    def build_class(self, class_to_provide: type, argument_name: str, di, context: str = "") -> Any:
+    def build_class(self, class_to_provide: type, argument_name: str, di: Di, context: str = "") -> Any:
         """Return the desired instance of a given class."""
         pass
 
-    def can_cache_class(self, class_to_build: type, di, context: str) -> bool:
+    def can_cache_class(self, class_to_build: type, di: Di, context: str) -> bool:
         """Control whether or not the Di container caches the instance after building a class."""
         return False
