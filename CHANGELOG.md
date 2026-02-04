@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.43] - 2026-02-04
+
+### Fixed
+- Documentation on none readable columns
+
 ## [2.0.42] - 2026-02-04
 
 ### Added
@@ -12,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add typing to config and configurable
 - Add backend permissions by @cmancone in [#64](https://github.com/clearskies-py/clearskies/pull/64)
 - Add backend permissions
+
+### Changed
+- Bump version to v2.0.42 by @github-actions[bot]
 
 ### Fixed
 - Do not use the di for schema by @cmancone in [#66](https://github.com/clearskies-py/clearskies/pull/66)
@@ -1123,6 +1131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.43]: https://github.com/clearskies-py/clearskies/compare/v2.0.42..v2.0.43
 [2.0.42]: https://github.com/clearskies-py/clearskies/compare/v2.0.41..v2.0.42
 [2.0.41]: https://github.com/clearskies-py/clearskies/compare/v2.0.40..v2.0.41
 [2.0.40]: https://github.com/clearskies-py/clearskies/compare/v2.0.39..v2.0.40
