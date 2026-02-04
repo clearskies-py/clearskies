@@ -527,7 +527,7 @@ class HasMany(Column):
                 **json,
                 **columns[child_id_column_name].to_json(child),
             }
-            for column_name in self.readable_child_column_names:
+            for column_name in self.readable_child_column_names or []:
                 json = {
                     **json,
                     **columns[column_name].to_json(child),
@@ -542,7 +542,7 @@ class HasMany(Column):
         child_id_column_name = self.child_model_class.id_column_name
         child_properties = [columns[child_id_column_name].documentation()]
 
-        for column_name in self.readable_child_column_names:
+        for column_name in self.readable_child_column_names or []:
             child_properties.extend(columns[column_name].documentation())  # type: ignore
 
         child_object = AutoDocObject(
