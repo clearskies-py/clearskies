@@ -16,8 +16,11 @@ class Response:
         self.formatted_schema = self.oai3_schema_resolver(response.schema)
 
     def convert(self):
+        # In OpenAPI 3.0, description is required for response objects
+        description = self.response.description if self.response.description else "Response"
+
         schema = {
-            "description": self.response.description,
+            "description": description,
             "content": {
                 "application/json": {
                     "schema": self.oai3_schema_resolver(self.response.schema).convert(),

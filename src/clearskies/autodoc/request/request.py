@@ -20,6 +20,8 @@ class Request:
             for match in re.findall("/(:[^/]+)/", relative_path):
                 name = match[1:]
                 relative_path = relative_path.replace(f"/:{name}/", "/{" + name + "}/")
+            # Remove trailing slash added for regex matching
+            relative_path = relative_path.rstrip("/")
 
         self.description = description
         self.responses = responses

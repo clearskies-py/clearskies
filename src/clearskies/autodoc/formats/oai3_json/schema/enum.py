@@ -4,4 +4,5 @@ class Enum:
         self.oai3_schema_resolver = oai3_schema_resolver
 
     def convert(self):
-        return {"nullable": True, "type": "string", "enum": [*self.schema.values, None]}
+        # In OpenAPI 3.0, nullable: true allows null values without including null in enum
+        return {"nullable": True, "type": "string", "enum": self.schema.values}

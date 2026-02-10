@@ -73,15 +73,21 @@ class Oai3Json:
         data: dict[str, Any] = {
             "openapi": "3.0.0",
             "paths": paths,
-            "components": {},
         }
 
+        # Only add components if we have schemas or security schemes
+        components: dict[str, Any] = {}
+
         if self.models:
-            data["components"]["schemas"] = {
+            components["schemas"] = {
                 model_name: self.oai3_schema_resolver(model).convert() for (model_name, model) in self.models.items()
             }
 
         if self.security_schemes:
-            data["components"]["securitySchemes"] = {name: data for (name, data) in self.security_schemes.items()}
+            components["securitySchemes"] = {name: scheme_data for (name, scheme_data) in self.security_schemes.items()}
+
+        # Only include components key if it has content
+        if components:
+            data["components"] = components
 
         return data

@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from ...schema import Object
@@ -32,17 +33,52 @@ class Request:
         formatted.set_parameter(parameter)
         return formatted
 
+    # Valid HTTP methods for OpenAPI 3.0
+    VALID_HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+
+    def _generate_operation_id(self, method: str, path: str) -> str:
+        """Generate a unique operationId from the HTTP method and path.
+
+        Examples:
+            GET /health -> getHealth
+            GET /v3/api/users -> getV3ApiUsers
+            GET /v3/api/users/{id} -> getV3ApiUsersById
+            POST /v3/api/users -> postV3ApiUsers
+        """
+        # Remove leading/trailing slashes and replace {param} with ByParam
+        clean_path = path.strip("/")
+        # Replace {param} with ByParam (title case param name: first char upper, rest as-is)
+        clean_path = re.sub(r"\{(\w+)\}", lambda m: "By" + m.group(1)[0].upper() + m.group(1)[1:], clean_path)
+        # Split by / and title case each part (first char upper, rest as-is)
+        parts = [part[0].upper() + part[1:] if part else "" for part in clean_path.split("/") if part]
+        # Join and prepend with method
+        return method.lower() + "".join(parts)
+
     def convert(self):
         data = {}
         for request_method in self.request.request_methods:
-            data[request_method.lower()] = {
-                "summary": self.request.description,
+            method_lower = request_method.lower()
+            # Skip invalid HTTP methods (e.g., "query" is not a valid OpenAPI method)
+            if method_lower not in self.VALID_HTTP_METHODS:
+                continue
+            # Generate a default summary from the path and method if description is empty
+            summary = self.request.description
+            if not summary:
+                # Create a human-readable summary from the path
+                path_parts = self.relative_path.strip("/").replace("{", "").replace("}", "").split("/")
+                summary = f"{method_lower.upper()} /{self.relative_path}"
+            # Generate operationId from method and path
+            operation_id = self._generate_operation_id(method_lower, self.relative_path)
+            method_data: dict[str, Any] = {
+                "operationId": operation_id,
+                "summary": summary,
                 "parameters": [parameter.convert() for parameter in self.formatted_parameters],
                 "responses": {str(response.status_code): response.convert() for response in self.formatted_responses},
             }
+            data[method_lower] = method_data
 
             if self.request.root_properties:
-                data[request_method.lower()] = {**data[request_method.lower()], **self.request.root_properties}
+                data[method_lower] = {**data[method_lower], **self.request.root_properties}
 
             if self.json_body_parameters:
                 # For OAI3, there should only be one JSON body root parameter, so it should either be an
@@ -55,7 +91,7 @@ class Request:
                     json_body = self.json_body_parameters[0].definition
                     is_required = len([1 for param in json_body.definition.children if param.required]) >= 1
 
-                data[request_method.lower()]["requestBody"] = {
+                data[method_lower]["requestBody"] = {
                     "description": self.request.description,
                     "required": is_required,
                     "content": {

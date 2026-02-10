@@ -277,7 +277,7 @@ class EndpointGroup(
     def add_url_prefix(self, prefix: str) -> None:
         self.url = (prefix.rstrip("/") + "/" + self.url.lstrip("/")).lstrip("/")
         for endpoint in self.endpoints:
-            endpoint.add_url_prefix(self.url)
+            endpoint.add_url_prefix(prefix)
 
     def matches_request(self, input_output: InputOutput, allow_partial=True) -> bool:
         """Whether or not we can handle an incoming request based on URL and request method."""
