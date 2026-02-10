@@ -59,7 +59,7 @@ class Environment(loggable.Loggable, configurable.Configurable, injectable_prope
     ```
     """
 
-    _env_file_config: dict[str, Any] = {}
+    _env_file_config: dict[str, Any] | None = None
     _resolved_values: dict[str, Any] = {}
     _overrides: dict[str, Any] = {}
 
@@ -165,7 +165,7 @@ class Environment(loggable.Loggable, configurable.Configurable, injectable_prope
             return self.resolve_value(self._overrides[name])
         if name in self.os_environ:
             return self.resolve_value(self.os_environ[name])
-        if name in self._env_file_config:
+        if self._env_file_config and name in self._env_file_config:
             return self.resolve_value(self._env_file_config[name])
 
         if not silent:
