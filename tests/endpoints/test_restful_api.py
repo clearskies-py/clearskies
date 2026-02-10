@@ -78,3 +78,69 @@ class RestfulApiTest(TestBase):
         )
         assert response_data["status"] == "success"
         assert [record["name"] for record in response_data["data"]] == ["Alice Smith"]
+
+    def test_nested_resource_with_matching_primary_key(self):
+        """
+        Test that RestfulApi doesn't create duplicate URL parameters.
+
+        When the base URL already contains a parameter that matches the model's primary key.
+
+        Example: resources/:resource_id/setting should not become
+        resources/:resource_id/setting/:resource_id
+        """
+
+        class ResourceSetting(clearskies.Model):
+            # This model uses resource_id as its primary key (singleton per resource)
+            id_column_name = "resource_id"
+            backend = clearskies.backends.MemoryBackend()
+
+            resource_id = columns.String(validators=[Required()])
+            feature_enabled = columns.Boolean()
+            max_users = columns.Integer()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.RestfulApi(
+                url="resources/:resource_id/setting",
+                model_class=ResourceSetting,
+                readable_column_names=["resource_id", "feature_enabled", "max_users"],
+                writeable_column_names=["resource_id", "feature_enabled", "max_users"],
+                sortable_column_names=["resource_id"],
+                searchable_column_names=["resource_id"],
+                default_sort_column_name="resource_id",
+            )
+        )
+
+        # Create a setting for resource "res-123"
+        status_code, response_data, response_headers = context(
+            request_method="POST",
+            body={"resource_id": "res-123", "feature_enabled": True, "max_users": 100},
+            url="resources/res-123/setting",
+        )
+        assert response_data["status"] == "success"
+        assert response_data["data"]["resource_id"] == "res-123"
+        assert response_data["data"]["feature_enabled"] is True
+
+        # Get the setting for resource "res-123"
+        # Should work at resources/res-123/setting, NOT resources/res-123/setting/res-123
+        status_code, response_data, response_headers = context(
+            request_method="GET",
+            url="resources/res-123/setting",
+        )
+        assert response_data["status"] == "success"
+        assert response_data["data"]["resource_id"] == "res-123"
+
+        # Update the setting
+        status_code, response_data, response_headers = context(
+            request_method="PATCH",
+            body={"max_users": 200},
+            url="resources/res-123/setting",
+        )
+        assert response_data["status"] == "success"
+        assert response_data["data"]["max_users"] == 200
+
+        # Delete the setting
+        status_code, response_data, response_headers = context(
+            request_method="DELETE",
+            url="resources/res-123/setting",
+        )
+        assert response_data["status"] == "success"
