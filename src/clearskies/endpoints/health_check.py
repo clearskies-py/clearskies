@@ -171,6 +171,7 @@ class HealthCheck(Endpoint):
                         output_autodoc,  # type: ignore
                         description=description,
                     ),
+                    self.documentation_generic_error_response(),
                 ],
                 relative_path=self.url,
                 request_methods=self.request_methods,

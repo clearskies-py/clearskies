@@ -26,9 +26,13 @@ class Parameter:
                 + f"an unsupported location: '{self.parameter.location}'"
             )
 
+        # In OpenAPI 3.0, description is recommended but not strictly required
+        # Provide a default if missing
+        description = self.parameter.description if self.parameter.description else ""
+
         return {
             "name": self.parameter.definition.name,
-            "description": self.parameter.description,
+            "description": description,
             "required": self.required,
             "in": self.location_map[self.parameter.location],
             "schema": self.oai3_schema_resolver(self.parameter.definition).convert(),
