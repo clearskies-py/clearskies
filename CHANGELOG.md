@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.45] - 2026-02-10
+
+### Fixed
+- Environment
+
 ## [2.0.44] - 2026-02-04
+
+### Changed
+- Bump version to v2.0.44 by @github-actions[bot]
 
 ### Fixed
 - More columns with documentation problem for the schema
@@ -1139,6 +1147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.45]: https://github.com/clearskies-py/clearskies/compare/v2.0.44..v2.0.45
 [2.0.44]: https://github.com/clearskies-py/clearskies/compare/v2.0.43..v2.0.44
 [2.0.43]: https://github.com/clearskies-py/clearskies/compare/v2.0.42..v2.0.43
 [2.0.42]: https://github.com/clearskies-py/clearskies/compare/v2.0.41..v2.0.42
