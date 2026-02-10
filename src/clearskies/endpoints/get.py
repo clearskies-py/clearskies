@@ -187,11 +187,14 @@ class Get(Endpoint):
         # which is why we have to call the parent.
         super().__init__()
 
-        route_parameters = routing.extract_url_parameter_name_map(url)
-        if self.record_lookup_column_name not in route_parameters:
-            raise KeyError(
-                f"Configuration error for {self.__class__.__name__} endpoint: record_lookup_column_name is set to '{self.record_lookup_column_name}' but no matching routing parameter is found"
-            )
+        # Skip URL parameter validation if URL is empty - this happens when the endpoint
+        # is part of an EndpointGroup that will add the URL prefix later
+        if url:
+            route_parameters = routing.extract_url_parameter_name_map(url)
+            if self.record_lookup_column_name not in route_parameters:
+                raise KeyError(
+                    f"Configuration error for {self.__class__.__name__} endpoint: record_lookup_column_name is set to '{self.record_lookup_column_name}' but no matching routing parameter is found"
+                )
 
     def get_model_id(self, input_output: InputOutput) -> str:
         routing_data = input_output.routing_data

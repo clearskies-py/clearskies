@@ -11,6 +11,7 @@ from clearskies.endpoints.delete import Delete
 from clearskies.endpoints.get import Get
 from clearskies.endpoints.simple_search import SimpleSearch
 from clearskies.endpoints.update import Update
+from clearskies.functional import routing
 
 if TYPE_CHECKING:
     from clearskies import Column, Endpoint, Model, Schema, SecurityHeader
@@ -327,6 +328,12 @@ class RestfulApi(EndpointGroup):
 
         id_column_name = id_column_name if id_column_name else model_class.id_column_name
 
+        # Check if the base URL already contains a parameter matching the model's primary key
+        # This happens with nested resources where the parent resource ID matches the model's primary key
+        # e.g., resources/:resource_id/setting where resource_id is the model's primary key
+        url_parameters = routing.extract_url_parameter_name_map(url) if url else {}
+        url_already_has_id = id_column_name in url_parameters
+
         # figure out which endpoints we actually need
         endpoints_to_build = []
         if not read_only:
@@ -338,27 +345,30 @@ class RestfulApi(EndpointGroup):
                     }
                 )
             if delete_endpoint:
+                # Only append the ID suffix if the URL doesn't already contain it
                 endpoints_to_build.append(
                     {
                         "class": delete_endpoint,
                         "request_methods": delete_request_methods,
-                        "url_suffix": f"/:{id_column_name}",
+                        "url_suffix": "" if url_already_has_id else f"/:{id_column_name}",
                     }
                 )
             if update_endpoint:
+                # Only append the ID suffix if the URL doesn't already contain it
                 endpoints_to_build.append(
                     {
                         "class": update_endpoint,
                         "request_methods": update_request_methods,
-                        "url_suffix": f"/:{id_column_name}",
+                        "url_suffix": "" if url_already_has_id else f"/:{id_column_name}",
                     }
                 )
         if get_endpoint:
+            # Only append the ID suffix if the URL doesn't already contain it
             endpoints_to_build.append(
                 {
                     "class": get_endpoint,
                     "request_methods": get_request_methods,
-                    "url_suffix": f"/:{id_column_name}",
+                    "url_suffix": "" if url_already_has_id else f"/:{id_column_name}",
                 }
             )
         if list_endpoint:
@@ -404,6 +414,10 @@ class RestfulApi(EndpointGroup):
 
             if url_suffix:
                 final_kwargs["url"] = url_suffix
+            elif url_suffix is not None:
+                # url_suffix is an empty string - means we don't append a suffix but still need to provide a URL
+                # The endpoint will use the base URL from the parent EndpointGroup
+                final_kwargs["url"] = ""
             final_kwargs["request_methods"] = endpoint_to_build["request_methods"]
             endpoints.append(endpoint_class(*final_args, **final_kwargs))  # type: ignore
 
