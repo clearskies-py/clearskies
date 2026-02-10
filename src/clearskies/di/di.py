@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 import datetime
 import importlib
 import inspect
+import logging
 import os
+import socket as socket_module
+import subprocess as subprocess_module
+import sys as sys_module
+import uuid as uuid_module
 from types import ModuleType
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -15,6 +22,14 @@ from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImpo
 from clearskies.environment import Environment
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
+
+if TYPE_CHECKING:
+    from clearskies.autodoc.formats.oai3_json import OAI3SchemaResolver
+    from clearskies.clients import GraphqlClient
+    from clearskies.cursors.from_environment.mysql import Mysql
+    from clearskies.secrets import Secrets
+
+T = TypeVar("T")
 
 
 class Di:
@@ -208,16 +223,16 @@ class Di:
            on the registered binding of `"dog"` to the name `"some_other_value"`, so clearskies provides `"dog"`.
     """
 
-    _added_modules: dict[int, bool] = {}
-    _additional_configs: list[AdditionalConfig] = []
-    _bindings: dict[str, Any] = {}
-    _from_bindings: dict[str, bool] = {}
-    _building: dict[int, str] = {}
-    _classes: dict[str, dict[str, int | type]] = {}
-    _prepared: dict[str, Any] = {}
-    _class_overrides_by_name: dict[str, type] = {}
-    _class_overrides_by_class: dict[type, Any] = {}
-    _type_hint_disallow_list = [int, float, str, dict, list, datetime.datetime]
+    _added_modules: dict[int, bool]
+    _additional_configs: list[AdditionalConfig]
+    _bindings: dict[str, Any]
+    _from_bindings: dict[str, bool]
+    _building: dict[int, str | None]
+    _classes: dict[str | type, dict[str, int | type]]
+    _prepared: dict[str | type, Any]
+    _class_overrides_by_name: dict[str, type]
+    _class_overrides_by_class: dict[type, Any]
+    _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
     _predefined_classes_name_map: dict[type, str] = {
@@ -228,15 +243,15 @@ class Di:
 
     def __init__(
         self,
-        classes: type | list[type] = [],
-        modules: ModuleType | list[ModuleType] = [],
-        bindings: dict[str, Any] = {},
-        additional_configs: AdditionalConfig | list[AdditionalConfig] = [],
-        class_overrides: dict[type, Any] = {},
-        overrides: dict[str, type] = {},
+        classes: type | list[type] | None = None,
+        modules: ModuleType | list[ModuleType] | None = None,
+        bindings: dict[str, Any] | None = None,
+        additional_configs: AdditionalConfig | list[AdditionalConfig] | None = None,
+        class_overrides: dict[type, Any] | None = None,
+        overrides: dict[str, type] | None = None,
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
-    ):
+    ) -> None:
         """
         Create a dependency injection container.
 
@@ -267,8 +282,8 @@ class Di:
         if additional_configs is not None:
             self.add_additional_configs(additional_configs)
         if class_overrides:
-            for key, value in class_overrides.items():  # type: ignore
-                self.add_class_override(key, value)  # type: ignore
+            for class_key, class_value in class_overrides.items():
+                self.add_class_override(class_key, class_value)
         if overrides:
             for key, value in overrides.items():
                 self.add_override(key, value)
@@ -317,7 +332,7 @@ class Di:
         for add_class in classes:
             name = string.camel_case_to_snake_case(add_class.__name__)
             self._classes[name] = {"id": id(add_class), "class": add_class}
-            self._classes[add_class] = {"id": id(add_class), "class": add_class}  # type: ignore
+            self._classes[add_class] = {"id": id(add_class), "class": add_class}
 
             # if this is a model class then also add a plural version of its name
             # to the DI configuration
@@ -457,7 +472,7 @@ class Di:
             additional_configs = [additional_configs]
         self._additional_configs.extend(additional_configs)
 
-    def add_binding(self, key, value):
+    def add_binding(self, key: str, value: Any) -> None:
         """
         Provide a specific value for name-based injection.
 
@@ -479,8 +494,10 @@ class Di:
         di.call_function(my_function)
         ```
         """
-        if key in self._building:
-            raise KeyError(f"Attempt to set binding for '{key}' while '{key}' was already being built")
+        # Check if any class currently being built has this key as its context
+        for class_id, context in self._building.items():
+            if context == key:
+                raise KeyError(f"Attempt to set binding for '{key}' while '{key}' was already being built")
 
         # classes are placed in self._bindings, but any other prepared value goes straight into self._prepared
         self._from_bindings[key] = True
@@ -603,14 +620,14 @@ class Di:
             return built_value
 
         if name in self._classes or name in self._class_overrides_by_name:
-            class_to_build = (
+            class_to_build: type = (
                 self._class_overrides_by_name[name]
                 if name in self._class_overrides_by_name
-                else self._classes[name]["class"]
-            )  # type: ignore
-            built_value = self.build_class(class_to_build, context=context)  # type: ignore
+                else self._classes[name]["class"]  # type: ignore[assignment]
+            )
+            built_value = self.build_class(class_to_build, context=context)
             if cache:
-                self._prepared[name] = built_value  # type: ignore
+                self._prepared[name] = built_value
             return built_value
 
         # additional configs are meant to override ones that come before, with most recent ones
@@ -657,14 +674,14 @@ class Di:
             return built_value
         return self.build_from_name(argument_name, context=context, cache=True)
 
-    def build_class(self, class_to_build: type, context=None, cache=True) -> Any:
+    def build_class(self, class_to_build: type, context: str | None = None, cache: bool = True) -> Any:
         """
         Build a class.
 
         The class constructor cannot accept any kwargs.   See self._disallow_kwargs for more details
         """
         if class_to_build in self._prepared and cache:
-            return self._prepared[class_to_build]  # type: ignore
+            return self._prepared[class_to_build]
         my_class_name = class_to_build.__name__
 
         init_args = inspect.getfullargspec(class_to_build)
@@ -677,7 +694,7 @@ class Di:
             self.inject_properties(class_to_build)
             built_value = class_to_build()
             if cache:
-                self._prepared[class_to_build] = built_value  # type: ignore
+                self._prepared[class_to_build] = built_value
             return built_value
 
         # self._building will help us keep track of what we're already building, and what we are building it for.
@@ -709,7 +726,7 @@ class Di:
         self.inject_properties(class_to_build)
         built_value = class_to_build(*args)
         if cache:
-            self._prepared[class_to_build] = built_value  # type: ignore
+            self._prepared[class_to_build] = built_value
         return built_value
 
     def build_class_from_type_hint(
@@ -762,7 +779,7 @@ class Di:
         # finally, if we found something, cache and/or return it
         if built_value is not None:
             if cache and can_cache:
-                self._prepared[class_to_build] = built_value  # type: ignore
+                self._prepared[class_to_build] = built_value
             return built_value
 
         # last but not least we build the class itself as long as it has been imported into the Di system
@@ -794,7 +811,7 @@ class Di:
                 module_name = parts[0]
                 library = importlib.import_module(module_name)
                 # Navigate through the attribute chain
-                result = library
+                result: Any = library
                 for attr in parts[1:]:
                     result = getattr(result, attr)
                 self.add_binding(name, result)
@@ -811,7 +828,7 @@ class Di:
             )
         return None
 
-    def call_function(self, callable_to_execute: Callable, **kwargs):
+    def call_function(self, callable_to_execute: Callable[..., T], **kwargs: Any) -> T:
         """
         Call a function, building any positional arguments and providing them.
 
@@ -858,7 +875,7 @@ class Di:
             )
             for arg in arg_names
         ]
-        callable_kwargs = {}
+        callable_kwargs: dict[str, Any] = {}
         for kwarg_name in kwarg_names:
             if kwarg_name not in kwargs:
                 continue
@@ -866,7 +883,7 @@ class Di:
 
         return callable_to_execute(*callable_args, **callable_kwargs)
 
-    def _disallow_kwargs(self, action):
+    def _disallow_kwargs(self, action: str) -> None:
         """
         Raise an exception.
 
@@ -892,7 +909,7 @@ class Di:
             return False
         return True
 
-    def inject_properties(self, cls):
+    def inject_properties(self, cls: type) -> None:
         if hasattr(cls, "injectable_properties"):
             cls.injectable_properties(self)
             return
@@ -906,13 +923,13 @@ class Di:
                 raise ValueError(
                     f"Class '{cls.__name__}' has an injectable property attached, but does not include clearskies.di.injectable_properties.InjectableProperties in it's parent classes.  You must include this as a parent class."
                 )
-        cls.__injectable_properties_sanity_check = True
+        setattr(cls, "__injectable_properties_sanity_check", True)
         return
 
-    def provide_di(self):
+    def provide_di(self) -> Di:
         return self
 
-    def provide_requests(self):
+    def provide_requests(self) -> requests.Session:
         retry_strategy = Retry(
             total=3,
             status_forcelist=[429, 500, 502, 503, 504],
@@ -925,76 +942,66 @@ class Di:
         session.mount("http://", adapter)
         return session
 
-    def provide_sys(self):
-        import sys
+    def provide_sys(self) -> ModuleType:
+        return sys_module
 
-        return sys
-
-    def provide_environment(self):
+    def provide_environment(self) -> Environment:
         self.inject_properties(Environment)
         return Environment(os.getcwd() + "/.env")
 
-    def provide_grahpql_client(self):
-        from clearskies.clients import GraphQLClient
+    def provide_graphql_client(self) -> GraphqlClient:
+        from clearskies.clients import GraphqlClient
 
-        return GraphQLClient()
+        return GraphqlClient()
 
-    def provide_cursor(self):
+    def provide_cursor(self) -> Mysql:
         from clearskies.cursors.from_environment import Mysql
 
         return Mysql()
 
-    def provide_now(self):
+    def provide_now(self) -> datetime.datetime:
         return datetime.datetime.now() if self._now is None else self._now
 
-    def provide_utcnow(self):
+    def provide_utcnow(self) -> datetime.datetime:
         return datetime.datetime.now(datetime.timezone.utc) if self._utcnow is None else self._utcnow
 
-    def provide_input_output(self):
+    def provide_input_output(self) -> None:
         raise AttributeError(
             "The dependency injector requested an InputOutput but none has been configured.  Alternatively, if you directly called `di.build('input_output')` then try again with `di.build('input_output', cache=True)`"
         )
 
-    def provide_oai3_schema_resolver(self):
+    def provide_oai3_schema_resolver(self) -> OAI3SchemaResolver:
         from clearskies import autodoc
 
         return autodoc.formats.oai3_json.OAI3SchemaResolver()
 
-    def provide_uuid(self):
-        import uuid
+    def provide_uuid(self) -> ModuleType:
+        return uuid_module
 
-        return uuid
-
-    def provide_secrets(self):
+    def provide_secrets(self) -> Secrets:
         import clearskies.secrets
 
         return clearskies.secrets.Secrets()
 
-    def provide_memory_backend_default_data(self):
+    def provide_memory_backend_default_data(self) -> list[Any]:
         return []
 
-    def provide_global_table_prefix(self):
+    def provide_global_table_prefix(self) -> str:
         return ""
 
-    def provide_akeyless_sdk(self):
+    def provide_akeyless_sdk(self) -> Any:
         import akeyless  # type: ignore[import-untyped]
 
         return akeyless
 
-    def provide_endpoint_groups(self):
+    def provide_endpoint_groups(self) -> list[Any]:
         return []
 
-    def provide_logger(self):
-        import logging
-
+    def provide_logger(self) -> logging.Logger:
         return logging.getLogger()
 
-    def provide_socket(self):
-        import socket
+    def provide_socket(self) -> ModuleType:
+        return socket_module
 
-        return socket
-
-    def provide_subprocess(self):
-        import subprocess
-
-        return subprocess
+    def provide_subprocess(self) -> ModuleType:
+        return subprocess_module
