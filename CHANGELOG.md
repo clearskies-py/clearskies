@@ -5,9 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.47] - 2026-02-18
+
+### Changed
+- Strong type di by @cmancone in [#67](https://github.com/clearskies-py/clearskies/pull/67)
+- Strong type di
+- Build classes as parameter
+
+### Fixed
+- Build class uses default values if provided by @cmancone in [#70](https://github.com/clearskies-py/clearskies/pull/70)
+- Build class uses default values if provided
+
 ## [2.0.46] - 2026-02-10
 
 ### Changed
+- Bump version to v2.0.46 by @github-actions[bot]
 - Ensure full OpenAPI 3.0 specification compliance by @cmancone in [#68](https://github.com/clearskies-py/clearskies/pull/68)
 - Ensure full OpenAPI 3.0 specification compliance
 
@@ -1160,6 +1172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.47]: https://github.com/clearskies-py/clearskies/compare/v2.0.46..v2.0.47
 [2.0.46]: https://github.com/clearskies-py/clearskies/compare/v2.0.45..v2.0.46
 [2.0.45]: https://github.com/clearskies-py/clearskies/compare/v2.0.44..v2.0.45
 [2.0.44]: https://github.com/clearskies-py/clearskies/compare/v2.0.43..v2.0.44
