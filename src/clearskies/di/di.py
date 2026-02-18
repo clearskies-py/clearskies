@@ -668,11 +668,27 @@ class Di:
         my_class_name = class_to_build.__name__
 
         init_args = inspect.getfullargspec(class_to_build)
-        if init_args.defaults is not None:
-            self._disallow_kwargs(f"build class '{class_to_build.__name__}'")
 
-        # ignore the first argument because that is just `self`
-        build_arguments = init_args.args[1:]
+        # Check for *args or **kwargs in the signature - we don't support these
+        if init_args.varargs is not None:
+            raise ValueError(f"Cannot build class '{class_to_build.__name__}' because it has *args in its constructor")
+        if init_args.varkw is not None:
+            raise ValueError(
+                f"Cannot build class '{class_to_build.__name__}' because it has **kwargs in its constructor"
+            )
+
+        # Separate out required positional arguments from optional keyword arguments.
+        # We ignore the first argument since that is `self`.  We will build all required positional arguments
+        # via DI, but we won't try to provide optional keyword arguments (arguments with defaults) unless their
+        # default value is a class that needs to be built by DI.  In that case we'll build the class and pass
+        # it as a keyword argument.  Otherwise we let the argument use its default value.
+        all_args = init_args.args[1:]
+        if init_args.defaults:
+            # Only put required positional arguments into build_arguments
+            build_arguments = all_args[: -len(init_args.defaults)]
+        else:
+            # No defaults means all arguments are required positional arguments
+            build_arguments = all_args
         if not build_arguments:
             self.inject_properties(class_to_build)
             built_value = class_to_build()
@@ -704,10 +720,23 @@ class Di:
             for build_argument in build_arguments
         ]
 
+        # Check if any optional keyword argument defaults are classes that need to be built by DI.
+        # This handles cases like `def __init__(self, logger=Logger):` where Logger is a class that
+        # itself has dependencies that need to be injected. We build the class and pass it as a keyword
+        # argument. For all other defaults (None, strings, numbers, etc.) we just let them use their
+        # default value.
+        kwargs = {}
+        if init_args.defaults:
+            kwarg_names = all_args[-len(init_args.defaults) :]
+            for idx, kwarg_name in enumerate(kwarg_names):
+                default_value = init_args.defaults[idx]
+                if inspect.isclass(default_value):
+                    kwargs[kwarg_name] = self.build_class(default_value, context=my_class_name, cache=True)
+
         del self._building[class_id]
 
         self.inject_properties(class_to_build)
-        built_value = class_to_build(*args)
+        built_value = class_to_build(*args, **kwargs)
         if cache:
             self._prepared[class_to_build] = built_value  # type: ignore
         return built_value
