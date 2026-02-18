@@ -668,11 +668,15 @@ class Di:
         my_class_name = class_to_build.__name__
 
         init_args = inspect.getfullargspec(class_to_build)
-        if init_args.defaults is not None:
-            self._disallow_kwargs(f"build class '{class_to_build.__name__}'")
 
         # ignore the first argument because that is just `self`
-        build_arguments = init_args.args[1:]
+        # also ignore any kwargs (arguments with defaults) - let them use their defaults
+        all_args = init_args.args[1:]
+        if init_args.defaults:
+            # Only build the required positional arguments, skip all kwargs with defaults
+            build_arguments = all_args[: -len(init_args.defaults)]
+        else:
+            build_arguments = all_args
         if not build_arguments:
             self.inject_properties(class_to_build)
             built_value = class_to_build()
