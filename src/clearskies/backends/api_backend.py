@@ -404,6 +404,31 @@ class ApiBackend(Backend, InjectableProperties):
     headers = configs.StringDict(default={})
 
     """
+    A dictionary of headers to attach to record fetch requests (GET). If not set, falls back to headers.
+    """
+    record_headers = configs.StringDict(default=None)
+
+    """
+    A dictionary of headers to attach to create requests (POST). If not set, falls back to headers.
+    """
+    create_headers = configs.StringDict(default=None)
+
+    """
+    A dictionary of headers to attach to update requests (PATCH/PUT). If not set, falls back to headers.
+    """
+    update_headers = configs.StringDict(default=None)
+
+    """
+    A dictionary of headers to attach to delete requests (DELETE). If not set, falls back to headers.
+    """
+    delete_headers = configs.StringDict(default=None)
+
+    """
+    A dictionary of headers to attach to count requests. If not set, falls back to headers.
+    """
+    count_headers = configs.StringDict(default=None)
+
+    """
     The casing used in the model (snake_case, camelCase, TitleCase)
 
     This is used in conjunction with api_casing to tell the processing layer when you and the API are using
@@ -595,6 +620,12 @@ class ApiBackend(Backend, InjectableProperties):
         self,
         base_url: str,
         authentication: Authentication | None = None,
+        headers: dict[str, str] = {},
+        record_headers: dict[str, str] | None = None,
+        create_headers: dict[str, str] | None = None,
+        update_headers: dict[str, str] | None = None,
+        delete_headers: dict[str, str] | None = None,
+        count_headers: dict[str, str] | None = None,
         model_casing: str = "snake_case",
         api_casing: str = "snake_case",
         api_to_model_map: dict[str, str | list[str]] = {},
@@ -741,6 +772,46 @@ class ApiBackend(Backend, InjectableProperties):
         """Return the request method to use for an update request."""
         return "PATCH"
 
+    def get_record_headers(self) -> dict[str, str]:
+        """
+        Return headers to use for record fetch requests.
+
+        Uses record_headers if set, otherwise falls back to headers.
+        """
+        return self.record_headers if self.record_headers is not None else self.headers
+
+    def get_create_headers(self) -> dict[str, str]:
+        """
+        Return headers to use for create requests.
+
+        Uses create_headers if set, otherwise falls back to headers.
+        """
+        return self.create_headers if self.create_headers is not None else self.headers
+
+    def get_update_headers(self) -> dict[str, str]:
+        """
+        Return headers to use for update requests.
+
+        Uses update_headers if set, otherwise falls back to headers.
+        """
+        return self.update_headers if self.update_headers is not None else self.headers
+
+    def get_delete_headers(self) -> dict[str, str]:
+        """
+        Return headers to use for delete requests.
+
+        Uses delete_headers if set, otherwise falls back to headers.
+        """
+        return self.delete_headers if self.delete_headers is not None else self.headers
+
+    def get_count_headers(self) -> dict[str, str]:
+        """
+        Return headers to use for count requests.
+
+        Uses count_headers if set, otherwise falls back to headers.
+        """
+        return self.count_headers if self.count_headers is not None else self.headers
+
     def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """Update a record."""
         data = {**data}
@@ -749,7 +820,9 @@ class ApiBackend(Backend, InjectableProperties):
         for parameter in used_routing_parameters:
             del data[parameter]
 
-        response = self.execute_request(url, request_method, json=self.map_update_request(id, data, model))
+        response = self.execute_request(
+            url, request_method, json=self.map_update_request(id, data, model), headers=self.get_update_headers()
+        )
         json_response = response.json() if response.content else {}
         new_record = {**model.get_raw_data(), **data}
         if response.content:
@@ -777,11 +850,12 @@ class ApiBackend(Backend, InjectableProperties):
         data = {**data}
         url, used_routing_parameters = self.create_url(data, model)
         request_method = self.create_method(data, model)
+
         for parameter in used_routing_parameters:
             del data[parameter]
 
         response = self.execute_request(
-            url, request_method, json=self.map_create_request(data, model), headers=self.headers
+            url, request_method, json=self.map_create_request(data, model), headers=self.get_create_headers()
         )
         json_response = response.json() if response.content else {}
         if response.content:
@@ -804,7 +878,7 @@ class ApiBackend(Backend, InjectableProperties):
         (url, used_routing_parameters) = self.delete_url(id, model)
         request_method = self.delete_method(id, model)
 
-        response = self.execute_request(url, request_method)
+        response = self.execute_request(url, request_method, headers=self.get_delete_headers())
         return SuccessQueryResult()
 
     def records(self, query: Query) -> RecordsQueryResult:
@@ -854,7 +928,7 @@ class ApiBackend(Backend, InjectableProperties):
             url,
             self.records_method(query),
             body_parameters,
-            {},
+            self.get_record_headers(),
         )
 
     def conditions_to_request_parameters(
