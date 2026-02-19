@@ -749,12 +749,20 @@ class ApiBackend(Backend, InjectableProperties):
         for parameter in used_routing_parameters:
             del data[parameter]
 
-        response = self.execute_request(url, request_method, json=data)
+        response = self.execute_request(url, request_method, json=self.map_update_request(id, data, model))
         json_response = response.json() if response.content else {}
         new_record = {**model.get_raw_data(), **data}
         if response.content:
             new_record = {**new_record, **self.map_update_response(response.json(), model)}
         return RecordQueryResult(record=new_record)
+
+    def map_update_request(self, id: int | str, data: dict[str, Any], model: Model) -> dict[str, Any]:
+        """
+        Take the data for an update request and figure out where it should go in the API request (e.g. URL parameters vs. query parameters vs. body).
+
+        See self.map_record_response for goals/motiviation
+        """
+        return data
 
     def map_update_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         """
@@ -772,12 +780,22 @@ class ApiBackend(Backend, InjectableProperties):
         for parameter in used_routing_parameters:
             del data[parameter]
 
-        response = self.execute_request(url, request_method, json=data, headers=self.headers)
+        response = self.execute_request(
+            url, request_method, json=self.map_create_request(data, model), headers=self.headers
+        )
         json_response = response.json() if response.content else {}
         if response.content:
             record = self.map_create_response(response.json(), model)
             return RecordQueryResult(record=record)
         return RecordQueryResult(record={})
+
+    def map_create_request(self, data: dict[str, Any], model: Model) -> dict[str, Any]:
+        """
+        Take the data for a create request and figure out where it should go in the API request (e.g. URL parameters vs. query parameters vs. body).
+
+        The default implementation just returns the data as-is, but you can overwrite this if you need to massage the data in some way before it's sent to the API endpoint.  For example, maybe your model has a column named `full_name` but the API expects this to be sent as `fullName` - in this case, you could overwrite this method to convert from snake_case to camelCase before sending the data to the API endpoint.
+        """
+        return data
 
     def map_create_response(self, response_data: dict[str, Any], model: Model) -> dict[str, Any]:
         return self.map_record_response(response_data, model.get_columns(), "create")
