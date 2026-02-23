@@ -165,6 +165,86 @@ class AkeylessCacheStorageTest(unittest.TestCase):
         self.assertIn(("/path/to/secret", "upserted-value", None), cache.set_calls)
         self.assertEqual(cache._cache["/path/to/secret"], "upserted-value")
 
+    def test_get_dynamic_secret_caches_as_json(self):
+        """Test that dynamic secrets with dict values are cached as JSON, not str(dict)."""
+        import json
+
+        cache = MockSecretCache()
+        akeyless = self._create_akeyless(cache_storage=cache)
+
+        # Mock the API response to return a dict (typical for dynamic secrets)
+        mock_response = {
+            "payload": '{"id": "123", "access_token": "abc123", "org_id": "456"}',
+        }
+        self.mock_api.get_dynamic_secret_value.return_value = mock_response
+
+        result = akeyless.get_dynamic_secret("/path/to/dynamic")
+
+        # Should have stored in cache
+        self.assertEqual(len(cache.set_calls), 1)
+        cached_path, cached_value, cached_ttl = cache.set_calls[0]
+
+        # Verify it's proper JSON (not Python str() format with single quotes)
+        self.assertEqual(cached_path, "/path/to/dynamic")
+        # Should be valid JSON
+        parsed = json.loads(cached_value)
+        self.assertEqual(parsed["payload"], '{"id": "123", "access_token": "abc123", "org_id": "456"}')
+        # Should use double quotes, not single quotes
+        self.assertIn('"payload"', cached_value)
+        self.assertNotIn("'payload'", cached_value)
+
+    def test_get_rotated_secret_caches_as_json(self):
+        """Test that rotated secrets with dict values are cached as JSON, not str(dict)."""
+        import json
+
+        cache = MockSecretCache()
+        akeyless = self._create_akeyless(cache_storage=cache)
+
+        # Mock the API response to return a dict (typical for rotated secrets)
+        mock_response = {
+            "value": {
+                "username": "db_user",
+                "password": "secret123",
+            }
+        }
+        self.mock_api.get_rotated_secret_value.return_value = mock_response
+
+        result = akeyless.get_rotated_secret("/path/to/rotated")
+
+        # Should have stored in cache
+        self.assertEqual(len(cache.set_calls), 1)
+        cached_path, cached_value, cached_ttl = cache.set_calls[0]
+
+        # Verify it's proper JSON (not Python str() format with single quotes)
+        self.assertEqual(cached_path, "/path/to/rotated")
+        # Should be valid JSON
+        parsed = json.loads(cached_value)
+        self.assertEqual(parsed["username"], "db_user")
+        self.assertEqual(parsed["password"], "secret123")
+        # Should use double quotes, not single quotes
+        self.assertIn('"username"', cached_value)
+        self.assertNotIn("'username'", cached_value)
+
+    def test_dynamic_secret_cache_hit_returns_dict(self):
+        """Test that cached dynamic secrets are properly deserialized when retrieved from cache."""
+        import json
+
+        cache = MockSecretCache()
+        akeyless = self._create_akeyless(cache_storage=cache)
+
+        # Pre-populate cache with JSON (as our fix now stores it)
+        cached_data = {"payload": "test-data"}
+        cache._cache["/path/to/dynamic"] = json.dumps(cached_data)
+
+        result = akeyless.get_dynamic_secret("/path/to/dynamic")
+
+        # Should have returned the cached value (as a string from cache.get())
+        self.assertEqual(cache.get_calls, ["/path/to/dynamic"])
+        # Should NOT have called the API
+        self.mock_api.get_dynamic_secret_value.assert_not_called()
+        # Result should be the JSON string from cache
+        self.assertEqual(result, json.dumps(cached_data))
+
 
 class SecretCacheConfigTest(unittest.TestCase):
     def test_cache_storage_accepts_secret_cache_instance(self):

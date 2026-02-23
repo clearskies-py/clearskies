@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
@@ -359,7 +360,8 @@ class Akeyless(secrets.Secrets):
 
         # Store in cache if configured and we got a value
         if value and self.cache:
-            self.cache.set(path, str(value) if not isinstance(value, str) else value)
+            cache_value = value if isinstance(value, str) else json.dumps(value)
+            self.cache.set(path, cache_value)
 
         return value
 
@@ -408,7 +410,8 @@ class Akeyless(secrets.Secrets):
 
         # Store in cache if configured and we got a value
         if value and self.cache:
-            self.cache.set(path, str(value) if not isinstance(value, str) else value)
+            cache_value = value if isinstance(value, str) else json.dumps(value)
+            self.cache.set(path, cache_value)
 
         return value
 
