@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.49] - 2026-02-23
+
+### Changed
+- Set headers for all methods by @tnijboer in [#71](https://github.com/clearskies-py/clearskies/pull/71)
+
 ## [2.0.48] - 2026-02-19
 
 ### Added
 - Add hooks for create/request data
+
+### Changed
+- Bump version to v2.0.48 by @github-actions[bot]
 
 ## [2.0.47] - 2026-02-18
 
@@ -1178,6 +1186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.49]: https://github.com/clearskies-py/clearskies/compare/v2.0.48..v2.0.49
 [2.0.48]: https://github.com/clearskies-py/clearskies/compare/v2.0.47..v2.0.48
 [2.0.47]: https://github.com/clearskies-py/clearskies/compare/v2.0.46..v2.0.47
 [2.0.46]: https://github.com/clearskies-py/clearskies/compare/v2.0.45..v2.0.46
