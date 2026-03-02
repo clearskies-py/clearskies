@@ -341,6 +341,137 @@ class Endpoint(
     model_class = configs.ModelClass(default=None)
 
     """
+    A schema that describes the expected input from the client.
+
+    Use this to define input validation for query parameters, URL path parameters, and request bodies
+    when you don't want to use a full Model with a backend, or when you need to validate inputs
+    differently than your model schema.
+
+    This is particularly useful for validating query parameters and URL path parameters in
+    endpoints like Get, List, and Delete, where you want to ensure that URL parameters like
+    `/users/{id}` are validated as the correct type (e.g., Integer instead of string).
+
+    ## Basic Usage
+
+    ```python
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+        email = clearskies.columns.String()
+
+    class UserLookup(clearskies.Schema):
+        id = clearskies.columns.Integer()
+
+    get_user = clearskies.endpoints.Get(
+        model_class=User,
+        input_schema=UserLookup,  # Validates routing_data["id"] as Integer
+        transform_input_types=True,
+        readable_column_names=["id", "name", "email"],
+    )
+
+    wsgi = clearskies.contexts.WsgiRef(get_user, classes=[User])
+    wsgi()
+    ```
+
+    In this example:
+    - `model_class=User` defines the data source (backend operations)
+    - `input_schema=UserLookup` defines input validation for path parameters
+    - Request `/users/abc` raises `InputError("id must be an integer")`
+    - Request `/users/123` validates and transforms to `{"id": 123}` (int)
+
+    ## When to Use input_schema vs model_class
+
+    ### Use input_schema when:
+
+    1. **Validating URL path parameters**: Ensure `/users/{id}` has proper type validation
+    2. **Validating query parameters**: Ensure `?age=25` is validated as Integer
+    3. **Input schema differs from model schema**: Admin endpoints may need different validation
+    4. **No backend needed**: Pure validation without database operations
+
+    ### model_class vs input_schema precedence:
+
+    When both are provided:
+    - `model_class` → Used for backend operations (fetch/save)
+    - `input_schema` → Used for input validation (routing_data, query_parameters, request_data when set)
+    - If `input_schema` is not set, `model_class` is used for both operations and validation
+
+    ## Common Patterns
+
+    ### Pattern 1: URL Path Validation
+
+    ```python
+    import clearskies
+
+    class UserLookup(clearskies.Schema):
+        id = clearskies.columns.Integer()
+
+    delete_user = clearskies.endpoints.Delete(
+        model_class=User,
+        input_schema=UserLookup,
+        transform_input_types=True,
+    )
+    ```
+
+    URL `/users/abc` → `InputError("id must be an integer")`
+    URL `/users/123` → Validates and deletes user with id=123
+
+    ### Pattern 2: Query Parameter Validation
+
+    ```python
+    import clearskies
+
+    class UserFilters(clearskies.Schema):
+        age = clearskies.columns.Integer()
+        active = clearskies.columns.Boolean()
+
+    list_users = clearskies.endpoints.List(
+        model_class=User,
+        input_schema=UserFilters,
+        transform_input_types=True,
+        searchable_column_names=["age", "active"],
+        readable_column_names=["id", "name", "age", "active"],
+    )
+    ```
+
+    Query `?age=abc` → `InputError("age must be an integer")`
+    Query `?age=25&active=true` → Validates and transforms to `{age: 25, active: True}`
+
+    ### Pattern 3: Combined Input Validation
+
+    ```python
+    import clearskies
+
+    class UserInput(clearskies.Schema):
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String(validators=[clearskies.validators.Required()])
+        age = clearskies.columns.Integer(validators=[clearskies.validators.MinimumValue(0)])
+
+    update_user = clearskies.endpoints.Update(
+        model_class=User,
+        input_schema=UserInput,
+        transform_input_types=True,
+        writeable_column_names=["name", "age"],
+        readable_column_names=["id", "name", "age"],
+    )
+    ```
+
+    This validates:
+    - Path parameter: `/users/abc` → Error
+    - Request body: `{"name": "", "age": -5}` → Errors for both fields
+
+    ## See Also
+
+    - `model_class`: Defines the data model and backend
+    - `transform_input_types`: Enables type transformation for all inputs
+    - `writeable_column_names`: Defines which columns can be set in request bodies
+    """
+    input_schema = configs.Schema(default=None)
+
+    """
     Columns from the model class that should be returned to the client.
 
     Most endpoints use a model to build the return response to the user.  In this case, `readable_column_names`
@@ -641,6 +772,280 @@ class Endpoint(
     external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
 
     """
+    Enable transformation of input types for query parameters and routing data.
+
+    By default (False), query parameters and URL path routing data remain as strings. When enabled (True),
+    these values will be converted to their proper Python types based on the schema's column definitions,
+    matching the behavior of request body transformation.
+
+    ## Overview
+
+    Clearskies automatically transforms string inputs from JSON request bodies into proper Python types
+    (e.g., `{"age": "25"}` becomes `{"age": 25}`). However, query parameters and URL path parameters
+    arrive as strings and by default remain as strings. This flag enables consistent type transformation
+    across all input sources.
+
+    ## What Gets Transformed
+
+    When `transform_input_types=True`, values are converted based on their column types:
+
+    - Request Body: Always transformed (default behavior)
+    - Query Parameters: Transformed when flag is True
+    - URL Path Parameters: Transformed when flag is True
+
+    ## Supported Column Types
+
+    The following column types support automatic type transformation:
+
+    - **Integer**: `"25"` → `25`
+    - **Float**: `"3.14"` → `3.14`
+    - **Boolean**: `"true"` / `"false"` → `True` / `False`
+    - **Date**: `"2025-01-15"` → `datetime.date(2025, 1, 15)`
+    - **Datetime**: `"2025-01-15T10:30:00"` → `datetime.datetime(2025, 1, 15, 10, 30)`
+    - **String**: No transformation (remains string)
+    - **UUID**: No transformation (remains string, validated by column)
+
+    ## Error Handling
+
+    Invalid type conversions raise `InputErrors` with clear error messages:
+
+    ```python
+    # Query: ?age=abc
+    # Result: InputError("age must be an integer")
+
+    # Query: ?active=maybe
+    # Result: InputError("active must be a boolean (true/false)")
+    ```
+
+    ## Usage by Endpoint Type
+
+    ### List Endpoint
+
+    Transforms query parameters used for filtering and searching:
+
+    ```python
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+        age = clearskies.columns.Integer()
+        active = clearskies.columns.Boolean()
+
+    list_users = clearskies.endpoints.List(
+        model_class=User,
+        transform_input_types=True,
+        searchable_column_names=["age", "active", "name"],
+        sortable_column_names=["id", "name", "age"],
+        readable_column_names=["id", "name", "age", "active"],
+    )
+
+    wsgi = clearskies.contexts.WsgiRef(list_users, classes=[User])
+    wsgi()
+    ```
+
+    Query example:
+
+    ```bash
+    # Query: GET /users?age=25&active=true
+    # Without flag: query_parameters = {"age": "25", "active": "true"}
+    # With flag:    query_parameters = {"age": 25, "active": True}
+    ```
+
+    ### Get/Delete Endpoints
+
+    Transforms URL path parameters used for record lookup:
+
+    ```python
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+
+    get_user = clearskies.endpoints.Get(
+        model_class=User,
+        transform_input_types=True,
+        readable_column_names=["id", "name"],
+    )
+
+    wsgi = clearskies.contexts.WsgiRef(get_user, classes=[User])
+    wsgi()
+    ```
+
+    Path parameter example:
+
+    ```bash
+    # Request: GET /users/123
+    # Without flag: routing_data = {"id": "123"}
+    # With flag:    routing_data = {"id": 123}
+    ```
+
+    ### Update Endpoint
+
+    Transforms both request body (always) and routing data (when flag enabled):
+
+    ```python
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+        age = clearskies.columns.Integer()
+
+    update_user = clearskies.endpoints.Update(
+        model_class=User,
+        transform_input_types=True,
+        writeable_column_names=["name", "age"],
+        readable_column_names=["id", "name", "age"],
+    )
+
+    wsgi = clearskies.contexts.WsgiRef(update_user, classes=[User])
+    wsgi()
+    ```
+
+    Example:
+
+    ```bash
+    # Request: PATCH /users/123
+    #          {"name": "Jane", "age": "30"}
+    # Without flag: routing_data = {"id": "123"}, request_data = {"name": "Jane", "age": 30}
+    # With flag:    routing_data = {"id": 123}, request_data = {"name": "Jane", "age": 30}
+    ```
+
+    ### Callable Endpoint
+
+    Transforms query parameters and routing data (when flag enabled and schema provided):
+
+    ```python
+    import clearskies
+
+    class UserSchema(clearskies.Schema):
+        user_id = clearskies.columns.Integer()
+        limit = clearskies.columns.Integer()
+
+    def process_user(user_id, limit):
+        # Both parameters are already integers
+        return {"user_id": user_id, "limit": limit, "type": type(user_id).__name__}
+
+    process = clearskies.endpoints.Callable(
+        process_user,
+        model_class=UserSchema,
+        transform_input_types=True,
+        url="/process/{user_id}",
+    )
+
+    wsgi = clearskies.contexts.WsgiRef(process)
+    wsgi()
+    ```
+
+    Example:
+
+    ```bash
+    # Request: GET /process/123?limit=50
+    # Without flag: user_id="123", limit="50"
+    # With flag:    user_id=123, limit=50
+
+    $ curl 'http://localhost:8080/process/123?limit=50' | jq
+    {
+        "status": "success",
+        "error": "",
+        "data": {
+            "user_id": 123,
+            "limit": 50,
+            "type": "int"
+        },
+        "pagination": {},
+        "input_errors": {}
+    }
+    ```
+
+    ## Advanced: Search Operators
+
+    The List endpoint supports search operators in query parameters. Type transformation applies to
+    the values when the flag is enabled:
+
+    ```python
+    # Query: GET /users?age__gt=25&age__lt=50&active=true
+    # Without flag: {"age__gt": "25", "age__lt": "50", "active": "true"}
+    # With flag:    {"age__gt": 25, "age__lt": 50, "active": True}
+    ```
+
+    The operator suffix (e.g., `__gt`, `__lt`) is preserved, and the column name is extracted
+    to determine the appropriate type transformation.
+
+    ## Migration Guide
+
+    If you have existing code that manually converts types, you can simplify it with this flag:
+
+    ```python
+    # Old code (manual conversion)
+    def process(query_parameters, routing_data):
+        age = int(query_parameters.get("age", "0"))
+        user_id = int(routing_data["id"])
+        active = query_parameters.get("active", "false") == "true"
+        return {"age": age, "user_id": user_id, "active": active}
+
+    # New code (with transform_input_types=True)
+    def process(query_parameters, routing_data):
+        age = query_parameters.get("age", 0)
+        user_id = routing_data["id"]
+        active = query_parameters.get("active", False)
+        return {"age": age, "user_id": user_id, "active": active}
+    ```
+
+    ## Edge Cases
+
+    ### Empty Values
+
+    Empty query parameters are treated as `None`:
+
+    ```python
+    # Query: ?age=
+    # Result: {"age": None}
+    ```
+
+    ### Multiple Values
+
+    Lists of values are not transformed (remain as list of strings):
+
+    ```python
+    # Query: ?tags=python&tags=flask
+    # Result: {"tags": ["python", "flask"]}
+    ```
+
+    ### Invalid Columns
+
+    Parameters not matching model columns are left as-is:
+
+    ```python
+    # Query: ?age=25&unknown=value
+    # Result: {"age": 25, "unknown": "value"}  # age transformed, unknown left as string
+    ```
+
+    ## Backward Compatibility
+
+    This flag defaults to `False` for backward compatibility. Code that depends on query parameters
+    or routing data being strings will continue to work. Enable it only when you're ready to handle
+    properly typed values.
+
+    In a future major version (v3.0), this may become the default behavior.
+
+    ## See Also
+
+    - `writeable_column_names`: Defines which columns can be set in request bodies
+    - `searchable_column_names`: Defines which columns can be filtered in List endpoints
+    - `readable_column_names`: Defines which columns are returned to the client
+    """
+    transform_input_types = configs.Boolean(default=False)
+
+    """
     Configure standard security headers to be sent along in the response from this endpoint.
 
     Note that, with CORS, you generally only have to specify the origin.  The routing system will automatically add
@@ -879,6 +1284,7 @@ class Endpoint(
         request_methods: list[str] = ["GET"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
+        input_schema: Schema | type[Schema] | None = None,
         column_overrides: dict[str, Column] = {},
         internal_casing: str = "snake_case",
         external_casing: str = "snake_case",
@@ -1110,6 +1516,115 @@ class Endpoint(
                 transformed_data[key] = value
 
         return transformed_data
+
+    def transform_query_parameters(
+        self, query_params: dict[str, Any], schema: Schema | type[Schema] | None = None
+    ) -> dict[str, Any]:
+        """
+        Transform query parameters to proper types based on searchable columns.
+
+        This method is only applied when transform_input_types=True. It transforms string query
+        parameters to their proper Python types using the schema's column definitions.
+
+        Handles:
+        - Simple filters: ?age=25 -> {"age": 25}
+        - Operators: ?age__gt=25 -> {"age__gt": 25} (validates value against column type)
+        - Pagination: ?limit=50 -> {"limit": 50}
+
+        Args:
+            query_params: Raw query parameters from the request (typically all strings)
+            schema: The model class or schema to use for type conversion (optional, defaults to input_schema or model_class)
+
+        Returns:
+            Dictionary with values transformed to proper Python types
+        """
+        # Prefer input_schema over model_class for validation
+        if schema is None:
+            schema = self.input_schema if self.input_schema else self.model_class
+
+        if not query_params or not schema:
+            return query_params
+
+        transformed = {}
+        columns = schema.get_columns()
+
+        for key, value in query_params.items():
+            # Handle operators like age__gt, age__lt, etc.
+            column_name = key.split("__")[0] if "__" in key else key
+
+            # Transform searchable column values
+            if column_name in self.searchable_column_names and column_name in columns:
+                column = columns[column_name]
+                try:
+                    # Use to_backend to transform the value
+                    column_data = column.to_backend({column_name: value})
+                    transformed[key] = column_data.get(column_name, value)
+                except (ValueError, TypeError):
+                    # If transformation fails, raise an input error
+                    raise exceptions.InputErrors(
+                        {key: f"Invalid value for {column_name}: expected {column.__class__.__name__} type"}
+                    )
+            # Transform pagination parameters
+            elif key in ["limit", "start"]:
+                try:
+                    transformed[key] = int(value) if value is not None else value
+                except (ValueError, TypeError):
+                    raise exceptions.InputErrors({key: f"{key} must be an integer"})
+            else:
+                # Keep other parameters as-is (like sort_by, sort_direction)
+                transformed[key] = value
+
+        return transformed
+
+    def transform_routing_data(
+        self, routing_data: dict[str, Any], schema: Schema | type[Schema] | None = None
+    ) -> dict[str, Any]:
+        """
+        Transform URL path parameters to proper types.
+
+        This method is only applied when transform_input_types=True. It transforms string URL
+        path parameters to their proper Python types using the schema's column definitions.
+
+        Examples:
+        - /users/123 with Integer id column: {"id": "123"} -> {"id": 123}
+        - /users/a-b-c-d with UUID id column: {"id": "a-b-c-d"} -> {"id": "a-b-c-d"} (stays string)
+        - /users/{user_id}/posts/{post_id}: Both IDs transformed based on their column types
+
+        Args:
+            routing_data: Raw routing data from URL path (typically all strings)
+            schema: The model class or schema to use for type conversion (optional, defaults to input_schema or model_class)
+
+        Returns:
+            Dictionary with values transformed to proper Python types
+        """
+        # Prefer input_schema over model_class for validation
+        if schema is None:
+            schema = self.input_schema if self.input_schema else self.model_class
+
+        if not routing_data or not schema:
+            return routing_data
+
+        transformed = {}
+        columns = schema.get_columns()
+
+        for key, value in routing_data.items():
+            # Only transform if the key exists in the schema columns
+            if key in columns:
+                column = columns[key]
+                try:
+                    # Use to_backend to transform the value
+                    column_data = column.to_backend({key: value})
+                    transformed[key] = column_data.get(key, value)
+                except (ValueError, TypeError):
+                    # If transformation fails, raise an input error
+                    raise exceptions.InputErrors(
+                        {key: f"Invalid value for {key}: expected {column.__class__.__name__} type"}
+                    )
+            else:
+                # Keep parameters that aren't in the schema as-is
+                transformed[key] = value
+
+        return transformed
 
     def map_request_data_external_to_internal(self, request_data, required=True):
         # we have to map from internal names to external names, because case mapping

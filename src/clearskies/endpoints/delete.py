@@ -6,7 +6,7 @@ from clearskies import authentication, autodoc, decorators
 from clearskies.endpoints.get import Get
 
 if TYPE_CHECKING:
-    from clearskies import Model, SecurityHeader, typing
+    from clearskies import Model, Schema, SecurityHeader, typing
     from clearskies.input_outputs import InputOutput
 
 
@@ -73,6 +73,7 @@ class Delete(Get):
         model_class: type[Model],
         url: str,
         record_lookup_column_name: str | None = None,
+        input_schema: type[Schema] | None = None,
         response_headers: list[str | Callable[..., list[str]]] = [],
         request_methods: list[str] = ["DELETE"],
         internal_casing: str = "snake_case",
@@ -81,6 +82,7 @@ class Delete(Get):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
+        transform_input_types: bool = False,
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
     ):
@@ -93,6 +95,10 @@ class Delete(Get):
         super().__init__(model_class, url, [model_class.id_column_name])
 
     def handle(self, input_output: InputOutput) -> Any:
+        # Transform routing data if enabled (input_schema takes precedence over model_class)
+        if self.transform_input_types and input_output.routing_data:
+            input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+
         model = self.fetch_model(input_output)
         model.delete()
         return self.success(input_output, {})

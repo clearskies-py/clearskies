@@ -162,6 +162,7 @@ class Get(Endpoint):
         url: str,
         readable_column_names: list[str],
         record_lookup_column_name: str | None = None,
+        input_schema: type[Schema] | None = None,
         request_methods: list[str] = ["GET"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
@@ -173,6 +174,7 @@ class Get(Endpoint):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
+        transform_input_types: bool = False,
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
     ):
@@ -214,6 +216,10 @@ class Get(Endpoint):
         return model
 
     def handle(self, input_output: InputOutput) -> Any:
+        # Transform routing data if enabled (input_schema takes precedence over model_class)
+        if self.transform_input_types and input_output.routing_data:
+            input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+
         model = self.fetch_model(input_output)
         return self.success(input_output, self.model_as_json(model, input_output))
 
