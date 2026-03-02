@@ -135,7 +135,9 @@ class Create(Endpoint):
         if not request_data and input_output.has_body():
             raise exceptions.ClientError("Request body was not valid JSON")
         self.validate_input_against_schema(request_data, input_output, self.model_class)
-        new_model = self.model.create(request_data, columns=self.columns)
+        # Transform the validated data to proper types
+        transformed_data = self.transform_request_data(request_data, self.model_class)
+        new_model = self.model.create(transformed_data, columns=self.columns)
         return self.success(input_output, self.model_as_json(new_model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:

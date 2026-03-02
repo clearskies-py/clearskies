@@ -122,7 +122,9 @@ class Update(Get):
             raise exceptions.ClientError("Request body was not valid JSON")
         model = self.fetch_model(input_output)
         self.validate_input_against_schema(request_data, input_output, model)
-        model.save(request_data)
+        # Transform the validated data to proper types
+        transformed_data = self.transform_request_data(request_data, self.model_class)
+        model.save(transformed_data)
         return self.success(input_output, self.model_as_json(model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:

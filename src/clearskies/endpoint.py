@@ -1080,6 +1080,37 @@ class Endpoint(
         request_data = self.map_request_data_external_to_internal(request_data)
         self.find_input_errors(request_data, input_output, schema)
 
+    def transform_request_data(
+        self, request_data: dict[str, Any], schema: Schema | type[Schema] | None = None
+    ) -> dict[str, Any]:
+        """
+        Transform request data to proper types using the schema's column definitions.
+
+        After validation passes, this method converts string values (or other input types)
+        to their proper Python types as defined by the schema columns. For example:
+        - "25" becomes int(25) for Integer columns
+        - "true" becomes bool(True) for Boolean columns
+        - "2024-12-31" becomes a date object for Date columns
+
+        If no schema is provided, the request_data is returned unchanged.
+        """
+        if not request_data or not schema:
+            return request_data
+
+        columns = schema.get_columns()
+        transformed_data = {}
+
+        for key, value in request_data.items():
+            if key in columns and value is not None:
+                # Use the column's to_backend method to convert types
+                # This is the same method used when saving to a model
+                column_data = columns[key].to_backend({key: value})
+                transformed_data[key] = column_data.get(key, value)
+            else:
+                transformed_data[key] = value
+
+        return transformed_data
+
     def map_request_data_external_to_internal(self, request_data, required=True):
         # we have to map from internal names to external names, because case mapping
         # isn't always one-to-one, so we want to do it exactly the same way that the documentation

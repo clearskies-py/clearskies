@@ -267,11 +267,21 @@ class Callable(Endpoint):
 
     def handle(self, input_output: InputOutput):
         if self.writeable_column_names or self.input_schema:
+            # Validate the request data
+            request_data = self.get_request_data(input_output)
             self.validate_input_against_schema(
-                self.get_request_data(input_output),
+                request_data,
                 input_output,
                 self.input_schema if self.input_schema else self.model_class,
             )
+            # Transform the validated data to proper types
+            transformed_data = self.transform_request_data(
+                request_data,
+                self.input_schema if self.input_schema else self.model_class,
+            )
+            # Update input_output's internal cache with the transformed data
+            # so callables receive properly typed values
+            input_output._body_as_json = transformed_data
         else:
             input_errors = self.find_input_errors_from_callable(input_output.request_data, input_output)
             if input_errors:
