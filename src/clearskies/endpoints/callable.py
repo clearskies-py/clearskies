@@ -111,64 +111,6 @@ class Callable(Endpoint):
     to_call = configs.Callable(default=None)
 
     """
-    A schema that describes the expected input from the client.
-
-    Note that if this is specified it will take precedence over writeable_column_names and model_class, which
-    can also be used to specify the expected input.
-
-    ```python
-    import clearskies
-
-    class ExpectedInput(clearskies.Schema):
-        first_name = clearskies.columns.String(validators=[clearskies.validators.Required()])
-        last_name = clearskies.columns.String()
-        age = clearskies.columns.Integer(validators=[clearskies.validators.MinimumValue(0)])
-
-    reflect = clearskies.endpoints.Callable(
-        lambda request_data: request_data,
-        request_methods=["POST"],
-        input_schema=ExpectedInput,
-    )
-
-    wsgi = clearskies.contexts.WsgiRef(reflect)
-    wsgi()
-    ```
-
-    And then valid and invalid requests:
-
-    ```bash
-    $ curl http://localhost:8080 -d '{"first_name":"Jane","last_name":"Doe","age":1}' | jq
-    {
-        "status": "success",
-        "error": "",
-        "data": {
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "age": 1
-        },
-        "pagination": {},
-        "input_errors": {}
-    }
-
-    $ curl http://localhost:8080 -d '{"last_name":10,"age":-1,"check":"cool"}' | jq
-    {
-        "status": "input_errors",
-        "error": "",
-        "data": [],
-        "pagination": {},
-        "input_errors": {
-            "age": "'age' must be at least 0.",
-            "first_name": "'first_name' is required.",
-            "last_name": "value should be a string",
-            "check": "Input column check is not an allowed input column."
-        }
-    }
-    ```
-
-    """
-    input_schema = configs.Schema(default=None)
-
-    """
     Whether or not the return value is meant to be wrapped up in the standard clearskies response schema.
 
     With the standard response schema, the return value of the function will be placed in the `data` portion of
@@ -254,6 +196,7 @@ class Callable(Endpoint):
         external_casing: str = "snake_case",
         security_headers: list[SecurityHeader] = [],
         description: str = "",
+        transform_input_types: bool = False,
         authentication: Authentication = authentication.Public(),
         authorization: Authorization = authentication.Authorization(),
     ):
@@ -266,12 +209,23 @@ class Callable(Endpoint):
             self.writeable_column_names = list(self.input_schema.get_columns().keys())
 
     def handle(self, input_output: InputOutput):
+        # Transform query and routing data if enabled (input_schema takes precedence over model_class)
+        if self.transform_input_types:
+            if input_output.query_parameters:
+                input_output.query_parameters = self.transform_query_parameters(input_output.query_parameters)
+            if input_output.routing_data:
+                input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+
         if self.writeable_column_names or self.input_schema:
-            self.validate_input_against_schema(
-                self.get_request_data(input_output),
-                input_output,
-                self.input_schema if self.input_schema else self.model_class,
-            )
+            # Validate the request data
+            request_data = self.get_request_data(input_output)
+            schema = self.input_schema if self.input_schema else self.model_class
+            self.validate_input_against_schema(request_data, input_output, schema)
+            # Transform the validated data to proper types (input_schema takes precedence over model_class)
+            transformed_data = self.transform_request_data(request_data, schema)
+            # Update input_output's internal cache with the transformed data
+            # so callables receive properly typed values
+            input_output._body_as_json = transformed_data
         else:
             input_errors = self.find_input_errors_from_callable(input_output.request_data, input_output)
             if input_errors:

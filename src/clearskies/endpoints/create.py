@@ -105,6 +105,7 @@ class Create(Endpoint):
         writeable_column_names: list[str],
         readable_column_names: list[str],
         input_validation_callable: Callable | None = None,
+        input_schema: type[Schema] | None = None,
         include_routing_data_in_request_data: bool = False,
         url: str = "",
         request_methods: list[str] = ["POST"],
@@ -114,6 +115,7 @@ class Create(Endpoint):
         column_overrides: dict[str, Column] = {},
         internal_casing: str = "snake_case",
         external_casing: str = "snake_case",
+        transform_input_types: bool = False,
         security_headers: list[SecurityHeader] = [],
         description: str = "",
         authentication: authentication.Authentication = authentication.Public(),
@@ -135,7 +137,9 @@ class Create(Endpoint):
         if not request_data and input_output.has_body():
             raise exceptions.ClientError("Request body was not valid JSON")
         self.validate_input_against_schema(request_data, input_output, self.model_class)
-        new_model = self.model.create(request_data, columns=self.columns)
+        # Transform the validated data to proper types
+        transformed_data = self.transform_request_data(request_data, self.model_class)
+        new_model = self.model.create(transformed_data, columns=self.columns)
         return self.success(input_output, self.model_as_json(new_model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:

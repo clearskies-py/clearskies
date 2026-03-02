@@ -94,6 +94,7 @@ class Update(Get):
         readable_column_names: list[str],
         record_lookup_column_name: str | None = None,
         input_validation_callable: Callable | None = None,
+        input_schema: type[Schema] | None = None,
         request_methods: list[str] = ["PATCH"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
@@ -105,6 +106,7 @@ class Update(Get):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
+        transform_input_types: bool = False,
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
     ):
@@ -117,12 +119,19 @@ class Update(Get):
         super().__init__(model_class, url, readable_column_names)
 
     def handle(self, input_output: InputOutput) -> Any:
+        # Transform routing data if enabled (input_schema takes precedence over model_class)
+        if self.transform_input_types and input_output.routing_data:
+            input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+
         request_data = self.get_request_data(input_output)
         if not request_data and input_output.has_body():
             raise exceptions.ClientError("Request body was not valid JSON")
         model = self.fetch_model(input_output)
         self.validate_input_against_schema(request_data, input_output, model)
-        model.save(request_data)
+        # Transform the validated data to proper types (input_schema takes precedence over model_class)
+        schema = self.input_schema if self.input_schema else self.model_class
+        transformed_data = self.transform_request_data(request_data, schema)
+        model.save(transformed_data)
         return self.success(input_output, self.model_as_json(model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:
