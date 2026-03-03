@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import json
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
@@ -23,6 +22,14 @@ class Akeyless(secrets.Secrets):
     This class provides integration with Akeyless vault services, allowing you to store, retrieve,
     and manage secrets. It supports different types of secrets (static, dynamic, rotated) and
     includes authentication mechanisms for AWS IAM, SAML, and JWT.
+
+    ### Token Validation and Caching
+
+    Authentication tokens are automatically cached and validated to minimize API calls:
+    - All auth methods (AWS IAM, JWT, SAML) cache the token's `expiry` timestamp from the auth API response
+    - **SAML**: First checks credentials file for cached token before API call (most efficient)
+    - **JWT/AWS IAM**: Caches token and expiry from API auth response
+    - Tokens are automatically refreshed when expired or within 10 seconds of expiry
 
     ### Cache Storage
 
@@ -81,6 +88,11 @@ class Akeyless(secrets.Secrets):
     environment = inject.Environment()
 
     """
+    The current time provider for testability
+    """
+    now = inject.Now()
+
+    """
     The Akeyless SDK module injected by the dependency injection system
     """
     akeyless: ModuleType = inject.ByName("akeyless_sdk")  # type: ignore
@@ -129,9 +141,9 @@ class Akeyless(secrets.Secrets):
     auto_guess_type = configs.Boolean(default=False)
 
     """
-    When the current token expires
+    When the current token expires (Unix timestamp in seconds)
     """
-    _token_refresh: datetime.datetime  # type: ignore
+    _token_expiry: float
 
     """
     The current authentication token
@@ -541,38 +553,70 @@ class Akeyless(secrets.Secrets):
         Get an authentication token for Akeyless API calls.
 
         Returns a cached token if available and not expired (within 10 seconds), otherwise obtains
-        a new one using the configured authentication method. Tokens are valid for about an hour,
-        but we set the refresh time to 30 minutes to be safe.
+        a new one using the configured authentication method. Token expiry is retrieved from the
+        auth response to ensure accurate validation.
         """
-        # AKeyless tokens live for an hour
-        if (
-            hasattr(self, "_token_refresh")
-            and hasattr(self, "_token")
-            and (self._token_refresh - datetime.datetime.now()).total_seconds() > 10
-        ):
-            return self._token
+        # Check if we have a valid cached token
+        if hasattr(self, "_token_expiry") and hasattr(self, "_token"):
+            current_timestamp = self.now.timestamp()
+            # Add a 10 second buffer to avoid using tokens that are about to expire
+            if current_timestamp < (self._token_expiry - 10):
+                self.logger.debug(f"Using cached token (expires at {self._token_expiry})")
+                return self._token
+            else:
+                self.logger.debug(
+                    f"Cached token expired or expiring soon (expiry: {self._token_expiry}, current: {current_timestamp})"
+                )
 
         auth_method_name = f"auth_{self.access_type}"
         if not hasattr(self, auth_method_name):
             raise ValueError(f"Requested Akeyless authentication with unsupported auth method: '{self.access_type}'")
 
-        self._token_refresh = datetime.datetime.now() + datetime.timedelta(hours=0.5)
-        self._token = getattr(self, auth_method_name)()
+        # Call auth method which returns (token, expiry)
+        auth_result = getattr(self, auth_method_name)()
+
+        # Handle both tuple (token, expiry) and string (token only) responses
+        if isinstance(auth_result, tuple):
+            self._token, self._token_expiry = auth_result
+        else:
+            # Fallback for legacy: token only, no expiry returned
+            self._token = auth_result
+            # Set expiry to 30 minutes from now as fallback
+            self._token_expiry = self.now.timestamp() + 1800  # 30 minutes
+            self.logger.warning(f"Auth method {auth_method_name} did not return expiry, using 30-minute fallback")
+
         return self._token
+
+    def _is_token_valid(self, token: str) -> bool:
+        """
+        Check if a token is still valid by making a test API call.
+
+        This validates that the token has not expired and can still be used for API calls.
+        Returns True if the token is valid, False otherwise.
+        """
+        try:
+            # Make a lightweight API call to validate the token
+            self.api.describe_permissions(self.akeyless.DescribePermissions(token=token, path="/", type="item"))
+            return True
+        except Exception as e:
+            # Token is invalid or expired
+            self.logger.debug(f"Token validation failed: {e}")
+            return False
 
     def auth_aws_iam(self):
         """
         Authenticate using AWS IAM.
 
         Uses the akeyless_cloud_id package to generate a cloud ID and authenticates with Akeyless
-        using the configured access_id.
+        using the configured access_id. Returns a tuple of (token, expiry_timestamp).
         """
         from akeyless_cloud_id import CloudId  # type: ignore
 
         res = self.api.auth(
             self.akeyless.Auth(access_id=self.access_id, access_type="aws_iam", cloud_id=CloudId().generate())
         )
-        return res.token  # type: ignore
+        # Return tuple of (token, expiry)
+        return (res.token, res.expiry)  # type: ignore
 
     def auth_saml(self):
         """
@@ -580,6 +624,9 @@ class Akeyless(secrets.Secrets):
 
         Uses the akeyless CLI to generate credentials and then retrieves a token either directly
         from the credentials file or by making an API call to convert the credentials to a token.
+        Validates that the returned token is still valid before returning it by checking the
+        expiry timestamp in the credentials file.
+        Returns a tuple of (token, expiry_timestamp).
         """
         import json
         import os
@@ -590,9 +637,34 @@ class Akeyless(secrets.Secrets):
         with open(f"{home}/.akeyless/.tmp_creds/{self.profile}-{self.access_id}", "r") as creds_file:
             credentials = creds_file.read()
             credentials_json = json.loads(credentials)
+
+        # Check if credentials file has a cached token
         if "token" in credentials_json:
-            return credentials_json["token"]
-        # and now we can turn that into a token
+            token = credentials_json["token"]
+
+            # Check expiry if present (Unix timestamp in seconds)
+            if "expiry" in credentials_json:
+                expiry_timestamp = credentials_json["expiry"]
+                # Convert datetime to Unix timestamp for comparison
+                current_timestamp = self.now.timestamp()
+                # Add a 10 second buffer to avoid using tokens that are about to expire
+                if current_timestamp < (expiry_timestamp - 10):
+                    self.logger.debug(f"Using cached SAML token (expires at {expiry_timestamp})")
+                    return (token, expiry_timestamp)
+                else:
+                    self.logger.debug(
+                        f"Cached SAML token expired or expiring soon (expiry: {expiry_timestamp}, current: {current_timestamp})"
+                    )
+            else:
+                # No expiry field, validate with API call as fallback
+                self.logger.debug("No expiry field in credentials, validating token via API")
+                if self._is_token_valid(token):
+                    # Use 30 minutes as fallback expiry if not provided
+                    fallback_expiry = self.now.timestamp() + 1800
+                    return (token, fallback_expiry)
+
+        # Get a new token using static-creds-auth
+        self.logger.debug("Fetching new SAML token via static-creds-auth")
         response = self.requests.post(
             "https://rest.akeyless.io/",
             data={
@@ -601,7 +673,9 @@ class Akeyless(secrets.Secrets):
                 "creds": credentials.strip(),
             },
         )
-        return response.json()["token"]
+        response_json = response.json()
+        # Return tuple of (token, expiry)
+        return (response_json["token"], response_json.get("expiry", self.now.timestamp() + 1800))
 
     def auth_jwt(self):
         """
@@ -609,6 +683,7 @@ class Akeyless(secrets.Secrets):
 
         Retrieves the JWT from the environment variable specified by jwt_env_key and authenticates
         with Akeyless. Raises ValueError if jwt_env_key is not specified.
+        Returns a tuple of (token, expiry_timestamp).
         """
         if not self.jwt_env_key:
             raise ValueError(
@@ -618,7 +693,8 @@ class Akeyless(secrets.Secrets):
         res = self.api.auth(
             self.akeyless.Auth(access_id=self.access_id, access_type="jwt", jwt=self.environment.get(self.jwt_env_key))
         )
-        return res.token  # type: ignore
+        # Return tuple of (token, expiry)
+        return (res.token, res.expiry)  # type: ignore
 
     def describe_permissions(self, path: str, type: str = "item") -> list[str]:
         """
