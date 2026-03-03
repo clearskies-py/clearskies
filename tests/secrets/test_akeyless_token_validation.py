@@ -49,30 +49,6 @@ class AkeylessTokenValidationTest(unittest.TestCase):
 
         return akeyless
 
-    def test_is_token_valid_with_valid_token(self):
-        """Test that _is_token_valid returns True for a valid token."""
-        akeyless = self._create_akeyless_saml()
-
-        # Mock successful API call
-        self.mock_api.describe_permissions.return_value = MagicMock(client_permissions=["read"])
-
-        result = akeyless._is_token_valid("valid-token")
-
-        self.assertTrue(result)
-        self.mock_api.describe_permissions.assert_called_once()
-
-    def test_is_token_valid_with_expired_token(self):
-        """Test that _is_token_valid returns False for an expired token."""
-        akeyless = self._create_akeyless_saml()
-
-        # Mock API call that raises an exception (expired token)
-        self.mock_api.describe_permissions.side_effect = Exception("Token expired")
-
-        result = akeyless._is_token_valid("expired-token")
-
-        self.assertFalse(result)
-        self.mock_api.describe_permissions.assert_called_once()
-
     @patch("os.system")
     @patch("builtins.open", new_callable=mock_open)
     def test_auth_saml_with_valid_token_and_expiry(self, mock_file, mock_os_system):
@@ -95,129 +71,100 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         # Should NOT validate the token via API (expiry check is sufficient)
         self.mock_api.describe_permissions.assert_not_called()
 
+    @patch("os.path.exists")
+    @patch("subprocess.run")
     @patch("os.system")
     @patch("builtins.open", new_callable=mock_open)
-    def test_auth_saml_with_expired_token_by_expiry(self, mock_file, mock_os_system):
+    def test_auth_saml_with_expired_token_by_expiry(self, mock_file, mock_os_system, mock_subprocess, mock_exists):
         """Test SAML auth when credentials file has an expired token (by expiry timestamp)."""
         # Mock current time as 2000 and expiry as 1500 (token is expired)
         akeyless = self._create_akeyless_saml(mock_timestamp=2000)
 
-        mock_creds = {"token": "expired-token", "expiry": 1500}
-        mock_file.return_value.read.return_value = json.dumps(mock_creds)
+        # Mock that creds file exists
+        mock_exists.return_value = True
 
-        # Mock the static-creds-auth response with token and expiry
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"token": "new-fresh-token", "expiry": 2500}
-        self.mock_requests.post.return_value = mock_response
+        # First call: read expired token
+        mock_file.return_value.read.return_value = json.dumps({"token": "expired-token", "expiry": 1500})
+
+        # Mock subprocess.run to return a successful auth response
+        mock_subprocess_result = Mock()
+        mock_subprocess_result.returncode = 0
+        mock_subprocess_result.stdout = json.dumps({"token": "new-fresh-token"})
+        mock_subprocess.return_value = mock_subprocess_result
 
         result = akeyless.auth_saml()
 
-        # Should call static-creds-auth to get a new token
-        self.mock_requests.post.assert_called_once()
+        # Should have called subprocess.run for auth command
+        self.assertEqual(mock_subprocess.call_count, 1)
+        # Check that the auth command was called with correct parameters
+        auth_call_args = mock_subprocess.call_args[0][0]
+        self.assertEqual(
+            auth_call_args, ["akeyless", "auth", "--access-id", "p-test123", "--access-type", "saml", "--json"]
+        )
+
         # Should return tuple of (token, expiry)
         token, expiry = result
         self.assertEqual(token, "new-fresh-token")
-        self.assertEqual(expiry, 2500)
-        # Should NOT validate via API (expiry check is sufficient)
-        self.mock_api.describe_permissions.assert_not_called()
+        # Expiry should be current time + auth_token_ttl (3600 by default)
+        self.assertEqual(expiry, 2000 + 3600)
 
+    @patch("os.path.exists")
+    @patch("subprocess.run")
     @patch("os.system")
     @patch("builtins.open", new_callable=mock_open)
-    def test_auth_saml_with_token_expiring_soon(self, mock_file, mock_os_system):
-        """Test SAML auth when token is expiring within 10 seconds."""
-        # Mock current time as 1995 and expiry as 2000 (token expires in 5 seconds)
-        akeyless = self._create_akeyless_saml(mock_timestamp=1995)
+    def test_auth_saml_with_token_expiring_soon(self, mock_file, mock_os_system, mock_subprocess, mock_exists):
+        """Test SAML auth when token is expiring within the refresh buffer (default 5 minutes/300 seconds)."""
+        # Mock current time as 1800 and expiry as 2000 (token expires in 200 seconds, less than 300 second buffer)
+        akeyless = self._create_akeyless_saml(mock_timestamp=1800)
 
-        mock_creds = {"token": "almost-expired-token", "expiry": 2000}
-        mock_file.return_value.read.return_value = json.dumps(mock_creds)
+        # Mock that creds file exists
+        mock_exists.return_value = True
 
-        # Mock the static-creds-auth response with token and expiry
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"token": "new-fresh-token", "expiry": 2500}
-        self.mock_requests.post.return_value = mock_response
+        # Read almost expired token
+        mock_file.return_value.read.return_value = json.dumps({"token": "almost-expired-token", "expiry": 2000})
+
+        # Mock subprocess.run to return a successful auth response
+        mock_subprocess_result = Mock()
+        mock_subprocess_result.returncode = 0
+        mock_subprocess_result.stdout = json.dumps({"token": "new-fresh-token"})
+        mock_subprocess.return_value = mock_subprocess_result
 
         result = akeyless.auth_saml()
 
-        # Should get a new token (within 10 second buffer)
-        self.mock_requests.post.assert_called_once()
+        # Should get a new token (within the refresh buffer)
+        self.assertEqual(mock_subprocess.call_count, 1)
         token, expiry = result
         self.assertEqual(token, "new-fresh-token")
-        self.assertEqual(expiry, 2500)
+        self.assertEqual(expiry, 1800 + 3600)
 
+    @patch("os.path.exists")
+    @patch("subprocess.run")
     @patch("os.system")
     @patch("builtins.open", new_callable=mock_open)
-    def test_auth_saml_with_valid_token_no_expiry_field(self, mock_file, mock_os_system):
-        """Test SAML auth when credentials file has a token but no expiry field (fallback to API validation)."""
-        akeyless = self._create_akeyless_saml(mock_timestamp=1000)
-
-        # Mock credentials file with a valid token but no expiry field (backward compatibility)
-        mock_creds = {"token": "valid-cached-token"}
-        mock_file.return_value.read.return_value = json.dumps(mock_creds)
-
-        # Mock token validation to return True
-        self.mock_api.describe_permissions.return_value = MagicMock(client_permissions=["read"])
-
-        result = akeyless.auth_saml()
-
-        # Should return tuple with fallback expiry (30 minutes)
-        token, expiry = result
-        self.assertEqual(token, "valid-cached-token")
-        self.assertEqual(expiry, 1000 + 1800)  # 30 minutes = 1800 seconds
-        # Should NOT call static-creds-auth API
-        self.mock_requests.post.assert_not_called()
-        # Should have validated the token via API (fallback when no expiry)
-        self.mock_api.describe_permissions.assert_called()
-
-    @patch("os.system")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_auth_saml_with_expired_token_no_expiry_field(self, mock_file, mock_os_system):
-        """Test SAML auth when credentials file has an expired token and no expiry field."""
-        akeyless = self._create_akeyless_saml(mock_timestamp=1000)
-
-        # Mock credentials file with an expired token and no expiry field
-        mock_creds = {"token": "expired-token"}
-        mock_file.return_value.read.return_value = json.dumps(mock_creds)
-
-        # Mock token validation to return False (expired)
-        self.mock_api.describe_permissions.side_effect = Exception("Token expired")
-
-        # Mock the static-creds-auth response with token and fallback expiry
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"token": "new-fresh-token"}  # No expiry in response
-        self.mock_requests.post.return_value = mock_response
-
-        result = akeyless.auth_saml()
-
-        # Should call static-creds-auth to get a new token
-        self.mock_requests.post.assert_called_once()
-        # Should return tuple with fallback expiry
-        token, expiry = result
-        self.assertEqual(token, "new-fresh-token")
-        self.assertEqual(expiry, 1000 + 1800)  # Fallback: 30 minutes
-
-    @patch("os.system")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_auth_saml_without_token_in_credentials(self, mock_file, mock_os_system):
+    def test_auth_saml_without_token_in_credentials(self, mock_file, mock_os_system, mock_subprocess, mock_exists):
         """Test SAML auth when credentials file doesn't have a token field."""
         akeyless = self._create_akeyless_saml(mock_timestamp=1000)
 
-        # Mock credentials file without a token field
-        mock_creds = {"some_other_field": "value"}
-        mock_file.return_value.read.return_value = json.dumps(mock_creds)
+        # Mock that creds file exists
+        mock_exists.return_value = True
 
-        # Mock the static-creds-auth response
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"token": "new-token", "expiry": 2500}
-        self.mock_requests.post.return_value = mock_response
+        # Read credentials without token
+        mock_file.return_value.read.return_value = json.dumps({"some_other_field": "value"})
+
+        # Mock subprocess.run to return a successful auth response
+        mock_subprocess_result = Mock()
+        mock_subprocess_result.returncode = 0
+        mock_subprocess_result.stdout = json.dumps({"token": "new-token"})
+        mock_subprocess.return_value = mock_subprocess_result
 
         result = akeyless.auth_saml()
 
-        # Should call static-creds-auth to get a token
-        self.mock_requests.post.assert_called_once()
+        # Should have called akeyless CLI auth command
+        self.assertEqual(mock_subprocess.call_count, 1)
         # Should return tuple
         token, expiry = result
         self.assertEqual(token, "new-token")
-        self.assertEqual(expiry, 2500)
+        self.assertEqual(expiry, 1000 + 3600)
 
     def test_get_token_with_valid_cached_token(self):
         """Test that _get_token returns cached token if still valid."""
@@ -234,9 +181,8 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         # Should NOT call auth method
         self.mock_requests.post.assert_not_called()
 
-    @patch("os.system")
     @patch("builtins.open", new_callable=mock_open)
-    def test_get_token_with_expired_cached_token(self, mock_file, mock_os_system):
+    def test_get_token_with_expired_cached_token(self, mock_file):
         """Test that _get_token fetches new token if cached token is expired."""
         akeyless = self._create_akeyless_saml(mock_timestamp=2000)
 
@@ -252,8 +198,8 @@ class AkeylessTokenValidationTest(unittest.TestCase):
 
         # Should return a new token
         self.assertEqual(token, "valid-new-token")
-        # Should have called auth method
-        mock_os_system.assert_called()
+        # Token expiry should be updated
+        self.assertEqual(akeyless._token_expiry, 2500)
 
     def test_get_token_refreshes_near_expiry(self):
         """Test that _get_token refreshes token when near expiry (< 10 seconds)."""

@@ -88,6 +88,7 @@ from .float import Float
 from .float_or_callable import FloatOrCallable
 from .headers import Headers
 from .integer import Integer
+from .integer_min_max import IntegerMinMax
 from .integer_or_callable import IntegerOrCallable
 from .integer_or_none import IntegerOrNone
 from .joins import Joins
@@ -146,6 +147,7 @@ __all__ = [
     "Headers",
     "Joins",
     "Integer",
+    "IntegerMinMax",
     "IntegerOrCallable",
     "IntegerOrNone",
     "ListAnyDict",
