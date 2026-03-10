@@ -5,7 +5,16 @@ from clearskies.configs import model_column
 
 class WriteableModelColumn(model_column.ModelColumn):
     def get_allowed_columns(self, model_class, column_configs):
-        return [name for (name, column) in column_configs.items() if column.is_writeable]
+        result = []
+        for name, column in column_configs.items():
+            try:
+                if column.is_writeable:
+                    result.append(name)
+            except KeyError:
+                # Column not yet finalized during re-entrant get_columns() call.
+                # Default to including it (is_writeable defaults to True).
+                result.append(name)
+        return result
 
     def my_description(self):
         return "writeable column"
