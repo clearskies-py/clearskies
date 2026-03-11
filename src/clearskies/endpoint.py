@@ -698,6 +698,18 @@ class Endpoint(
     transform_input_types = configs.Boolean(default=False)
 
     """
+    Enable validation of routing data (URL path parameters) against column validators.
+
+    When enabled (True, the default), routing data values are validated using each
+    column's `input_error_for_value()` method. This provides security-by-default
+    validation of URL path parameters (e.g. rejecting non-integer values for integer
+    columns).
+
+    Set to `False` to disable routing data validation.
+    """
+    validate_routing = configs.Boolean(default=True)
+
+    """
     Configure standard security headers to be sent along in the response from this endpoint.
 
     Note that, with CORS, you generally only have to specify the origin.  The routing system will automatically add
@@ -1175,9 +1187,9 @@ class Endpoint(
         """Validate routing data values against column validators.
 
         Runs input_error_for_value() for each routing data key that matches a column.
-        Called after forcing, when transform_input_types=True.
+        Called by default (validate_routing=True) on endpoints with routing data.
         """
-        if not routing_data or not schema:
+        if not self.validate_routing or not routing_data or not schema:
             return
 
         columns = schema.get_columns()
