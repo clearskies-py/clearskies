@@ -27,6 +27,9 @@ class ModelColumn(select.Select):
     def get_allowed_columns(self, model_class, column_configs):
         return [name for name in column_configs.keys()]
 
+    def get_allowed_columns_by_attribute_name(self, model_class, column_configs, attribute_name):
+        return [name for name, column in column_configs.items() if getattr(column, attribute_name)]
+
     def my_description(self):
         return "column"
 
