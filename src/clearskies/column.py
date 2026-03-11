@@ -855,6 +855,24 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         """
         return self.input_error_for_value(value, operator=operator)
 
+    def force_value_from_input(self, value: Any) -> Any:
+        """
+        Attempt to force a string input value to the proper Python type.
+
+        Returns the forced value, or the original value if forcing is not possible.
+        This is called by endpoints before input validation, to convert string values
+        (from query parameters, URL path parameters, or CLI arguments) to their proper
+        Python types as defined by the column.
+
+        Override in subclasses for type-specific forcing logic. The default implementation
+        returns the value unchanged (appropriate for String, Datetime, Json, UUID, etc.).
+
+        If the value cannot be forced (e.g. "abc" for an Integer column), return the original
+        value unchanged — input validation will then catch the error and return a proper
+        error message.
+        """
+        return value
+
     def input_error_for_value(self, value: str, operator: str | None = None) -> str:
         """
         Check if the given value is an allowed value.

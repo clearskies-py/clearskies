@@ -1,102 +1,559 @@
-"""Tests for input type transformation consistency across endpoints."""
-
-import unittest
+"""Tests for input type forcing and validation across endpoints."""
 
 import clearskies
-from clearskies import exceptions
-from clearskies.di import Di
+from tests.test_base import TestBase
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. Column-level force_value_from_input() tests
+# ──────────────────────────────────────────────────────────────────────────────
 
 
-class User(clearskies.Model):
-    """Test model with various column types."""
+class ForceValueFromInputTest(TestBase):
+    """Test force_value_from_input() on Integer, Float, Boolean columns."""
 
-    id_column_name = "id"
-    backend = clearskies.backends.MemoryBackend()
+    # ── Integer ────────────────────────────────────────────────────────────
 
-    id = clearskies.columns.Integer()
-    name = clearskies.columns.String()
-    age = clearskies.columns.Integer()
-    active = clearskies.columns.Boolean()
-    score = clearskies.columns.Float()
+    def test_integer_forces_string_to_int(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input("25") == 25
+
+    def test_integer_forces_negative_string(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input("-3") == -3
+
+    def test_integer_passes_through_native_int(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input(25) == 25
+
+    def test_integer_returns_original_on_invalid_string(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input("abc") == "abc"
+
+    def test_integer_returns_original_on_empty_string(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input("") == ""
+
+    def test_integer_does_not_treat_bool_as_int(self):
+        col = clearskies.columns.Integer()
+        assert col.force_value_from_input(True) is True
+        assert col.force_value_from_input(False) is False
+
+    # ── Float ──────────────────────────────────────────────────────────────
+
+    def test_float_forces_string_to_float(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input("3.14") == 3.14
+
+    def test_float_forces_integer_to_float(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input(5) == 5.0
+        assert isinstance(col.force_value_from_input(5), float)
+
+    def test_float_forces_integer_string_to_float(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input("42") == 42.0
+
+    def test_float_passes_through_native_float(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input(3.14) == 3.14
+
+    def test_float_returns_original_on_invalid_string(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input("abc") == "abc"
+
+    def test_float_does_not_treat_bool_as_int(self):
+        col = clearskies.columns.Float()
+        assert col.force_value_from_input(True) is True
+        assert col.force_value_from_input(False) is False
+
+    # ── Boolean ────────────────────────────────────────────────────────────
+
+    def test_boolean_forces_string_true(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input("true") is True
+        assert col.force_value_from_input("True") is True
+        assert col.force_value_from_input("TRUE") is True
+
+    def test_boolean_forces_string_false(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input("false") is False
+        assert col.force_value_from_input("False") is False
+        assert col.force_value_from_input("FALSE") is False
+
+    def test_boolean_forces_string_1_and_0(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input("1") is True
+        assert col.force_value_from_input("0") is False
+
+    def test_boolean_forces_yes_no(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input("yes") is True
+        assert col.force_value_from_input("no") is False
+
+    def test_boolean_forces_empty_string_to_false(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input("") is False
+
+    def test_boolean_passes_through_native_bool(self):
+        col = clearskies.columns.Boolean()
+        assert col.force_value_from_input(True) is True
+        assert col.force_value_from_input(False) is False
+
+    def test_boolean_returns_original_on_invalid_string(self):
+        col = clearskies.columns.Boolean()
+        result = col.force_value_from_input("maybe")
+        assert result == "maybe"
+
+    # ── String (no-op) ─────────────────────────────────────────────────────
+
+    def test_string_column_returns_value_unchanged(self):
+        col = clearskies.columns.String()
+        assert col.force_value_from_input("hello") == "hello"
+        assert col.force_value_from_input(42) == 42
+
+    # ── Timestamp ─────────────────────────────────────────────────────────
+
+    def test_timestamp_forces_string_to_int(self):
+        col = clearskies.columns.Timestamp()
+        assert col.force_value_from_input("1234567890") == 1234567890
+
+    def test_timestamp_passes_through_native_int(self):
+        col = clearskies.columns.Timestamp()
+        assert col.force_value_from_input(1234567890) == 1234567890
+
+    def test_timestamp_returns_original_on_invalid_string(self):
+        col = clearskies.columns.Timestamp()
+        assert col.force_value_from_input("not_a_timestamp") == "not_a_timestamp"
+
+    def test_timestamp_does_not_treat_bool_as_int(self):
+        col = clearskies.columns.Timestamp()
+        assert col.force_value_from_input(True) is True
+        assert col.force_value_from_input(False) is False
 
 
-class TypeTransformationTest(unittest.TestCase):
-    """Test that type transformation flag works correctly."""
+# ──────────────────────────────────────────────────────────────────────────────
+# Helper: isolated model factory to avoid MemoryBackend cross-test pollution
+# ──────────────────────────────────────────────────────────────────────────────
 
-    def test_transform_query_parameters_method(self):
-        """Test transform_query_parameters method directly."""
-        endpoint = clearskies.endpoints.List(
-            model_class=User,
-            readable_column_names=["id", "name", "age", "active"],
-            sortable_column_names=["id", "name"],
-            searchable_column_names=["age", "active"],
-            default_sort_column_name="id",
+
+def _make_user_model():
+    """Create an isolated model class to avoid MemoryBackend cross-test pollution."""
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+        age = clearskies.columns.Integer()
+        active = clearskies.columns.Boolean()
+        score = clearskies.columns.Float()
+
+    return User
+
+
+def _make_integer_id_model():
+    """Create a model with an integer id column."""
+
+    class IntegerIdModel(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+
+    return IntegerIdModel
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. Force-then-validate flow tests (Create endpoint with body data)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class ForceBeforeValidateTest(TestBase):
+    """Test that forcing happens before validation in the Create endpoint."""
+
+    def test_string_age_forced_to_int_passes_validation(self):
+        """String '25' → forced to int(25) → passes Integer validation."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "age"],
+                readable_column_names=["id", "name", "age"],
+                transform_input_types=True,
+            ),
         )
-
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
-
-        # Test transformation
-        query_params = {
-            "age": "25",
-            "active": "true",
-            "limit": "50",
-        }
-
-        transformed = endpoint.transform_query_parameters(query_params, User)
-
-        # Check transformations
-        self.assertEqual(transformed["age"], 25)  # String to int
-        self.assertEqual(transformed["active"], True)  # String to bool
-        self.assertEqual(transformed["limit"], 50)  # String to int
-
-    def test_transform_routing_data_method(self):
-        """Test transform_routing_data method directly."""
-        endpoint = clearskies.endpoints.Get(
-            model_class=User,
-            url="/{id}",
-            readable_column_names=["id", "name"],
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "age": "25"},
         )
+        assert status_code == 200
+        assert response_data["status"] == "success"
+        assert response_data["data"]["age"] == 25
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
+    def test_invalid_string_age_fails_validation(self):
+        """String 'abc' → stays 'abc' → fails Integer validation."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "age"],
+                readable_column_names=["id", "name", "age"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "age": "abc"},
+        )
+        assert response_data["status"] == "input_errors"
+        assert "age" in response_data["input_errors"]
 
-        # Test transformation
-        routing_data = {"id": "123"}
+    def test_string_boolean_forced_to_bool_passes_validation(self):
+        """String 'false' → forced to bool(False) → passes Boolean validation."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "active"],
+                readable_column_names=["id", "name", "active"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "active": "false"},
+        )
+        assert status_code == 200
+        assert response_data["status"] == "success"
+        assert response_data["data"]["active"] is False
 
-        transformed = endpoint.transform_routing_data(routing_data, User)
+    def test_invalid_boolean_string_fails_validation(self):
+        """String 'maybe' → stays 'maybe' → fails Boolean validation."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "active"],
+                readable_column_names=["id", "name", "active"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "active": "maybe"},
+        )
+        assert response_data["status"] == "input_errors"
+        assert "active" in response_data["input_errors"]
 
-        # Check transformation
-        self.assertEqual(transformed["id"], 123)  # String to int
+    def test_string_float_forced_to_float_passes_validation(self):
+        """String '3.14' → forced to float(3.14) → passes Float validation."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "score"],
+                readable_column_names=["id", "name", "score"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "score": "3.14"},
+        )
+        assert status_code == 200
+        assert response_data["status"] == "success"
+        assert response_data["data"]["score"] == 3.14
 
-    def test_flag_is_optional(self):
-        """Test that transform_input_types flag is optional and defaults to False."""
-        # List endpoint
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. _body_as_json is updated after forcing
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class BodyAsJsonUpdateTest(TestBase):
+    """Verify that _body_as_json on input_output is updated with forced data."""
+
+    def test_body_as_json_updated_after_forcing(self):
+        """After forcing, the callable receives forced values via request_data."""
+        User = _make_user_model()
+        received = {}
+
+        def capture_request_data(request_data):
+            received.update(request_data)
+            return request_data
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                capture_request_data,
+                model_class=User,
+                writeable_column_names=["name", "age"],
+                request_methods=["POST"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "age": "25"},
+        )
+        assert status_code == 200
+        # The callable received forced values (int, not string)
+        assert received["age"] == 25
+        assert isinstance(received["age"], int)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 4. Routing data validation (Get, Update, Delete)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class RoutingDataValidationTest(TestBase):
+    """Test that routing data is forced and written back to input_output."""
+
+    def test_get_with_valid_uuid_routing(self):
+        """Valid UUID routing data passes validation and fetches record."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Get(
+                model_class=User,
+                url="/{id}",
+                readable_column_names=["id", "name"],
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Alice", "age": 30, "active": True, "score": 4.5},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(url="/1-2-3-4")
+        assert status_code == 200
+        assert response_data["data"]["id"] == "1-2-3-4"
+        assert response_data["data"]["name"] == "Alice"
+
+    def test_get_invalid_routing_data_returns_not_found(self):
+        """Non-existent id fails with 404."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Get(
+                model_class=User,
+                url="/{id}",
+                readable_column_names=["id", "name"],
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Alice"},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(url="/nonexistent")
+        assert status_code == 404
+
+    def test_delete_with_valid_uuid_routing(self):
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Delete(
+                model_class=User,
+                url="/{id}",
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Alice", "age": 30, "active": True, "score": 4.5},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(url="/1-2-3-4", request_method="DELETE")
+        assert status_code == 200
+        assert response_data["status"] == "success"
+
+    def test_update_forces_body_data_with_routing(self):
+        """Update forces body data types while routing stays as strings."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Update(
+                model_class=User,
+                url="/{id}",
+                writeable_column_names=["name", "age"],
+                readable_column_names=["id", "name", "age"],
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Alice", "age": 30, "active": True, "score": 4.5},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(
+            url="/1-2-3-4",
+            request_method="PATCH",
+            body={"name": "Bob", "age": "35"},
+        )
+        assert status_code == 200
+        assert response_data["data"]["name"] == "Bob"
+        assert response_data["data"]["age"] == 35
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. Routing data validation with Integer id model
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class RoutingIntegerValidationTest(TestBase):
+    """Test that routing data is validated against integer columns."""
+
+    def test_routing_validates_integer_id_rejects_non_numeric(self):
+        """Non-numeric id string is rejected by validate_routing_data."""
+        IntegerIdModel = _make_integer_id_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Get(
+                model_class=IntegerIdModel,
+                url="/{id}",
+                readable_column_names=["id", "name"],
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(url="/not_a_number")
+        assert response_data["status"] == "input_errors"
+        assert "id" in response_data["input_errors"]
+
+    def test_routing_validates_integer_id_accepts_numeric(self):
+        """Numeric id string passes validation."""
+        IntegerIdModel = _make_integer_id_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Get(
+                model_class=IntegerIdModel,
+                url="/{id}",
+                readable_column_names=["id", "name"],
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": IntegerIdModel,
+                        "records": [
+                            {"id": 42, "name": "Alice"},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(url="/42")
+        assert status_code == 200
+        assert response_data["data"]["name"] == "Alice"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 6. List endpoint forcing
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class ListForcingTest(TestBase):
+    """Test that the List endpoint forces query parameters via force_query_parameters."""
+
+    def test_limit_forced_to_int(self):
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "name"],
+                sortable_column_names=["id", "name"],
+                searchable_column_names=[],
+                default_sort_column_name="id",
+                transform_input_types=True,
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1-2-3-4", "name": "Alice", "age": 30, "active": True, "score": 4.5},
+                            {"id": "1-2-3-5", "name": "Bob", "age": 25, "active": False, "score": 3.2},
+                            {"id": "1-2-3-6", "name": "Carol", "age": 35, "active": True, "score": 4.8},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, _ = context(
+            query_parameters={"limit": "2"},
+        )
+        assert status_code == 200
+        assert len(response_data["data"]) == 2
+        assert response_data["pagination"]["limit"] == 2
+
+    def test_invalid_limit_raises_error(self):
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "name"],
+                sortable_column_names=["id", "name"],
+                searchable_column_names=[],
+                default_sort_column_name="id",
+                transform_input_types=True,
+            ),
+        )
+        status_code, response_data, _ = context(
+            query_parameters={"limit": "abc"},
+        )
+        assert status_code == 400 or response_data.get("status") in ("client_error", "input_errors")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 7. Flag behavior (defaults, enabling)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class TransformFlagTest(TestBase):
+    """Test that transform_input_types defaults to False and can be enabled."""
+
+    def test_flag_defaults_to_false(self):
+        User = _make_user_model()
+
         endpoint = clearskies.endpoints.List(
             model_class=User,
             readable_column_names=["id", "name"],
             sortable_column_names=["id"],
             default_sort_column_name="id",
         )
-        self.assertFalse(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is False
 
-        # Get endpoint
         endpoint = clearskies.endpoints.Get(
             model_class=User,
             url="/{id}",
             readable_column_names=["id", "name"],
         )
-        self.assertFalse(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is False
 
-        # Callable endpoint
         endpoint = clearskies.endpoints.Callable(
             to_call=lambda: {"hello": "world"},
         )
-        self.assertFalse(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is False
 
     def test_flag_can_be_enabled(self):
-        """Test that transform_input_types flag can be set to True."""
-        # List endpoint
+        User = _make_user_model()
+
         endpoint = clearskies.endpoints.List(
             model_class=User,
             readable_column_names=["id", "name"],
@@ -104,224 +561,139 @@ class TypeTransformationTest(unittest.TestCase):
             default_sort_column_name="id",
             transform_input_types=True,
         )
-        self.assertTrue(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is True
 
-        # Get endpoint
         endpoint = clearskies.endpoints.Get(
             model_class=User,
             url="/{id}",
             readable_column_names=["id", "name"],
             transform_input_types=True,
         )
-        self.assertTrue(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is True
 
-        # Callable endpoint
         endpoint = clearskies.endpoints.Callable(
             to_call=lambda: {"hello": "world"},
             transform_input_types=True,
         )
-        self.assertTrue(endpoint.transform_input_types)
+        assert endpoint.transform_input_types is True
 
-    def test_invalid_type_raises_error(self):
-        """Test that invalid type conversion raises InputErrors."""
-        endpoint = clearskies.endpoints.List(
-            model_class=User,
-            readable_column_names=["id", "name", "age"],
-            sortable_column_names=["id"],
-            searchable_column_names=["age"],
-            default_sort_column_name="id",
+    def test_no_forcing_when_flag_is_false(self):
+        """Without transform_input_types, native typed values still work."""
+        User = _make_user_model()
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                model_class=User,
+                writeable_column_names=["name", "age"],
+                readable_column_names=["id", "name", "age"],
+                transform_input_types=False,
+            ),
         )
-
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
-
-        # Try to transform invalid integer
-        query_params = {"age": "not_a_number"}
-
-        with self.assertRaises(exceptions.InputErrors) as cm:
-            endpoint.transform_query_parameters(query_params, User)
-
-        self.assertIn("age", cm.exception.errors)
-
-    def test_non_searchable_columns_not_transformed(self):
-        """Test that non-searchable columns are not transformed."""
-        endpoint = clearskies.endpoints.List(
-            model_class=User,
-            readable_column_names=["id", "name", "age"],
-            sortable_column_names=["id", "name"],
-            searchable_column_names=["age"],  # Only age is searchable
-            default_sort_column_name="id",
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"name": "Alice", "age": 25},
         )
+        assert status_code == 200
+        assert response_data["data"]["age"] == 25
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
 
-        query_params = {
-            "age": "25",  # Searchable - should transform
-            "name": "123",  # Not searchable - should stay as string
-        }
+# ──────────────────────────────────────────────────────────────────────────────
+# 8. No input_schema on non-Callable endpoints
+# ──────────────────────────────────────────────────────────────────────────────
 
-        transformed = endpoint.transform_query_parameters(query_params, User)
 
-        self.assertEqual(transformed["age"], 25)  # Transformed
-        self.assertEqual(transformed["name"], "123")  # Not transformed
+class NoInputSchemaOnModelEndpointsTest(TestBase):
+    """Verify input_schema is NOT accepted on Get/Delete/Create/Update/List endpoints."""
 
-    def test_operators_in_query_params(self):
-        """Test that operators in query parameters are handled correctly."""
-        endpoint = clearskies.endpoints.List(
-            model_class=User,
-            readable_column_names=["id", "name", "age"],
-            sortable_column_names=["id"],
-            searchable_column_names=["age"],
-            default_sort_column_name="id",
-        )
+    def test_create_has_no_input_schema_parameter(self):
+        import inspect
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
+        sig = inspect.signature(clearskies.endpoints.Create.__init__)
+        assert "input_schema" not in sig.parameters
 
-        # Test operator syntax
-        query_params = {
-            "age__gt": "25",
-            "age__lt": "50",
-        }
+    def test_update_has_no_input_schema_parameter(self):
+        import inspect
 
-        transformed = endpoint.transform_query_parameters(query_params, User)
+        sig = inspect.signature(clearskies.endpoints.Update.__init__)
+        assert "input_schema" not in sig.parameters
 
-        # Both should be transformed because they reference the searchable column 'age'
-        self.assertEqual(transformed["age__gt"], 25)
-        self.assertEqual(transformed["age__lt"], 50)
+    def test_get_has_no_input_schema_parameter(self):
+        import inspect
 
-    def test_input_schema_overrides_model_class(self):
-        """Test that input_schema takes precedence over model_class for validation."""
+        sig = inspect.signature(clearskies.endpoints.Get.__init__)
+        assert "input_schema" not in sig.parameters
 
-        # Create a separate input schema with different types
-        class UserInput(clearskies.Schema):
-            id = clearskies.columns.Integer()
-            search_term = clearskies.columns.String()
+    def test_delete_has_no_input_schema_parameter(self):
+        import inspect
 
-        endpoint = clearskies.endpoints.Get(
-            model_class=User,
-            url="/{id}",
-            readable_column_names=["id", "name"],
-            input_schema=UserInput,  # Use input_schema for validation
-            transform_input_types=True,
-        )
+        sig = inspect.signature(clearskies.endpoints.Delete.__init__)
+        assert "input_schema" not in sig.parameters
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
+    def test_list_has_no_input_schema_parameter(self):
+        import inspect
 
-        # Test that routing data uses input_schema
-        routing_data = {"id": "123"}
-        transformed = endpoint.transform_routing_data(routing_data)
+        sig = inspect.signature(clearskies.endpoints.List.__init__)
+        assert "input_schema" not in sig.parameters
 
-        # Should be transformed to int based on input_schema
-        self.assertEqual(transformed["id"], 123)
+    def test_callable_still_has_input_schema(self):
+        """Callable IS the only endpoint that supports input_schema."""
+        import inspect
 
-    def test_input_schema_in_list_endpoint(self):
-        """Test input_schema with List endpoint for query parameter validation."""
+        sig = inspect.signature(clearskies.endpoints.Callable.__init__)
+        assert "input_schema" in sig.parameters
 
-        class SearchInput(clearskies.Schema):
-            age = clearskies.columns.Integer()
-            active = clearskies.columns.Boolean()
 
-        endpoint = clearskies.endpoints.List(
-            model_class=User,
-            readable_column_names=["id", "name", "age", "active"],
-            sortable_column_names=["id"],
-            searchable_column_names=["age", "active"],
-            default_sort_column_name="id",
-            input_schema=SearchInput,
-            transform_input_types=True,
-        )
+# ──────────────────────────────────────────────────────────────────────────────
+# 9. Callable endpoint with input_schema
+# ──────────────────────────────────────────────────────────────────────────────
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
 
-        # Test query parameter transformation with input_schema
-        query_params = {
-            "age": "30",
-            "active": "false",
-        }
-        transformed = endpoint.transform_query_parameters(query_params)
+class CallableWithInputSchemaTest(TestBase):
+    """Test the Callable endpoint with input_schema and type forcing."""
 
-        self.assertEqual(transformed["age"], 30)
-        # Boolean column's to_backend converts any non-empty string to True
-        # so "false" becomes True - this is expected behavior
-        self.assertEqual(transformed["active"], True)
-
-    def test_input_schema_in_callable_endpoint(self):
-        """Test input_schema with Callable endpoint."""
-
+    def test_callable_forces_body_with_input_schema(self):
         class CallableInput(clearskies.Schema):
             user_id = clearskies.columns.Integer()
             limit = clearskies.columns.Integer()
 
-        def process_data(user_id, limit):
-            return {"user_id": user_id, "limit": limit}
-
-        endpoint = clearskies.endpoints.Callable(
-            process_data,
-            input_schema=CallableInput,
-            url="/process/{user_id}",
-            transform_input_types=True,
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                lambda request_data: request_data,
+                input_schema=CallableInput,
+                request_methods=["POST"],
+                transform_input_types=True,
+            ),
         )
-
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
-
-        # Test routing data transformation
-        routing_data = {"user_id": "42"}
-        transformed_routing = endpoint.transform_routing_data(routing_data)
-        self.assertEqual(transformed_routing["user_id"], 42)
-
-        # Test query parameter transformation
-        query_params = {"limit": "100"}
-        transformed_query = endpoint.transform_query_parameters(query_params)
-        self.assertEqual(transformed_query["limit"], 100)
-
-    def test_fallback_to_model_class_when_no_input_schema(self):
-        """Test that model_class is used when input_schema is not provided."""
-        endpoint = clearskies.endpoints.Get(
-            model_class=User,
-            url="/{id}",
-            readable_column_names=["id", "name"],
-            transform_input_types=True,
+        status_code, response_data, _ = context(
+            request_method="POST",
+            body={"user_id": "42", "limit": "100"},
         )
+        assert status_code == 200
+        assert response_data["data"]["user_id"] == 42
+        assert response_data["data"]["limit"] == 100
 
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
+    def test_callable_validates_routing_data_with_input_schema(self):
+        """Routing data is validated (forced to proper types for validation).
 
-        # Without input_schema, should fall back to model_class
-        routing_data = {"id": "456"}
-        transformed = endpoint.transform_routing_data(routing_data)
+        Invalid routing values are caught by validate_routing_data.
+        """
 
-        # Should still transform based on model_class
-        self.assertEqual(transformed["id"], 456)
+        class CallableInput(clearskies.Schema):
+            user_id = clearskies.columns.Integer()
 
-    def test_input_schema_validation_error(self):
-        """Test that invalid input raises appropriate error with input_schema."""
-
-        class StrictInput(clearskies.Schema):
-            id = clearskies.columns.Integer()
-
-        endpoint = clearskies.endpoints.Delete(
-            model_class=User,
-            url="/{id}",
-            input_schema=StrictInput,
-            transform_input_types=True,
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                lambda routing_data: {"user_id": routing_data["user_id"]},
+                input_schema=CallableInput,
+                url="/{user_id}",
+                request_methods=["POST"],
+                transform_input_types=True,
+            ),
         )
-
-        di = Di(classes=[User])
-        endpoint.injectable_properties(di)
-
-        # Try to pass invalid integer
-        routing_data = {"id": "not_an_integer"}
-
-        with self.assertRaises(exceptions.InputErrors) as cm:
-            endpoint.transform_routing_data(routing_data)
-
-        self.assertIn("id", cm.exception.errors)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        # Invalid routing value
+        status_code, response_data, _ = context(
+            url="/not_a_number",
+            request_method="POST",
+            body={"user_id": "42"},
+        )
+        assert response_data["status"] == "input_errors"
+        assert "user_id" in response_data["input_errors"]

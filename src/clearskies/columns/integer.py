@@ -126,6 +126,16 @@ class Integer(Column):
 
         return {**data, self.name: int(data[self.name])}
 
+    def force_value_from_input(self, value):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return value  # Let validation catch it
+        return value
+
     def input_error_for_value(self, value, operator=None):
         try:
             int(value)

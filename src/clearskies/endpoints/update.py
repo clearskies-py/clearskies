@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, decorators, exceptions
+from clearskies import authentication, autodoc, decorators
 from clearskies.endpoints.get import Get
 from clearskies.functional import string
 from clearskies.input_outputs import InputOutput
@@ -94,7 +94,6 @@ class Update(Get):
         readable_column_names: list[str],
         record_lookup_column_name: str | None = None,
         input_validation_callable: Callable | None = None,
-        input_schema: type[Schema] | None = None,
         request_methods: list[str] = ["PATCH"],
         response_headers: list[str | Callable[..., list[str]]] = [],
         output_map: Callable[..., dict[str, Any]] | None = None,
@@ -119,19 +118,17 @@ class Update(Get):
         super().__init__(model_class, url, readable_column_names)
 
     def handle(self, input_output: InputOutput) -> Any:
-        # Transform routing data if enabled (input_schema takes precedence over model_class)
         if self.transform_input_types and input_output.routing_data:
-            input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+            forced_routing = self.force_routing_data(input_output.routing_data, self.model_class)
+            self.validate_routing_data(forced_routing, self.model_class)
 
         request_data = self.get_request_data(input_output)
-        if not request_data and input_output.has_body():
-            raise exceptions.ClientError("Request body was not valid JSON")
         model = self.fetch_model(input_output)
+        if self.transform_input_types:
+            request_data = self.force_input_data(request_data, self.model_class)
+            input_output._body_as_json = request_data
         self.validate_input_against_schema(request_data, input_output, model)
-        # Transform the validated data to proper types (input_schema takes precedence over model_class)
-        schema = self.input_schema if self.input_schema else self.model_class
-        transformed_data = self.transform_request_data(request_data, schema)
-        model.save(transformed_data)
+        model.save(request_data)
         return self.success(input_output, self.model_as_json(model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:

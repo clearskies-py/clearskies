@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, decorators, exceptions
+from clearskies import authentication, autodoc, decorators
 from clearskies.endpoint import Endpoint
 from clearskies.functional import string
 
@@ -105,7 +105,6 @@ class Create(Endpoint):
         writeable_column_names: list[str],
         readable_column_names: list[str],
         input_validation_callable: Callable | None = None,
-        input_schema: type[Schema] | None = None,
         include_routing_data_in_request_data: bool = False,
         url: str = "",
         request_methods: list[str] = ["POST"],
@@ -134,12 +133,11 @@ class Create(Endpoint):
 
     def handle(self, input_output: InputOutput) -> Any:
         request_data = self.get_request_data(input_output)
-        if not request_data and input_output.has_body():
-            raise exceptions.ClientError("Request body was not valid JSON")
+        if self.transform_input_types:
+            request_data = self.force_input_data(request_data, self.model_class)
+            input_output._body_as_json = request_data
         self.validate_input_against_schema(request_data, input_output, self.model_class)
-        # Transform the validated data to proper types
-        transformed_data = self.transform_request_data(request_data, self.model_class)
-        new_model = self.model.create(transformed_data, columns=self.columns)
+        new_model = self.model.create(request_data, columns=self.columns)
         return self.success(input_output, self.model_as_json(new_model, input_output))
 
     def documentation(self) -> list[autodoc.request.Request]:

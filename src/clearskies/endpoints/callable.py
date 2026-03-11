@@ -106,6 +106,14 @@ class Callable(Endpoint):
     """
 
     """
+    A schema that describes the expected input from the client.
+
+    Only the Callable endpoint supports `input_schema`. Use this to define input validation
+    when you need a schema separate from `model_class`, or when there is no model.
+    """
+    input_schema = configs.Schema(default=None)
+
+    """
     The callable to execute when the endpoint is invoked
     """
     to_call = configs.Callable(default=None)
@@ -209,23 +217,23 @@ class Callable(Endpoint):
             self.writeable_column_names = list(self.input_schema.get_columns().keys())
 
     def handle(self, input_output: InputOutput):
-        # Transform query and routing data if enabled (input_schema takes precedence over model_class)
-        if self.transform_input_types:
+        # Force query and routing data types if enabled
+        schema = self.input_schema if self.input_schema else self.model_class
+        if self.transform_input_types and schema:
             if input_output.query_parameters:
-                input_output.query_parameters = self.transform_query_parameters(input_output.query_parameters)
+                input_output.query_parameters = self.force_query_parameters(input_output.query_parameters, schema)
             if input_output.routing_data:
-                input_output.routing_data = self.transform_routing_data(input_output.routing_data)
+                forced_routing = self.force_routing_data(input_output.routing_data, schema)
+                self.validate_routing_data(forced_routing, schema)
 
         if self.writeable_column_names or self.input_schema:
             # Validate the request data
             request_data = self.get_request_data(input_output)
-            schema = self.input_schema if self.input_schema else self.model_class
-            self.validate_input_against_schema(request_data, input_output, schema)
-            # Transform the validated data to proper types (input_schema takes precedence over model_class)
-            transformed_data = self.transform_request_data(request_data, schema)
-            # Update input_output's internal cache with the transformed data
-            # so callables receive properly typed values
-            input_output._body_as_json = transformed_data
+            validation_schema = self.input_schema if self.input_schema else self.model_class
+            if self.transform_input_types and validation_schema:
+                request_data = self.force_input_data(request_data, validation_schema)
+                input_output._body_as_json = request_data
+            self.validate_input_against_schema(request_data, input_output, validation_schema)
         else:
             input_errors = self.find_input_errors_from_callable(input_output.request_data, input_output)
             if input_errors:
