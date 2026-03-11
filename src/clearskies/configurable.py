@@ -21,6 +21,8 @@ class Configurable:
 
         name = self._descriptor_to_name(descriptor)
         if name not in self._config:
+            if descriptor.has_default:
+                return descriptor.default
             raise KeyError(f"Attempt to fetch a config value named '{name}' but no value has been set for this config")
         return self._config[name]
 
