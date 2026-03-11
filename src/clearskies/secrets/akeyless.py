@@ -93,6 +93,11 @@ class Akeyless(secrets.Secrets):
     now = inject.Now()
 
     """
+    The subprocess module injected by the dependency injection system for testability
+    """
+    subprocess = inject.ByStandardLib("subprocess")
+
+    """
     The Akeyless SDK module injected by the dependency injection system
     """
     akeyless: ModuleType = inject.ByName("akeyless_sdk")  # type: ignore
@@ -145,15 +150,15 @@ class Akeyless(secrets.Secrets):
 
     Defaults to 60 minutes (3600 seconds) to match Akeyless's 1-hour token lifetime
     """
-    auth_token_ttl = configs.IntegerMinMax(default=3600, min=300, max=3600 * 12)
+    auth_token_ttl = configs.Integer(default=3600, min=300, max=3600 * 12)
 
     """
     Time buffer (in seconds) before token expiry to trigger re-authentication
 
     When a token will expire within this time window, it will be considered expired and
     re-authentication will be triggered. Defaults to 5 minutes (300 seconds).
-   """
-    token_refresh_buffer = configs.IntegerMinMax(default=300, min=0, max=3600)
+    """
+    token_refresh_buffer = configs.Integer(default=300, min=0, max=3600)
 
     """
     When the current token expires (Unix timestamp in seconds)
@@ -609,22 +614,6 @@ class Akeyless(secrets.Secrets):
 
         return self._token
 
-    def _is_token_valid(self, token: str) -> bool:
-        """
-        Check if a token is still valid by making a test API call.
-
-        This validates that the token has not expired and can still be used for API calls.
-        Returns True if the token is valid, False otherwise.
-        """
-        try:
-            # Make a lightweight API call to validate the token
-            self.api.describe_permissions(self.akeyless.DescribePermissions(token=token, path="/", type="item"))
-            return True
-        except Exception as e:
-            # Token is invalid or expired
-            self.logger.debug(f"Token validation failed: {e}")
-            return False
-
     def auth_aws_iam(self) -> tuple[str, float]:
         """
         Authenticate using AWS IAM.
@@ -646,8 +635,6 @@ class Akeyless(secrets.Secrets):
 
         Returns (token, expiry) tuple if valid credentials exist, None otherwise.
         """
-        import json
-
         try:
             with open(creds_path, "r") as creds_file:
                 credentials_json = json.loads(creds_file.read())
@@ -672,7 +659,6 @@ class Akeyless(secrets.Secrets):
         Returns a tuple of (token, expiry_timestamp).
         """
         import os
-        import subprocess
         from pathlib import Path
 
         home = str(Path.home())
@@ -689,7 +675,10 @@ class Akeyless(secrets.Secrets):
         else:
             # No credentials file exists - try list-items as a fallback (REST API flow)
             self.logger.debug("No credentials file found, trying list-items as fallback")
-            os.system(f"akeyless list-items --profile {self.profile} --path /not/a/real/path > /dev/null 2>&1")
+            self.subprocess.run(
+                ["akeyless", "list-items", "--profile", self.profile, "--path", "/not/a/real/path"],
+                capture_output=True,
+            )
 
             # Check if that created credentials with a valid token
             credentials = self._read_saml_credentials(creds_path)
@@ -700,8 +689,18 @@ class Akeyless(secrets.Secrets):
         # Get a new token using Akeyless CLI auth command
         # This forces SAML re-authentication instead of reusing potentially expired credentials
         self.logger.debug("Fetching new SAML token via Akeyless CLI auth command")
-        result = subprocess.run(
-            ["akeyless", "auth", "--access-id", self.access_id, "--access-type", "saml", "--json"],
+        result = self.subprocess.run(
+            [
+                "akeyless",
+                "auth",
+                "--access-id",
+                self.access_id,
+                "--access-type",
+                "saml",
+                "--profile",
+                self.profile,
+                "--json",
+            ],
             capture_output=True,
             text=True,
         )
@@ -709,13 +708,10 @@ class Akeyless(secrets.Secrets):
         if result.returncode != 0:
             raise RuntimeError(f"SAML authentication failed: {result.stderr}")
 
-        # Parse the JSON output from akeyless auth
-        import json
-
         auth_response = json.loads(result.stdout)
-        # Extract token and calculate expiry using configured TTL
+        # Extract token and expiry, falling back to configured TTL if expiry not in response
         token = auth_response.get("token", "")
-        expiry = self.now.timestamp() + self.auth_token_ttl
+        expiry = auth_response.get("expiry", self.now.timestamp() + self.auth_token_ttl)
 
         return (token, expiry)
 
