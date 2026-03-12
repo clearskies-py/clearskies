@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.52] - 2026-03-12
+
+### Fixed
+- Override to_json, documentation, and __set__ for single-record semantics
+
 ## [2.0.51] - 2026-03-11
+
+### Changed
+- Bump version to v2.0.51 by @github-actions[bot]
 
 ### Fixed
 - Honor config defaults before finalization in Configurable._get_config() by @cmancone in [#74](https://github.com/clearskies-py/clearskies/pull/74)
@@ -1202,6 +1210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.52]: https://github.com/clearskies-py/clearskies/compare/v2.0.51..v2.0.52
 [2.0.51]: https://github.com/clearskies-py/clearskies/compare/v2.0.50..v2.0.51
 [2.0.50]: https://github.com/clearskies-py/clearskies/compare/v2.0.49..v2.0.50
 [2.0.49]: https://github.com/clearskies-py/clearskies/compare/v2.0.48..v2.0.49
