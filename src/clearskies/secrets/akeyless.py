@@ -26,9 +26,9 @@ class Akeyless(secrets.Secrets):
     ### Token Validation and Caching
 
     Authentication tokens are automatically cached and validated to minimize API calls:
-    - All auth methods (AWS IAM, JWT, SAML) cache the token's `expiry` timestamp from the auth API response
-    - **SAML**: First checks credentials file for cached token before API call (most efficient)
-    - **JWT/AWS IAM**: Caches token and expiry from API auth response
+    - All auth methods (AWS IAM, JWT, SAML) return a `(token, expiry)` tuple
+    - **JWT/AWS IAM**: Token and expiry are obtained from the Akeyless SDK auth response
+    - **SAML**: Reads credentials file first; only forces re-authentication (via `list-items`) when token is expired
     - Tokens are automatically refreshed when expired or within the configured token_refresh_buffer (default: 5 minutes)
 
     ### Cache Storage
@@ -598,19 +598,7 @@ class Akeyless(secrets.Secrets):
             raise ValueError(f"Requested Akeyless authentication with unsupported auth method: '{self.access_type}'")
 
         # Call auth method which returns (token, expiry)
-        auth_result = getattr(self, auth_method_name)()
-
-        # Handle both tuple (token, expiry) and string (token only) responses
-        if isinstance(auth_result, tuple):
-            self._token, self._token_expiry = auth_result
-        else:
-            # Fallback for legacy: token only, no expiry returned
-            self._token = auth_result
-            # Set expiry using configured TTL
-            self._token_expiry = self.now.timestamp() + self.auth_token_ttl
-            self.logger.warning(
-                f"Auth method {auth_method_name} did not return expiry, using {self.auth_token_ttl}s TTL fallback"
-            )
+        self._token, self._token_expiry = getattr(self, auth_method_name)()
 
         return self._token
 
@@ -629,33 +617,14 @@ class Akeyless(secrets.Secrets):
         # Return tuple of (token, expiry)
         return (res.token, res.expiry)  # type: ignore
 
-    def _read_saml_credentials(self, creds_path: str) -> tuple[str, float] | None:
-        """
-        Read and validate SAML credentials from file.
-
-        Returns (token, expiry) tuple if valid credentials exist, None otherwise.
-        """
-        try:
-            with open(creds_path, "r") as creds_file:
-                credentials_json = json.loads(creds_file.read())
-
-            if "token" in credentials_json and "expiry" in credentials_json:
-                current_timestamp = self.now.timestamp()
-                # Add a buffer to avoid using tokens that are about to expire
-                if current_timestamp < (credentials_json["expiry"] - self.token_refresh_buffer):
-                    return (credentials_json["token"], credentials_json["expiry"])
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.logger.debug(f"Could not read credentials from {creds_path}: {e}")
-
-        return None
-
     def auth_saml(self) -> tuple[str, float]:
         """
         Authenticate using SAML.
 
-        First checks the credentials file for a cached token. If the token is expired or about to expire,
-        uses `akeyless auth` to force SAML re-authentication. If no credentials file exists, tries
-        `akeyless list-items` as a fallback (which may trigger the REST API flow).
+        Reads the credentials file first to check for a valid cached token. If the token is still valid,
+        returns it immediately. If the token is expired or the credentials file doesn't exist, deletes
+        the file to force fresh authentication and runs `akeyless list-items` to trigger SAML login.
+        Falls back to the REST API static-creds-auth endpoint if the file only contains raw credentials.
         Returns a tuple of (token, expiry_timestamp).
         """
         import os
@@ -664,55 +633,60 @@ class Akeyless(secrets.Secrets):
         home = str(Path.home())
         creds_path = f"{home}/.akeyless/.tmp_creds/{self.profile}-{self.access_id}"
 
-        # Check if credentials file exists and has a valid cached token
-        credentials = self._read_saml_credentials(creds_path)
-        if credentials:
-            self.logger.debug(f"Using cached SAML token (expires at {credentials[1]})")
-            return credentials
+        # Try reading existing credentials file first
+        try:
+            with open(creds_path, "r") as creds_file:
+                credentials = creds_file.read()
+                credentials_json = json.loads(credentials)
 
-        if os.path.exists(creds_path):
-            self.logger.debug("Cached SAML token expired or expiring soon")
-        else:
-            # No credentials file exists - try list-items as a fallback (REST API flow)
-            self.logger.debug("No credentials file found, trying list-items as fallback")
-            self.subprocess.run(
-                ["akeyless", "list-items", "--profile", self.profile, "--path", "/not/a/real/path"],
-                capture_output=True,
-            )
+            # Check if we have a valid token with expiry
+            if "token" in credentials_json and "expiry" in credentials_json:
+                current_timestamp = self.now.timestamp()
+                if current_timestamp < (credentials_json["expiry"] - self.token_refresh_buffer):
+                    self.logger.debug(f"Using cached SAML token (expires at {credentials_json['expiry']})")
+                    return (credentials_json["token"], credentials_json["expiry"])
+                else:
+                    self.logger.debug("Cached SAML token expired or expiring soon")
 
-            # Check if that created credentials with a valid token
-            credentials = self._read_saml_credentials(creds_path)
-            if credentials:
-                self.logger.debug("Got valid token from list-items fallback")
-                return credentials
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            self.logger.debug(f"Could not read credentials from {creds_path}: {e}")
 
-        # Get a new token using Akeyless CLI auth command
-        # This forces SAML re-authentication instead of reusing potentially expired credentials
-        self.logger.debug("Fetching new SAML token via Akeyless CLI auth command")
-        result = self.subprocess.run(
-            [
-                "akeyless",
-                "auth",
-                "--access-id",
-                self.access_id,
-                "--access-type",
-                "saml",
-                "--profile",
-                self.profile,
-                "--json",
-            ],
+        # Token is expired/invalid/missing — delete the file so the CLI fetches fresh credentials
+        try:
+            os.remove(creds_path)
+            self.logger.debug("Deleted existing SAML credentials file to force re-authentication")
+        except FileNotFoundError:
+            pass
+
+        # Run list-items to trigger SAML authentication (creates fresh credentials file)
+        self.subprocess.run(
+            ["akeyless", "list-items", "--profile", self.profile, "--path", "/not/a/real/path"],
             capture_output=True,
-            text=True,
         )
 
-        if result.returncode != 0:
-            raise RuntimeError(f"SAML authentication failed: {result.stderr}")
+        # Read the fresh credentials file created by list-items
+        with open(creds_path, "r") as creds_file:
+            credentials = creds_file.read()
+            credentials_json = json.loads(credentials)
 
-        auth_response = json.loads(result.stdout)
-        # Extract token and expiry, falling back to configured TTL if expiry not in response
-        token = auth_response.get("token", "")
-        expiry = auth_response.get("expiry", self.now.timestamp() + self.auth_token_ttl)
+        # Extract expiry from credentials file, falling back to configured TTL
+        expiry = credentials_json.get("expiry", self.now.timestamp() + self.auth_token_ttl)
 
+        if "token" in credentials_json:
+            return (credentials_json["token"], expiry)
+
+        # Credentials file contains raw credentials instead of a token — convert via REST API
+        response = self.requests.post(
+            "https://rest.akeyless.io/",
+            data={
+                "cmd": "static-creds-auth",
+                "access-id": self.access_id,
+                "creds": credentials.strip(),
+            },
+        )
+        response_json = response.json()
+        token = response_json.get("token", "")
+        expiry = response_json.get("expiry", self.now.timestamp() + self.auth_token_ttl)
         return (token, expiry)
 
     def auth_jwt(self) -> tuple[str, float]:
