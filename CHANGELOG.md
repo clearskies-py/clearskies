@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.53] - 2026-03-13
+
+### Added
+- Add opt-in input type forcing via `transform_input_types` by @tnijboer in [#72](https://github.com/clearskies-py/clearskies/pull/72)
+- Address maintainer review feedback on SAML auth and token handling
+
+### Changed
+- Validate Akeyless auth token expiry and improve SAML authentication by @cmancone in [#73](https://github.com/clearskies-py/clearskies/pull/73)
+- Merge IntegerMinMax into Integer and add missing tests
+- Reauth on saml
+- Check if akeyless token is expired our not
+
 ## [2.0.52] - 2026-03-12
+
+### Changed
+- Bump version to v2.0.52 by @github-actions[bot]
 
 ### Fixed
 - Override to_json, documentation, and __set__ for single-record semantics
@@ -1210,6 +1225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.53]: https://github.com/clearskies-py/clearskies/compare/v2.0.52..v2.0.53
 [2.0.52]: https://github.com/clearskies-py/clearskies/compare/v2.0.51..v2.0.52
 [2.0.51]: https://github.com/clearskies-py/clearskies/compare/v2.0.50..v2.0.51
 [2.0.50]: https://github.com/clearskies-py/clearskies/compare/v2.0.49..v2.0.50
