@@ -4,11 +4,26 @@ from clearskies.configs import config
 
 
 class Integer(config.Config):
+    def __init__(self, required=False, default=None, min: int | None = None, max: int | None = None):
+        super().__init__(required=required, default=default)
+        self.min = min
+        self.max = max
+
     def __set__(self, instance, value: int):
         if not isinstance(value, int):
             error_prefix = self._error_prefix(instance)
             raise TypeError(
                 f"{error_prefix} attempt to set a value of type '{value.__class__.__name__}' to parameter that requires an integer."
+            )
+        if self.min is not None and value < self.min:
+            error_prefix = self._error_prefix(instance)
+            raise ValueError(
+                f"{error_prefix} attempt to set a value of {value} which is less than the minimum allowed {self.min}."
+            )
+        if self.max is not None and value > self.max:
+            error_prefix = self._error_prefix(instance)
+            raise ValueError(
+                f"{error_prefix} attempt to set a value of {value} which is greater than the maximum allowed {self.max}."
             )
         instance._set_config(self, value)
 

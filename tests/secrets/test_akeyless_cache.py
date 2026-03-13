@@ -65,9 +65,10 @@ class AkeylessCacheStorageTest(unittest.TestCase):
         akeyless._api = self.mock_api
         # Pre-set a token to avoid authentication calls
         akeyless._token = "test-token"
-        import datetime
+        import time
 
-        akeyless._token_refresh = datetime.datetime.now() + datetime.timedelta(hours=1)
+        # Set token expiry as Unix timestamp (current time + 1 hour)
+        akeyless._token_expiry = time.time() + 3600
         return akeyless
 
     def test_get_without_cache(self):
