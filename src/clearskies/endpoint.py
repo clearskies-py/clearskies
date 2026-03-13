@@ -641,6 +641,75 @@ class Endpoint(
     external_casing = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
 
     """
+    Enable type forcing for input values from query parameters, URL path parameters, and request bodies.
+
+    When enabled (True), string input values are forced to their proper Python types using
+    each column's `force_value_from_input()` method. This happens **before** validation, so
+    validators see properly-typed values.
+
+    Defaults to `False` — no type forcing occurs.
+
+    ## Supported Column Types
+
+    - **Integer**: `"25"` → `25`
+    - **Float**: `"3.14"` → `3.14`
+    - **Boolean**: `"true"` / `"false"` → `True` / `False`
+    - **Timestamp**: `"1234567890"` → `1234567890`
+
+    All other column types (String, Date, Datetime, UUID, etc.) return the value unchanged.
+
+    If forcing fails (e.g. `"abc"` for an Integer column), the original value is returned
+    and validation will catch the error with a proper message.
+
+    ## Usage
+
+    ```python
+    import clearskies
+
+    class User(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+        id = clearskies.columns.Integer()
+        name = clearskies.columns.String()
+        age = clearskies.columns.Integer()
+        active = clearskies.columns.Boolean()
+
+    # List endpoint: forces query parameter types
+    list_users = clearskies.endpoints.List(
+        model_class=User,
+        transform_input_types=True,
+        searchable_column_names=["age", "active"],
+        readable_column_names=["id", "name", "age", "active"],
+    )
+
+    # Get endpoint: forces URL path parameter types
+    get_user = clearskies.endpoints.Get(
+        model_class=User,
+        transform_input_types=True,
+        readable_column_names=["id", "name", "age", "active"],
+    )
+    ```
+
+    ## Backward Compatibility
+
+    This flag defaults to `False`. Existing code that depends on string-typed query
+    parameters or routing data will continue to work unchanged.
+    """
+    transform_input_types = configs.Boolean(default=False)
+
+    """
+    Enable validation of routing data (URL path parameters) against column validators.
+
+    When enabled (True, the default), routing data values are validated using each
+    column's `input_error_for_value()` method. This provides security-by-default
+    validation of URL path parameters (e.g. rejecting non-integer values for integer
+    columns).
+
+    Set to `False` to disable routing data validation.
+    """
+    validate_routing = configs.Boolean(default=True)
+
+    """
     Configure standard security headers to be sent along in the response from this endpoint.
 
     Note that, with CORS, you generally only have to specify the origin.  The routing system will automatically add
@@ -1079,6 +1148,59 @@ class Endpoint(
             )
         request_data = self.map_request_data_external_to_internal(request_data)
         self.find_input_errors(request_data, input_output, schema)
+
+    def force_input_data(self, data: dict[str, Any], schema: Schema | type[Schema]) -> dict[str, Any]:
+        """Force string input values to proper types using column definitions.
+
+        Callers are responsible for checking transform_input_types before calling this method.
+        """
+        if not data or not schema:
+            return data
+
+        columns = schema.get_columns()
+        forced = {}
+
+        for key, value in data.items():
+            if key in columns and value is not None:
+                forced[key] = columns[key].force_value_from_input(value)
+            else:
+                forced[key] = value
+
+        return forced
+
+    def force_query_parameters(self, query_params: dict[str, Any], schema: Schema | type[Schema]) -> dict[str, Any]:
+        """Force query parameter values to proper types."""
+        forced = self.force_input_data(query_params, schema)
+        # Always force limit to int
+        if "limit" in forced and forced["limit"] is not None:
+            try:
+                forced["limit"] = int(forced["limit"])
+            except (ValueError, TypeError):
+                raise exceptions.InputErrors({"limit": "limit must be an integer"})
+        return forced
+
+    def force_routing_data(self, routing_data: dict[str, Any], schema: Schema | type[Schema]) -> dict[str, Any]:
+        """Force URL path parameter values to proper types."""
+        return self.force_input_data(routing_data, schema)
+
+    def validate_routing_data(self, routing_data: dict[str, Any], schema: Schema | type[Schema]) -> None:
+        """Validate routing data values against column validators.
+
+        Runs input_error_for_value() for each routing data key that matches a column.
+        Called by default (validate_routing=True) on endpoints with routing data.
+        """
+        if not self.validate_routing or not routing_data or not schema:
+            return
+
+        columns = schema.get_columns()
+        errors = {}
+        for key, value in routing_data.items():
+            if key in columns and value is not None:
+                error = columns[key].input_error_for_value(value)
+                if error:
+                    errors[key] = error
+        if errors:
+            raise exceptions.InputErrors(errors)
 
     def map_request_data_external_to_internal(self, request_data, required=True):
         # we have to map from internal names to external names, because case mapping

@@ -119,6 +119,18 @@ class Float(Column):
 
         return {**data, self.name: float(data[self.name])}
 
+    def force_value_from_input(self, value):
+        if isinstance(value, float):
+            return value
+        if isinstance(value, bool):
+            return value  # Don't treat bool as int
+        if isinstance(value, (int, str)):
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return value  # Let validation catch it
+        return value
+
     def equals(self, value: float) -> Condition:
         return super().equals(value)
 

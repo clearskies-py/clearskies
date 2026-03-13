@@ -182,6 +182,7 @@ class List(Endpoint):
         readable_column_names: list[str],
         sortable_column_names: list[str],
         default_sort_column_name: str | None,
+        searchable_column_names: list[str] = [],
         default_sort_direction: str = "ASC",
         default_limit: int = 50,
         maximum_limit: int = 200,
@@ -198,6 +199,7 @@ class List(Endpoint):
         external_casing: str = "snake_case",
         security_headers: list[SecurityHeader] = [],
         description: str = "",
+        transform_input_types: bool = False,
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
     ):
@@ -232,6 +234,11 @@ class List(Endpoint):
             raise exceptions.ClientError("Request body was not valid JSON")
         if input_output.request_data and not isinstance(input_output.request_data, dict):
             raise exceptions.ClientError("When present, request body must be a JSON dictionary")
+
+        # Force query parameter types if enabled
+        if self.transform_input_types and input_output.query_parameters:
+            input_output.query_parameters = self.force_query_parameters(input_output.query_parameters, self.model_class)
+
         request_data = self.map_input_to_internal_names(input_output.request_data)  # type: ignore
         query_parameters = self.map_input_to_internal_names(input_output.query_parameters)
         pagination_data = {}

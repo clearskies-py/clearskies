@@ -173,6 +173,7 @@ class Get(Endpoint):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
+        transform_input_types: bool = False,
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
     ):
@@ -214,6 +215,13 @@ class Get(Endpoint):
         return model
 
     def handle(self, input_output: InputOutput) -> Any:
+        if input_output.routing_data:
+            if self.transform_input_types:
+                forced_routing = self.force_routing_data(input_output.routing_data, self.model_class)
+                self.validate_routing_data(forced_routing, self.model_class)
+            else:
+                self.validate_routing_data(input_output.routing_data, self.model_class)
+
         model = self.fetch_model(input_output)
         return self.success(input_output, self.model_as_json(model, input_output))
 

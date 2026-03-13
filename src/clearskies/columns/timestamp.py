@@ -154,6 +154,22 @@ class Timestamp(Datetime):
 
         instance._next_data[self.name] = value
 
+    def force_value_from_input(self, value: Any) -> Any:
+        """Force a string timestamp to an integer.
+
+        Converts string values that look like timestamps to integers.
+        Boolean values are excluded since bool is a subclass of int in Python.
+        Returns the original value on failure (let validation catch it).
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return value
+        return value
+
     def input_error_for_value(self, value: str, operator: str | None = None) -> str:
         if not isinstance(value, int):
             return f"'{self.name}' must be an integer"

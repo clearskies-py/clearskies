@@ -67,6 +67,17 @@ class Boolean(Column):
 
         return {**data, self.name: bool(data[self.name])}
 
+    def force_value_from_input(self, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lower = value.lower()
+            if lower in ("true", "1", "yes"):
+                return True
+            if lower in ("false", "0", "no", ""):
+                return False
+        return value  # Let validation catch it
+
     @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:
         pass

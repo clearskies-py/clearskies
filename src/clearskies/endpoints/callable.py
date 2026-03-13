@@ -106,67 +106,17 @@ class Callable(Endpoint):
     """
 
     """
+    A schema that describes the expected input from the client.
+
+    Only the Callable endpoint supports `input_schema`. Use this to define input validation
+    when you need a schema separate from `model_class`, or when there is no model.
+    """
+    input_schema = configs.Schema(default=None)
+
+    """
     The callable to execute when the endpoint is invoked
     """
     to_call = configs.Callable(default=None)
-
-    """
-    A schema that describes the expected input from the client.
-
-    Note that if this is specified it will take precedence over writeable_column_names and model_class, which
-    can also be used to specify the expected input.
-
-    ```python
-    import clearskies
-
-    class ExpectedInput(clearskies.Schema):
-        first_name = clearskies.columns.String(validators=[clearskies.validators.Required()])
-        last_name = clearskies.columns.String()
-        age = clearskies.columns.Integer(validators=[clearskies.validators.MinimumValue(0)])
-
-    reflect = clearskies.endpoints.Callable(
-        lambda request_data: request_data,
-        request_methods=["POST"],
-        input_schema=ExpectedInput,
-    )
-
-    wsgi = clearskies.contexts.WsgiRef(reflect)
-    wsgi()
-    ```
-
-    And then valid and invalid requests:
-
-    ```bash
-    $ curl http://localhost:8080 -d '{"first_name":"Jane","last_name":"Doe","age":1}' | jq
-    {
-        "status": "success",
-        "error": "",
-        "data": {
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "age": 1
-        },
-        "pagination": {},
-        "input_errors": {}
-    }
-
-    $ curl http://localhost:8080 -d '{"last_name":10,"age":-1,"check":"cool"}' | jq
-    {
-        "status": "input_errors",
-        "error": "",
-        "data": [],
-        "pagination": {},
-        "input_errors": {
-            "age": "'age' must be at least 0.",
-            "first_name": "'first_name' is required.",
-            "last_name": "value should be a string",
-            "check": "Input column check is not an allowed input column."
-        }
-    }
-    ```
-
-    """
-    input_schema = configs.Schema(default=None)
 
     """
     Whether or not the return value is meant to be wrapped up in the standard clearskies response schema.
@@ -254,6 +204,7 @@ class Callable(Endpoint):
         external_casing: str = "snake_case",
         security_headers: list[SecurityHeader] = [],
         description: str = "",
+        transform_input_types: bool = False,
         authentication: Authentication = authentication.Public(),
         authorization: Authorization = authentication.Authorization(),
     ):
@@ -266,12 +217,26 @@ class Callable(Endpoint):
             self.writeable_column_names = list(self.input_schema.get_columns().keys())
 
     def handle(self, input_output: InputOutput):
+        # Force query and routing data types if enabled
+        schema = self.input_schema if self.input_schema else self.model_class
+        if input_output.routing_data and schema:
+            if self.transform_input_types:
+                forced_routing = self.force_routing_data(input_output.routing_data, schema)
+                self.validate_routing_data(forced_routing, schema)
+            else:
+                self.validate_routing_data(input_output.routing_data, schema)
+        if self.transform_input_types and schema:
+            if input_output.query_parameters:
+                input_output.query_parameters = self.force_query_parameters(input_output.query_parameters, schema)
+
         if self.writeable_column_names or self.input_schema:
-            self.validate_input_against_schema(
-                self.get_request_data(input_output),
-                input_output,
-                self.input_schema if self.input_schema else self.model_class,
-            )
+            # Validate the request data
+            request_data = self.get_request_data(input_output)
+            validation_schema = self.input_schema if self.input_schema else self.model_class
+            if self.transform_input_types and validation_schema:
+                request_data = self.force_input_data(request_data, validation_schema)
+                input_output._body_as_json = request_data
+            self.validate_input_against_schema(request_data, input_output, validation_schema)
         else:
             input_errors = self.find_input_errors_from_callable(input_output.request_data, input_output)
             if input_errors:

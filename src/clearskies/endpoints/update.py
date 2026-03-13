@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from clearskies import authentication, autodoc, decorators, exceptions
+from clearskies import authentication, autodoc, decorators
 from clearskies.endpoints.get import Get
 from clearskies.functional import string
 from clearskies.input_outputs import InputOutput
@@ -105,6 +105,7 @@ class Update(Get):
         description: str = "",
         where: typing.condition | list[typing.condition] = [],
         joins: typing.join | list[typing.join] = [],
+        transform_input_types: bool = False,
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
     ):
@@ -117,10 +118,18 @@ class Update(Get):
         super().__init__(model_class, url, readable_column_names)
 
     def handle(self, input_output: InputOutput) -> Any:
+        if input_output.routing_data:
+            if self.transform_input_types:
+                forced_routing = self.force_routing_data(input_output.routing_data, self.model_class)
+                self.validate_routing_data(forced_routing, self.model_class)
+            else:
+                self.validate_routing_data(input_output.routing_data, self.model_class)
+
         request_data = self.get_request_data(input_output)
-        if not request_data and input_output.has_body():
-            raise exceptions.ClientError("Request body was not valid JSON")
         model = self.fetch_model(input_output)
+        if self.transform_input_types:
+            request_data = self.force_input_data(request_data, self.model_class)
+            input_output._body_as_json = request_data
         self.validate_input_against_schema(request_data, input_output, model)
         model.save(request_data)
         return self.success(input_output, self.model_as_json(model, input_output))
