@@ -27,7 +27,8 @@ class Akeyless(secrets.Secrets):
 
     Authentication tokens are automatically cached and validated to minimize API calls:
     - All auth methods (AWS IAM, JWT, SAML) return a `(token, expiry)` tuple
-    - **JWT/AWS IAM**: Token and expiry are obtained from the Akeyless SDK auth response
+    - **JWT/AWS IAM**: Token expiry is extracted from the nested `creds.expiry` field in the auth response,
+      with a fallback to `auth_token_ttl` when `creds` is not populated
     - **SAML**: Reads credentials file first; only forces re-authentication (via `list-items`) when token is expired
     - Tokens are automatically refreshed when expired or within the configured token_refresh_buffer (default: 5 minutes)
 
@@ -614,8 +615,8 @@ class Akeyless(secrets.Secrets):
         res = self.api.auth(
             self.akeyless.Auth(access_id=self.access_id, access_type="aws_iam", cloud_id=CloudId().generate())
         )
-        # Return tuple of (token, expiry)
-        return (res.token, res.expiry)  # type: ignore
+        expiry = self._extract_expiry(res)
+        return (res.token, expiry)  # type: ignore
 
     def auth_saml(self) -> tuple[str, float]:
         """
@@ -705,8 +706,22 @@ class Akeyless(secrets.Secrets):
         res = self.api.auth(
             self.akeyless.Auth(access_id=self.access_id, access_type="jwt", jwt=self.environment.get(self.jwt_env_key))
         )
-        # Return tuple of (token, expiry)
-        return (res.token, res.expiry)  # type: ignore
+        expiry = self._extract_expiry(res)
+        return (res.token, expiry)
+
+    def _extract_expiry(self, auth_response: Any) -> float:
+        """
+        Extract token expiry from an Akeyless auth response.
+
+        The Akeyless SDK's AuthOutput object does not have a top-level expiry attribute.
+        The expiry is nested inside auth_response.creds.expiry (a Unix timestamp integer)
+        when the creds object is populated. Falls back to auth_token_ttl when not available.
+        """
+        if auth_response.creds is not None:
+            expiry = getattr(auth_response.creds, "expiry", None)
+            if expiry is not None:
+                return float(expiry)
+        return self.now.timestamp() + self.auth_token_ttl
 
     def describe_permissions(self, path: str, type: str = "item") -> list[str]:
         """

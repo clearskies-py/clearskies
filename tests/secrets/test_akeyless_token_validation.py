@@ -20,8 +20,9 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         # Mock describe_permissions to return a successful response by default
         self.mock_api.describe_permissions.return_value = MagicMock(client_permissions=["read", "write", "list"])
 
-        # Mock auth to return token and expiry
-        self.mock_api.auth.return_value = MagicMock(token="test-token", expiry=2000)
+        # Mock auth to return token with creds containing expiry
+        mock_creds = MagicMock(expiry=2000)
+        self.mock_api.auth.return_value = MagicMock(token="test-token", creds=mock_creds)
 
         # Create DI container with mocked akeyless module
         self.di = Di(bindings={"akeyless_sdk": self.mock_akeyless_module})
@@ -309,7 +310,8 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         """Test that auth_aws_iam returns a (token, expiry) tuple from the API response."""
         akeyless = self._create_akeyless_aws_iam(mock_timestamp=1000)
 
-        self.mock_api.auth.return_value = MagicMock(token="aws-token", expiry=5000.0)
+        mock_creds = MagicMock(expiry=5000)
+        self.mock_api.auth.return_value = MagicMock(token="aws-token", creds=mock_creds)
 
         with patch.dict("sys.modules", {"akeyless_cloud_id": MagicMock()}):
             import akeyless_cloud_id  # type: ignore
@@ -330,7 +332,8 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         mock_env.get.return_value = "my-jwt-value"
         akeyless.environment = mock_env
 
-        self.mock_api.auth.return_value = MagicMock(token="jwt-token", expiry=6000.0)
+        mock_creds = MagicMock(expiry=6000)
+        self.mock_api.auth.return_value = MagicMock(token="jwt-token", creds=mock_creds)
 
         result = akeyless.auth_jwt()
 
@@ -338,6 +341,61 @@ class AkeylessTokenValidationTest(unittest.TestCase):
         token, expiry = result
         self.assertEqual(token, "jwt-token")
         self.assertEqual(expiry, 6000.0)
+
+    def test_auth_aws_iam_falls_back_to_ttl_when_creds_is_none(self):
+        """Test that auth_aws_iam uses auth_token_ttl when creds is None (no expiry available)."""
+        akeyless = self._create_akeyless_aws_iam(mock_timestamp=1000)
+
+        # Simulate AuthOutput with creds=None (as returned by the real Akeyless SDK)
+        self.mock_api.auth.return_value = MagicMock(token="aws-token", creds=None)
+
+        with patch.dict("sys.modules", {"akeyless_cloud_id": MagicMock()}):
+            import akeyless_cloud_id  # type: ignore
+
+            akeyless_cloud_id.CloudId.return_value.generate.return_value = "mock-cloud-id"
+            result = akeyless.auth_aws_iam()
+
+        token, expiry = result
+        self.assertEqual(token, "aws-token")
+        # Should fall back to now + auth_token_ttl (1000 + 3600)
+        self.assertEqual(expiry, 1000 + 3600)
+
+    def test_auth_aws_iam_handles_creds_expiry_zero(self):
+        """Test that auth_aws_iam correctly returns expiry=0 when creds.expiry is 0 (epoch)."""
+        akeyless = self._create_akeyless_aws_iam(mock_timestamp=1000)
+
+        # expiry=0 is falsy but should still be used (not fall back to TTL)
+        mock_creds = MagicMock(expiry=0)
+        self.mock_api.auth.return_value = MagicMock(token="aws-token", creds=mock_creds)
+
+        with patch.dict("sys.modules", {"akeyless_cloud_id": MagicMock()}):
+            import akeyless_cloud_id  # type: ignore
+
+            akeyless_cloud_id.CloudId.return_value.generate.return_value = "mock-cloud-id"
+            result = akeyless.auth_aws_iam()
+
+        token, expiry = result
+        self.assertEqual(token, "aws-token")
+        # Should return 0.0 (from creds.expiry), NOT the TTL fallback
+        self.assertEqual(expiry, 0.0)
+
+    def test_auth_jwt_falls_back_to_ttl_when_creds_is_none(self):
+        """Test that auth_jwt uses auth_token_ttl when creds is None (no expiry available)."""
+        akeyless = self._create_akeyless_jwt(mock_timestamp=1000)
+
+        mock_env = MagicMock()
+        mock_env.get.return_value = "my-jwt-value"
+        akeyless.environment = mock_env
+
+        # Simulate AuthOutput with creds=None
+        self.mock_api.auth.return_value = MagicMock(token="jwt-token", creds=None)
+
+        result = akeyless.auth_jwt()
+
+        token, expiry = result
+        self.assertEqual(token, "jwt-token")
+        # Should fall back to now + auth_token_ttl (1000 + 3600)
+        self.assertEqual(expiry, 1000 + 3600)
 
     def test_auth_jwt_raises_without_jwt_env_key(self):
         """Test that auth_jwt raises ValueError when jwt_env_key is not provided."""
