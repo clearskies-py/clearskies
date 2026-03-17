@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -14,8 +14,10 @@ from clearskies.functional import string
 if TYPE_CHECKING:
     from clearskies import Model
 
+RelatedModel = TypeVar("RelatedModel", bound="Model")
 
-class ManyToManyModels(Column):
+
+class ManyToManyModels(Column, Generic[RelatedModel]):
     """
     A companion for the ManyToManyIds column that returns the matching models instead of the ids.
 
@@ -71,7 +73,7 @@ class ManyToManyModels(Column):
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, instance: Model, cls: type[Model]) -> RelatedModel:
         pass
 
     def __get__(self, instance, cls):

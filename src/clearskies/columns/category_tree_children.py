@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.column import Column
@@ -9,8 +9,10 @@ from clearskies.columns import CategoryTree
 if TYPE_CHECKING:
     from clearskies import Model
 
+CategoryModel = TypeVar("CategoryModel", bound="Model")
 
-class CategoryTreeChildren(Column):
+
+class CategoryTreeChildren(Column, Generic[CategoryModel]):
     """
     Return the child categories from a category tree column.
 
@@ -61,7 +63,7 @@ class CategoryTreeChildren(Column):
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, instance: Model, cls: type[Model]) -> CategoryModel:
         pass
 
     def __get__(self, model, cls):

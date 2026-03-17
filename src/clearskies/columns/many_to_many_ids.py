@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, overload
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -10,8 +10,11 @@ from clearskies.column import Column
 if TYPE_CHECKING:
     from clearskies import Column, Model, typing
 
+RelatedModel = TypeVar("RelatedModel", bound="Model")
+PivotModel = TypeVar("PivotModel", bound="Model")
 
-class ManyToManyIds(Column):
+
+class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
     """
     A column that represents a many-to-many relationship.
 
@@ -174,8 +177,8 @@ class ManyToManyIds(Column):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class,
-        pivot_model_class,
+        related_model_class: type[RelatedModel],
+        pivot_model_class: type[PivotModel],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_column_names: list[str] = [],

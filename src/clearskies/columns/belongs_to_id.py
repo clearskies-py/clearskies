@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Object as AutoDocObject
@@ -13,8 +13,10 @@ from clearskies.functional import validations
 if TYPE_CHECKING:
     from clearskies import Model, typing
 
+ParentModel = TypeVar("ParentModel", bound="Model")
 
-class BelongsToId(String):
+
+class BelongsToId(String, Generic[ParentModel]):
     """
     Declares that this model belongs to another - that it has a parent.
 
@@ -299,7 +301,7 @@ class BelongsToId(String):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        parent_model_class,
+        parent_model_class: type[ParentModel],
         readable_parent_columns: list[str] = [],
         join_type: str | None = None,
         where: typing.condition | list[typing.condition] = [],

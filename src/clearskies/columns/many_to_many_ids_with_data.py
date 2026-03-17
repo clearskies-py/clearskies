@@ -4,13 +4,13 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies import configs, decorators
-from clearskies.columns.many_to_many_ids import ManyToManyIds
+from clearskies.columns.many_to_many_ids import ManyToManyIds, PivotModel, RelatedModel
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
 
 
-class ManyToManyIdsWithData(ManyToManyIds):
+class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
     """
     A column to represent a many-to-many relationship with information stored in the relationship itself.
 
@@ -153,8 +153,8 @@ class ManyToManyIdsWithData(ManyToManyIds):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class,
-        pivot_model_class,
+        related_model_class: type[RelatedModel],
+        pivot_model_class: type[PivotModel],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_columns: list[str] = [],

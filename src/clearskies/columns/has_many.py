@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
 from clearskies import configs, decorators, typing
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -13,8 +13,10 @@ if TYPE_CHECKING:
     from clearskies import Column, Model, typing
     from clearskies.autodoc.schema import Schema as AutoDocSchema
 
+ChildModel = TypeVar("ChildModel", bound="Model")
 
-class HasMany(Column):
+
+class HasMany(Column, Generic[ChildModel]):
     """
     A column to manage a "has many" relationship.
 
@@ -407,7 +409,7 @@ class HasMany(Column):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        child_model_class,
+        child_model_class: type[ChildModel],
         foreign_column_name: str | None = None,
         readable_child_column_names: list[str] = [],
         where: typing.condition | list[typing.condition] = [],
@@ -457,7 +459,7 @@ class HasMany(Column):
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, instance: Model, cls: type[Model]) -> ChildModel:
         pass
 
     def __get__(self, model, cls):

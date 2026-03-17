@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies.autodoc.schema import Object as AutoDocObject
-from clearskies.columns.has_many import HasMany
+from clearskies.columns.has_many import ChildModel, HasMany
 
 if TYPE_CHECKING:
     from clearskies import Model
     from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
-class HasOne(HasMany):
+class HasOne(HasMany[ChildModel]):
     """
     This operates exactly like the HasMany relationship, except it assumes there is only ever one child.
 
@@ -19,6 +19,14 @@ class HasOne(HasMany):
     """
 
     _descriptor_config_map = None
+
+    @overload
+    def __get__(self, model: None, cls: type[Model]) -> Self:
+        pass
+
+    @overload
+    def __get__(self, model: Model, cls: type[Model]) -> ChildModel:
+        pass
 
     def __get__(self, model, cls):
         if model is None:

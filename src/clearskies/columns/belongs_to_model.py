@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.column import Column
@@ -11,8 +11,10 @@ from clearskies.functional import validations
 if TYPE_CHECKING:
     from clearskies import Model
 
+ParentModel = TypeVar("ParentModel", bound="Model")
 
-class BelongsToModel(Column):
+
+class BelongsToModel(Column, Generic[ParentModel]):
     """Return the model object for a belongs to relationship."""
 
     """ The name of the belongs to column we are connected to. """
@@ -48,7 +50,7 @@ class BelongsToModel(Column):
         pass
 
     @overload
-    def __get__(self, model: Model, cls: type[Model]) -> Model:
+    def __get__(self, model: Model, cls: type[Model]) -> ParentModel:
         pass
 
     def __get__(self, model, cls):
