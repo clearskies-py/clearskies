@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Self, overload
 
 from clearskies.configs import config
 
@@ -14,7 +14,11 @@ class FloatOrCallable(config.Config):
             )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> float | Callable[..., float]:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> float | Callable[..., float]: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

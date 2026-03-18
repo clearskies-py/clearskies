@@ -28,7 +28,7 @@ class HasOne(HasMany[ChildModel]):
     def __get__(self, model: Model, cls: type[Model]) -> ChildModel:
         pass
 
-    def __get__(self, model, cls):
+    def __get__(self, model, cls):  # type: ignore[override]
         if model is None:
             self.model_class = cls
             return self
@@ -62,10 +62,10 @@ class HasOne(HasMany[ChildModel]):
     ) -> list[AutoDocSchema]:
         columns = self.child_columns
         child_id_column_name = self.child_model_class.id_column_name
-        child_properties = [columns[child_id_column_name].documentation()]
+        child_properties: list[AutoDocSchema] = [*columns[child_id_column_name].documentation()]
 
         for column_name in self.readable_child_column_names or []:
-            child_properties.extend(columns[column_name].documentation())  # type: ignore
+            child_properties.extend(columns[column_name].documentation())
 
         return [
             AutoDocObject(

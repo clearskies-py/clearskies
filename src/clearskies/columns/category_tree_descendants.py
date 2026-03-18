@@ -40,10 +40,10 @@ class CategoryTreeDescendants(CategoryTreeChildren[CategoryModel]):
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             model.get_columns()
 
         return self.relatives(model, include_all=True)

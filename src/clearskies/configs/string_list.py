@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Self, overload
 
 from clearskies.configs import config
 
@@ -41,7 +42,11 @@ class StringList(config.Config):
                 )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> list[str]:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> list[str]: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

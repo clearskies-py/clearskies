@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore
+from urllib3.util.retry import Retry
 
 import clearskies.input_outputs.input_output
 from clearskies.di.additional_config import AdditionalConfig
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from clearskies.clients import GraphqlClient
     from clearskies.cursors.from_environment.mysql import Mysql
     from clearskies.secrets import Secrets
+
 
 T = TypeVar("T")
 
@@ -468,9 +469,10 @@ class Di:
         di.call_function(my_function)
         ```
         """
-        if not isinstance(additional_configs, list):
-            additional_configs = [additional_configs]
-        self._additional_configs.extend(additional_configs)
+        if isinstance(additional_configs, list):
+            self._additional_configs.extend(list(additional_configs))
+        else:
+            self._additional_configs.append(additional_configs)
 
     def add_binding(self, key: str, value: Any) -> None:
         """
@@ -619,13 +621,17 @@ class Di:
                 self._prepared[name] = built_value
             return built_value
 
-        if name in self._classes or name in self._class_overrides_by_name:
-            class_to_build: type = (
-                self._class_overrides_by_name[name]
-                if name in self._class_overrides_by_name
-                else self._classes[name]["class"]  # type: ignore[assignment]
-            )
-            built_value = self.build_class(class_to_build, context=context)
+        if name in self._class_overrides_by_name:
+            built_value = self.build_class(self._class_overrides_by_name[name], context=context)
+            if cache:
+                self._prepared[name] = built_value
+            return built_value
+
+        if name in self._classes:
+            class_entry = self._classes[name]["class"]
+            if not isinstance(class_entry, type):
+                raise TypeError(f"Expected a class for '{name}', got {type(class_entry)}")
+            built_value = self.build_class(class_entry, context=context)
             if cache:
                 self._prepared[name] = built_value
             return built_value
@@ -894,12 +900,16 @@ class Di:
         arg_names = call_arguments[: nargs - nkwargs]
         kwarg_names = call_arguments[nargs - nkwargs :]
 
+        callable_context = getattr(callable_to_execute, "__name__", str(callable_to_execute))
         callable_args = [
             (
                 kwargs[arg]
                 if arg in kwargs
                 else self.build_argument(
-                    arg, args_data.annotations.get(arg, None), context=callable_to_execute.__name__, cache=True
+                    arg,
+                    args_data.annotations.get(arg, None),
+                    context=callable_context,
+                    cache=True,
                 )
             )
             for arg in arg_names
@@ -939,7 +949,9 @@ class Di:
         return True
 
     def inject_properties(self, cls: type) -> None:
-        if hasattr(cls, "injectable_properties"):
+        from clearskies.di import InjectableProperties
+
+        if issubclass(cls, InjectableProperties):
             cls.injectable_properties(self)
             return
 
@@ -1019,7 +1031,7 @@ class Di:
         return ""
 
     def provide_akeyless_sdk(self) -> Any:
-        import akeyless  # type: ignore[import-untyped]
+        import akeyless
 
         return akeyless
 

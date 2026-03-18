@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import urllib.parse
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 from clearskies import autodoc, column, configs, configurable, decorators, di, end, exceptions
 from clearskies.authentication import Authentication, Authorization, Public
@@ -16,11 +16,12 @@ if TYPE_CHECKING:
     from clearskies import Column, Model, SecurityHeader
     from clearskies.input_outputs import InputOutput
     from clearskies.schema import Schema
-    from clearskies.security_headers import Cors
+
+from clearskies.security_headers import Cors
 
 
 class Endpoint(
-    end.End,  # type: ignore
+    end.End,
     configurable.Configurable,
     di.InjectableProperties,
 ):
@@ -46,11 +47,6 @@ class Endpoint(
     Whether or not this endpoint can handle CORS
     """
     has_cors = False
-
-    """
-    The actual CORS header
-    """
-    cors_header: Optional[Cors] = None
 
     """
     Set some response headers that should be returned for this endpoint.
@@ -489,6 +485,13 @@ class Endpoint(
     searchable_column_names = configs.SearchableModelColumns("model_class", default=[])
 
     """
+    Columns from the model class that can be sorted by the client.
+
+    Sets which columns the client is allowed to sort (for endpoints that support sorting).
+    """
+    sortable_column_names = configs.ReadableModelColumns("model_class", default=[])
+
+    """
     A function to call to add custom input validation logic.
 
     Typically, input validation happens by choosing the appropriate column in your schema and adding validators where necessary.  You
@@ -496,7 +499,7 @@ class Endpoint(
     allow you to add callables for custom validation logic.  These functions should return a dictionary where the key name
     represents the name of the column that has invalid input, and the value is a human-readable error message.  If no input errors are
     found, then the callable should return an empty dictionary.  As usual, the callable can request any standard dependencies configured
-    in the dependency injection container or proivded by input_output.get_context_for_callables.
+    in the dependency injection container or provided by input_output.get_context_for_callables.
 
     Note that most endpoints (such as Create and Update) explicitly require input.  As a result, if a request comes in without input
     from the end user, it will be rejected before calling your input validator.  In these cases you can depend on request_data always
@@ -932,14 +935,14 @@ class Endpoint(
     """
     joins = configs.Joins(default=[])
 
-    cors_header: Cors = None  # type: ignore
-    _model: Model = None  # type: ignore
-    _columns: dict[str, column.Column] = None  # type: ignore
-    _readable_columns: dict[str, column.Column] = None  # type: ignore
-    _writeable_columns: dict[str, column.Column] = None  # type: ignore
-    _searchable_columns: dict[str, column.Column] = None  # type: ignore
-    _sortable_columns: dict[str, column.Column] = None  # type: ignore
-    _as_json_map: dict[str, column.Column] = None  # type: ignore
+    cors_header: Cors | None = None
+    _model: Model | None = None
+    _columns: dict[str, column.Column] | None = None
+    _readable_columns: dict[str, column.Column] | None = None
+    _writeable_columns: dict[str, column.Column] | None = None
+    _searchable_columns: dict[str, column.Column] | None = None
+    _sortable_columns: dict[str, column.Column] | None = None
+    _as_json_map: dict[str, column.Column] | None = None
 
     @decorators.parameters_to_properties
     def __init__(
@@ -960,8 +963,9 @@ class Endpoint(
         for security_header in self.security_headers:
             if not security_header.is_cors:
                 continue
-            self.cors_header = security_header  # type: ignore
-            self.has_cors = True
+            if isinstance(security_header, Cors):
+                self.cors_header = security_header
+                self.has_cors = True
             break
 
     @property
@@ -991,13 +995,13 @@ class Endpoint(
     @property
     def searchable_columns(self) -> dict[str, Column]:
         if self._searchable_columns is None:
-            self._searchable_columns = {name: self._columns[name] for name in self.sortable_column_names}
+            self._searchable_columns = {name: self.columns[name] for name in self.searchable_column_names}
         return self._searchable_columns
 
     @property
     def sortable_columns(self) -> dict[str, Column]:
         if self._sortable_columns is None:
-            self._sortable_columns = {name: self._columns[name] for name in self.sortable_column_names}
+            self._sortable_columns = {name: self.columns[name] for name in self.sortable_column_names}
         return self._sortable_columns
 
     def get_request_data(self, input_output: InputOutput, required=True) -> dict[str, Any]:
@@ -1009,7 +1013,7 @@ class Endpoint(
             raise exceptions.ClientError("Request body was not a JSON dictionary.")
 
         return {
-            **input_output.request_data,  # type: ignore
+            **input_output.request_data,
             **(input_output.routing_data if self.include_routing_data_in_request_data else {}),
         }
 
@@ -1140,7 +1144,10 @@ class Endpoint(
         return conversion_map
 
     def validate_input_against_schema(
-        self, request_data: dict[str, Any], input_output: InputOutput, schema: Schema | type[Schema]
+        self,
+        request_data: dict[str, Any],
+        input_output: InputOutput,
+        schema: Model | type[Model] | Schema | type[Schema],
     ) -> None:
         if not self.writeable_column_names:
             raise ValueError(
@@ -1213,16 +1220,37 @@ class Endpoint(
         return {key_map.get(key, key): value for (key, value) in request_data.items()}
 
     def find_input_errors(
-        self, request_data: dict[str, Any], input_output: InputOutput, schema: Schema | type[Schema]
+        self,
+        request_data: dict[str, Any],
+        input_output: InputOutput,
+        schema: Model | type[Model] | Schema | type[Schema],
     ) -> None:
+        """
+        Validate input data against column definitions and raise InputErrors if any are found.
+
+        Iterates over the writeable columns for the endpoint and calls each column's `input_errors` method
+        to check the request data.  Also invokes the `input_validation_callable` if one is configured.
+        Any unexpected columns in the request data (i.e. columns not in `writeable_column_names`) will
+        generate an error as well.
+
+        If `schema` is a class, it will be built via the DI container to produce an instance.  The resulting
+        object is cast to `Model` because `column.input_errors` expects a `Model` instance — in practice,
+        this method is always called with a model or model class.
+
+        Raises `exceptions.InputErrors` if any validation errors are found.
+        """
+        from typing import cast
+
+        from clearskies.model import Model
+
         input_errors: dict[str, str] = {}
         columns = schema.get_columns()
-        model = self.di.build(schema) if inspect.isclass(schema) else schema
+        model = cast(Model, self.di.build(schema) if inspect.isclass(schema) else schema)
         for column_name in self.writeable_column_names:
             column = columns[column_name]
             input_errors = {
                 **input_errors,
-                **column.input_errors(model, request_data),  # type: ignore
+                **column.input_errors(model, request_data),
             }
         input_errors = {
             **input_errors,
@@ -1375,7 +1403,7 @@ class Endpoint(
             schema = self.model_class
         readable_column_names = [*column_names]
         if not readable_column_names and self.readable_column_names:
-            readable_column_names: list[str] = self.readable_column_names  # type: ignore
+            readable_column_names: list[str] = self.readable_column_names
         properties = []
 
         columns = schema.get_columns()
@@ -1412,7 +1440,7 @@ class Endpoint(
                     required=columns[column_name].is_required,
                 )
             )
-        return parameters  # type: ignore
+        return parameters
 
     def documentation_url_parameters(self) -> list[Parameter]:
         parameter_names = routing.extract_url_parameter_name_map(self.url.strip("/"))

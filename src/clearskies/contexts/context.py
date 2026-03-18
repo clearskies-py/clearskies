@@ -5,7 +5,7 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable
 
 from clearskies import exceptions
-from clearskies.di import Di
+from clearskies.di import Di, InjectableProperties
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.input_outputs import InputOutput, Programmatic
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class Context:
     """Context: a flexible way to connect applications to hosting strategies."""
 
-    di: Di = None  # type: ignore
+    di: Di = None  # type: ignore[assignment]  # always set in __init__
 
     """
     The application to execute.
@@ -26,7 +26,7 @@ class Context:
     standard or defined dependencies and should return the desired response.  It can also raise any exception from
     exceptions.
     """
-    application: Callable | Endpoint | EndpointGroup = None  # type: ignore
+    application: Callable | Endpoint | EndpointGroup = None  # type: ignore[assignment]  # always set in __init__
 
     """
     Switch to routing based on the request body rather than a URL
@@ -80,7 +80,7 @@ class Context:
         self.di.add_binding("input_output", input_output)
         self.di.add_class_override(InputOutput, input_output)
 
-        if hasattr(self.application, "injectable_properties"):
+        if isinstance(self.application, InjectableProperties):
             self.application.injectable_properties(self.di)
             return self.application(input_output)
         elif callable(self.application):
@@ -106,16 +106,16 @@ class Context:
         url: str = "",
         request_method: str = "GET",
         body: str | dict[str, Any] | list[Any] = "",
-        query_parameters: dict[str, str] = {},
-        request_headers: dict[str, str] = {},
-    ):
+        query_parameters: dict[str, str] | None = None,
+        request_headers: dict[str, str] | None = None,
+    ) -> Any:
         return self.execute_application(
             Programmatic(
                 url=url,
                 request_method=request_method,
                 body=body,
-                query_parameters=query_parameters,
-                request_headers=request_headers,
+                query_parameters=query_parameters if query_parameters is not None else {},
+                request_headers=request_headers if request_headers is not None else {},
             )
         )
 

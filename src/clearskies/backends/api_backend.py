@@ -4,7 +4,7 @@ import urllib.parse
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-import requests
+from requests import Response as RequestsResponse
 
 from clearskies import columns, configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
@@ -613,7 +613,7 @@ class ApiBackend(Backend, InjectableProperties):
     di = inject.Di()
 
     _auth_injected = False
-    _response_to_model_map: dict[str, str] = None  # type: ignore
+    _response_to_model_map: dict[str, str] | None = None
 
     @decorators.parameters_to_properties
     def __init__(
@@ -1005,7 +1005,11 @@ class ApiBackend(Backend, InjectableProperties):
                 raise ValueError(
                     "The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
                 )
-            return [self.check_dict_and_map_to_model(record, columns, query_data) for record in response_data]  # type: ignore
+            return [
+                mapped
+                for record in response_data
+                if (mapped := self.check_dict_and_map_to_model(record, columns, query_data)) is not None
+            ]
 
         if not isinstance(response_data, dict):
             raise ValueError(
@@ -1127,7 +1131,7 @@ class ApiBackend(Backend, InjectableProperties):
     def get_next_page_data_from_response(
         self,
         query: Query,
-        response: requests.Response,  # type: ignore
+        response: RequestsResponse,
     ) -> dict[str, Any]:
         """
         Extract pagination data from the API response needed to fetch the next page of records.
@@ -1221,7 +1225,7 @@ class ApiBackend(Backend, InjectableProperties):
         json: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         is_retry=False,
-    ) -> requests.models.Response:  # type: ignore
+    ) -> RequestsResponse:
         """
         Execute the actual API request and returns the response object.
 
@@ -1242,7 +1246,7 @@ class ApiBackend(Backend, InjectableProperties):
         if self.authentication:
             if not self._auth_injected:
                 self._auth_injected = True
-                if hasattr(self.authentication, "injectable_properties"):
+                if isinstance(self.authentication, InjectableProperties):
                     self.authentication.injectable_properties(self.di)
             if is_retry:
                 self.authentication.clear_credential_cache()
@@ -1339,7 +1343,7 @@ class ApiBackend(Backend, InjectableProperties):
         if isinstance(column, columns.json.Json):
             return backend_data
         # also, APIs tend to have a different format for dates than SQL
-        if isinstance(column, columns.datetime.Datetime) and column.name in backend_data:
+        if isinstance(column, columns.date.Date) and column.name in backend_data:
             as_date = (
                 backend_data[column.name].isoformat()
                 if type(backend_data[column.name]) != str

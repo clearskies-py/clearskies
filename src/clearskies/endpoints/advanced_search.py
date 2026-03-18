@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from clearskies import exceptions
 from clearskies.endpoints.simple_search import SimpleSearch
@@ -363,11 +363,12 @@ class AdvancedSearch(SimpleSearch):
         if sort:
             column_key_name = self.auto_case_internal_column_name("column")
             direction_key_name = self.auto_case_internal_column_name("direction")
-            for index, sort_entry in enumerate(sort):
-                if not isinstance(sort_entry, dict):
+            for index, _sort_entry in enumerate(sort):
+                if not isinstance(_sort_entry, dict):
                     raise exceptions.ClientError(
-                        f"'{sort_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{sort_entry.__class__.__name}', not a dict"
+                        f"'{sort_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_sort_entry.__class__.__name}', not a dict"
                     )
+                sort_entry = cast(dict[str, str], _sort_entry)
                 for key_name in [column_key_name, direction_key_name]:
                     if not sort_entry.get(key_name):
                         raise exceptions.ClientError(
@@ -403,11 +404,12 @@ class AdvancedSearch(SimpleSearch):
             column_key_name = self.auto_case_internal_column_name("column")
             operator_key_name = self.auto_case_internal_column_name("operator")
             value_key_name = self.auto_case_internal_column_name("value")
-            for index, where_entry in enumerate(where):
-                if not isinstance(where_entry, dict):
+            for index, _where_entry in enumerate(where):
+                if not isinstance(_where_entry, dict):
                     raise exceptions.ClientError(
-                        f"'{where_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{where_entry.__class__.__name}', not a dict"
+                        f"'{where_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_where_entry.__class__.__name}', not a dict"
                     )
+                where_entry = cast(dict[str, Any], _where_entry)
                 for key_name in [column_key_name, operator_key_name, value_key_name]:
                     if key_name not in where_entry:
                         raise exceptions.ClientError(

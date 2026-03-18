@@ -462,21 +462,21 @@ class HasMany(Column, Generic[ChildModel]):
     def __get__(self, instance: Model, cls: type[Model]) -> ChildModel:
         pass
 
-    def __get__(self, model, cls):
-        if model is None:
+    def __get__(self, instance, cls):
+        if instance is None:
             self.model_class = cls
             return self
 
         # Initialize if needed
-        if "name" not in self._config:
-            model.get_columns()
+        if not self._config or "name" not in self._config:
+            instance.get_columns()
 
         # Check cache first
-        if self.name in model._transformed_data:
-            return model._transformed_data[self.name]
+        if self.name in instance._transformed_data:
+            return instance._transformed_data[self.name]
 
         # Check if backend provided pre-loaded data as raw dicts in _data
-        raw_data = model.get_raw_data()
+        raw_data = instance.get_raw_data()
 
         if self.name in raw_data and isinstance(raw_data[self.name], list):
             # Backend provided pre-loaded data (could be empty list or list of dicts)
@@ -488,12 +488,12 @@ class HasMany(Column, Generic[ChildModel]):
                 # Create a query-enabled Model with pre-loaded data
                 # Attach the pre-loaded records to the query so the backend can find them
                 children = [self.child_model.model(child_data) for child_data in pre_loaded_list]
-                model._transformed_data[self.name] = children
+                instance._transformed_data[self.name] = children
                 return children
 
         # Build the query
         foreign_column_name = self.foreign_column_name
-        model_id = getattr(model, model.id_column_name)
+        model_id = getattr(instance, instance.id_column_name)
         children = self.child_model.where(f"{foreign_column_name}={model_id}")
 
         # Apply where conditions
@@ -501,7 +501,7 @@ class HasMany(Column, Generic[ChildModel]):
             for index, where in enumerate(self.where):
                 if callable(where):
                     children = self.di.call_function(
-                        where, model=children, parent=model, **self.input_output.get_context_for_callables()
+                        where, model=children, parent=instance, **self.input_output.get_context_for_callables()
                     )
                     if not validations.is_model(children):
                         raise ValueError(
@@ -511,10 +511,10 @@ class HasMany(Column, Generic[ChildModel]):
                     children = children.where(where)
 
         # Cache and return
-        model._transformed_data[self.name] = children
+        instance._transformed_data[self.name] = children
         return children
 
-    def __set__(self, model: Model, value: Model) -> None:
+    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
         raise ValueError(
             f"Attempt to set a value to {model.__class__.__name__}.{self.name}: this is not allowed because it is a HasMany column, which is not writeable."
         )
@@ -542,10 +542,10 @@ class HasMany(Column, Generic[ChildModel]):
     ) -> list[AutoDocSchema]:
         columns = self.child_columns
         child_id_column_name = self.child_model_class.id_column_name
-        child_properties = [columns[child_id_column_name].documentation()]
+        child_properties: list[AutoDocSchema] = [*columns[child_id_column_name].documentation()]
 
         for column_name in self.readable_child_column_names or []:
-            child_properties.extend(columns[column_name].documentation())  # type: ignore
+            child_properties.extend(columns[column_name].documentation())
 
         child_object = AutoDocObject(
             string.title_case_to_nice(self.child_model_class.__name__),

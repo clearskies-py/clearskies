@@ -10,6 +10,7 @@ from clearskies.functional import validations
 
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.schema import Schema
 
 ParentModel = TypeVar("ParentModel", bound="Model")
 
@@ -30,7 +31,7 @@ class BelongsToModel(Column, Generic[ParentModel]):
     ):
         pass
 
-    def finalize_configuration(self, model_class: type, name: str) -> None:
+    def finalize_configuration(self, model_class: type[Schema], name: str) -> None:
         """Finalize and check the configuration."""
         getattr(self.__class__, "belongs_to_column_name").set_model_class(model_class)
         self.model_class = model_class
@@ -53,13 +54,13 @@ class BelongsToModel(Column, Generic[ParentModel]):
     def __get__(self, model: Model, cls: type[Model]) -> ParentModel:
         pass
 
-    def __get__(self, model, cls):
+    def __get__(self, model, cls):  # type: ignore[override]
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             model.get_columns()
 
         # Check cache first
@@ -100,9 +101,9 @@ class BelongsToModel(Column, Generic[ParentModel]):
         model._transformed_data[self.name] = parent_instance
         return parent_instance
 
-    def __set__(self, model: Model, value: Model) -> None:
+    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             model.get_columns()
 
         setattr(model, self.belongs_to_column_name, getattr(value, value.id_column_name))
@@ -141,7 +142,7 @@ class BelongsToModel(Column, Generic[ParentModel]):
         parent = getattr(model, self.name)
         json: dict[str, Any] = OrderedDict()
         for column_name in belongs_to_column.readable_parent_columns:
-            json = {**json, **columns[column_name].to_json(parent)}  # type: ignore
+            json = {**json, **columns[column_name].to_json(parent)}
         return {
             self.name: json,
         }

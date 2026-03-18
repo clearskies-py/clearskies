@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.configs import config
 from clearskies.functional import validations
@@ -21,11 +21,15 @@ class ModelClass(config.Config):
             raise TypeError(f"{error_prefix} {str(e)}")
 
         # reference or model class?
-        instance._set_config(self, value)  # type: ignore
+        instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> type[Model]:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> type[Model]: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
 
         value = instance._get_config(self)
         if validations.is_model_class_reference(value):

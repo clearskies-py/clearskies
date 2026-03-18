@@ -12,6 +12,7 @@ from clearskies.functional import string
 
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.schema import Schema
 
 PivotModel = TypeVar("PivotModel", bound="Model")
 
@@ -38,7 +39,7 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
     ):
         pass
 
-    def finalize_configuration(self, model_class: type, name: str) -> None:
+    def finalize_configuration(self, model_class: type[Schema], name: str) -> None:
         """Finalize and check the configuration."""
         getattr(self.__class__, "many_to_many_column_name").set_model_class(model_class)
         self.model_class = model_class
@@ -54,11 +55,11 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
 
     @property
     def pivot_model(self) -> Model:
-        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True)  # type: ignore
+        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True)
 
     @property
     def related_models(self) -> Model:
-        return self.di.build(self.many_to_many_column.related_model_class, cache=True)  # type: ignore
+        return self.di.build(self.many_to_many_column.related_model_class, cache=True)
 
     @property
     def related_columns(self):
@@ -82,11 +83,11 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
-        many_to_many_column: Column = self.many_to_many_column
-        own_column_name_in_pivot = many_to_many_column._config.get("own_column_name_in_pivot")
+        many_to_many_column = self.many_to_many_column
+        own_column_name_in_pivot = many_to_many_column.own_column_name_in_pivot
         my_id = getattr(instance, instance.id_column_name)
         return [model for model in self.pivot_model.where(f"{own_column_name_in_pivot}={my_id}")]
 
@@ -98,9 +99,9 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
 
     def to_json(self, model: Model) -> dict[str, Any]:
         records = []
-        many_to_many_column = self.many_to_many_column  # type: ignore
+        many_to_many_column = self.many_to_many_column
         columns = many_to_many_column.pivot_columns
-        readable_column_names = many_to_many_column.readable_pivot_column_names
+        readable_column_names: list[str] = getattr(many_to_many_column, "readable_pivot_column_names", [])
         pivot_id_column_name = many_to_many_column.pivot_model_class.id_column_name
         for pivot in many_to_many_column.get_pivot_models(model):
             json = OrderedDict()
@@ -109,24 +110,22 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
             for column_name in readable_column_names:
                 column_data = columns[column_name].to_json(pivot)
                 if type(column_data) == dict:
-                    json = {**json, **column_data}  # type: ignore
+                    json = {**json, **column_data}
                 else:
                     json[column_name] = column_data
             records.append(json)
         return {self.name: records}
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
-        many_to_many_column = self.many_to_many_column  # type: ignore
+        from clearskies.autodoc.schema import Schema as AutoDocSchema
+
+        many_to_many_column = self.many_to_many_column
         columns = many_to_many_column.pivot_model_class.get_columns()
         pivot_id_column_name = many_to_many_column.pivot_model_class.id_column_name
-        pivot_id_docs = columns[pivot_id_column_name].documentation()
-        pivot_properties = pivot_id_docs if isinstance(pivot_id_docs, list) else [pivot_id_docs]
+        pivot_properties: list[AutoDocSchema] = [*columns[pivot_id_column_name].documentation()]
 
-        for column_name in many_to_many_column.readable_pivot_column_names or []:
-            pivot_docs = columns[column_name].documentation()
-            if type(pivot_docs) != list:
-                pivot_docs = [pivot_docs]
-            pivot_properties.extend(pivot_docs)
+        for column_name in getattr(many_to_many_column, "readable_pivot_column_names", []) or []:
+            pivot_properties.extend(columns[column_name].documentation())
 
         pivot_object = AutoDocObject(
             string.title_case_to_nice(many_to_many_column.pivot_model_class.__name__),

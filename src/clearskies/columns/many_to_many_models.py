@@ -13,6 +13,7 @@ from clearskies.functional import string
 
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.schema import Schema
 
 RelatedModel = TypeVar("RelatedModel", bound="Model")
 
@@ -38,7 +39,7 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
     ):
         pass
 
-    def finalize_configuration(self, model_class: type, name: str) -> None:
+    def finalize_configuration(self, model_class: type[Schema], name: str) -> None:
         """Finalize and check the configuration."""
         getattr(self.__class__, "many_to_many_column_name").set_model_class(model_class)
         self.model_class = model_class
@@ -54,11 +55,11 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
 
     @property
     def pivot_model(self):
-        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True)  # type: ignore
+        return self.di.build(self.many_to_many_column.pivot_model_class, cache=True)
 
     @property
     def related_models(self):
-        return self.di.build(self.many_to_many_column.related_model_class, cache=True)  # type: ignore
+        return self.di.build(self.many_to_many_column.related_model_class, cache=True)
 
     @property
     def related_columns(self):
@@ -82,7 +83,7 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         if self.name in instance._transformed_data:
@@ -95,14 +96,14 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
 
     def __set__(self, instance, value: Model | list[Model] | list[dict[str, Any]]) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         # we allow a list of models or a model, but if it's a model it may represent a single record or a query.
         # if it's a single record then we want to wrap it in a list so we can iterate over it.
         if hasattr(value, "_data") and isinstance(value, Model) and value._data:
             value = []
-        many_to_many_column: ManyToManyIds = self.many_to_many_column  # type: ignore
+        many_to_many_column: ManyToManyIds = self.many_to_many_column
         related_model_class = many_to_many_column.related_model_class
         related_id_column_name = related_model_class.id_column_name
         record_ids = []
@@ -124,13 +125,13 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
         setattr(instance, self.many_to_many_column_name, record_ids)
 
     def add_search(self, model: Model, value: str, operator: str = "", relationship_reference: str = "") -> Model:
-        return self.many_to_many_column.add_search(  # type: ignore
+        return self.many_to_many_column.add_search(
             model, value, operator, relationship_reference=relationship_reference
-        )  # type: ignore
+        )
 
     def to_json(self, model: Model) -> dict[str, Any]:
         records = []
-        many_to_many_column: ManyToManyIds = self.many_to_many_column  # type: ignore
+        many_to_many_column: ManyToManyIds = self.many_to_many_column
         columns = many_to_many_column.related_columns
         related_id_column_name = many_to_many_column.related_model_class.id_column_name
         readable_related_column_names = many_to_many_column.readable_related_column_names or []
@@ -141,14 +142,14 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
             for column_name in readable_related_column_names:
                 column_data = columns[column_name].to_json(related)
                 if type(column_data) == dict:
-                    json = {**json, **column_data}  # type: ignore
+                    json = {**json, **column_data}
                 else:
                     json[column_name] = column_data
             records.append(json)
         return {self.name: records}
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
-        many_to_many_column = self.many_to_many_column  # type: ignore
+        many_to_many_column = self.many_to_many_column
         columns = many_to_many_column.related_model_class.get_columns()
         related_id_column_name = many_to_many_column.related_model_class.id_column_name
         related_id_docs = columns[related_id_column_name].documentation()
