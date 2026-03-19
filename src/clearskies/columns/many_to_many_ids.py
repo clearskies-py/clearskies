@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, overload
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Array as AutoDocArray
@@ -9,9 +9,13 @@ from clearskies.column import Column
 
 if TYPE_CHECKING:
     from clearskies import Column, Model, typing
+    from clearskies.schema import Schema
+
+RelatedModel = TypeVar("RelatedModel", bound="Model")
+PivotModel = TypeVar("PivotModel", bound="Model")
 
 
-class ManyToManyIds(Column):
+class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
     """
     A column that represents a many-to-many relationship.
 
@@ -166,16 +170,16 @@ class ManyToManyIds(Column):
     """ The list of columns to be loaded from the related models when we are converted to JSON. """
     readable_related_column_names = configs.ReadableModelColumns("related_model_class")
 
-    default = configs.StringList(default=None)  # type: ignore
-    setable = configs.StringListOrCallable(default=None)  # type: ignore
+    default = configs.StringList(default=None)
+    setable = configs.StringListOrCallable(default=None)
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class,
-        pivot_model_class,
+        related_model_class: type[RelatedModel],
+        pivot_model_class: type[PivotModel],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_column_names: list[str] = [],
@@ -194,7 +198,7 @@ class ManyToManyIds(Column):
     ):
         pass
 
-    def finalize_configuration(self, model_class: type, name: str) -> None:
+    def finalize_configuration(self, model_class: type[Schema], name: str) -> None:
         """
         Finalize and check the configuration.
 
@@ -249,7 +253,7 @@ class ManyToManyIds(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         related_id_column_name = self.related_model_class.id_column_name
@@ -257,7 +261,7 @@ class ManyToManyIds(Column):
 
     def __set__(self, instance, value: list[str | int]) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value
@@ -297,7 +301,7 @@ class ManyToManyIds(Column):
         related_column_name_in_pivot = self.related_column_name_in_pivot
         if to_delete:
             for model_to_delete in pivot_model.where(
-                f"{related_column_name_in_pivot} IN ({','.join(map(str, to_delete))})"
+                f"{related_column_name_in_pivot} IN ({','.join(str(x) for x in to_delete)})"
             ):
                 model_to_delete.delete()
         if to_create:

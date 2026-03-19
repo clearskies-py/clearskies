@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from clearskies import decorators
-from clearskies.columns.has_many import HasMany
+from clearskies.columns.has_many import ChildModel, HasMany
 
 if TYPE_CHECKING:
     from clearskies import typing
 
 
-class HasManySelf(HasMany):
+class HasManySelf(HasMany[ChildModel]):
     """
     This is just like the HasMany column, but is used when the model references itself.
 

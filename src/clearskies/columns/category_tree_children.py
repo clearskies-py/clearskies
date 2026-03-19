@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.column import Column
@@ -8,9 +8,12 @@ from clearskies.columns import CategoryTree
 
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.schema import Schema
+
+CategoryModel = TypeVar("CategoryModel", bound="Model")
 
 
-class CategoryTreeChildren(Column):
+class CategoryTreeChildren(Column, Generic[CategoryModel]):
     """
     Return the child categories from a category tree column.
 
@@ -42,7 +45,7 @@ class CategoryTreeChildren(Column):
     ):
         pass
 
-    def finalize_configuration(self, model_class: type, name: str) -> None:
+    def finalize_configuration(self, model_class: type[Schema], name: str) -> None:
         """Finalize and check the configuration."""
         getattr(self.__class__, "category_tree_column_name").set_model_class(model_class)
         self.model_class = model_class
@@ -61,21 +64,21 @@ class CategoryTreeChildren(Column):
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, instance: Model, cls: type[Model]) -> CategoryModel:
         pass
 
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             model.get_columns()
 
         return self.relatives(model)
 
-    def __set__(self, model: Model, value: Model) -> None:
+    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
         raise ValueError(
             f"Attempt to set a value to '{model.__class__.__name__}.{self.name}, but this column is not writeable"
         )

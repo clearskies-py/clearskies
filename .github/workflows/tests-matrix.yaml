@@ -8,7 +8,7 @@ on:
       python-version:
         required: true
         type: string
-      run-mypy:
+      run-ty:
         required: true
         type: boolean
       run-pytest:
@@ -29,10 +29,10 @@ env:
   PYTHONWARNDEFAULTENCODING: "true"
 
 jobs:
-  mypy:
-    name: mypy
+  ty:
+    name: ty
     runs-on: ${{ inputs.runner }}
-    if: inputs.run-mypy
+    if: inputs.run-ty
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -45,7 +45,7 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --locked --all-extras --dev
-      - run: uv run mypy src --check || true
+      - run: uv run ty check src
 
   pytest:
     name: pytest

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TypeVar
+from typing import TypeVar, overload
 
 _T = TypeVar("_T")
 
@@ -46,7 +46,16 @@ class Headers(dict[str, str]):
         else:
             self.__setitem__(key, value)
 
-    def get(self, key: str, default: _T = None) -> str | _T:  # type: ignore[assignment]
+    @overload
+    def get(self, key: str, /) -> str | None: ...
+
+    @overload
+    def get(self, key: str, default: str, /) -> str: ...
+
+    @overload
+    def get(self, key: str, default: _T, /) -> str | _T: ...
+
+    def get(self, key: str, default=None, /):  # type: ignore[override]
         return super().get(key.upper().replace("_", "-"), default)
 
     def add(self, key: str, value: str) -> None:

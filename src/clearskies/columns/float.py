@@ -67,8 +67,8 @@ class Float(Column):
     ```
     """
 
-    default = configs.Float()  # type: ignore
-    setable = configs.FloatOrCallable(default=None)  # type: ignore
+    default = configs.Float()
+    setable = configs.FloatOrCallable(default=None)
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
     auto_doc_class: type[AutoDocSchema] = AutoDocNumber
     _descriptor_config_map = None
@@ -105,7 +105,7 @@ class Float(Column):
 
     def __set__(self, instance, value: float) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = float(value)

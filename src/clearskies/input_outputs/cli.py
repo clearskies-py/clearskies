@@ -18,11 +18,11 @@ class Cli(InputOutput):
         self._parse_args(sys.argv)
         super().__init__()
 
-    def respond(self, response, status_code=200):
-        if type(response) != str:
-            final = json.dumps(response)
+    def respond(self, body, status_code=200):
+        if type(body) != str:
+            final = json.dumps(body)
         else:
-            final = response
+            final = body
         if status_code != 200:
             sys.exit(final)
         print(final)
@@ -126,14 +126,14 @@ class Cli(InputOutput):
         # Most of the above inputs result in a string for our final data, in which case we'll leave it as the "raw body"
         # so that it can optionally be interpreted as JSON.  If we received a bunch of kwargs though, we'll allow those to
         # only be "read" as JSON.
-        if data_source == "kwargs":
-            self._body_as_json = final_data  # type: ignore
+        if data_source == "kwargs" and isinstance(final_data, dict):
+            self._body_as_json = final_data
             self._body_loaded_as_json = True
             self._has_body = True
             self._body = json.dumps(final_data)
         elif final_data:
             self._has_body = True
-            self._body = final_data
+            self._body = str(final_data)
 
     def get_full_path(self):
         if self.url is not None:

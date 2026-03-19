@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from clearskies import decorators
-from clearskies.columns.belongs_to_id import BelongsToId
+from clearskies.columns.belongs_to_id import BelongsToId, ParentModel
 
 if TYPE_CHECKING:
     from clearskies import typing
 
 
-class BelongsToSelf(BelongsToId):
+class BelongsToSelf(BelongsToId[ParentModel]):
     """
     This is a standard BelongsToId column except it's used in cases where the model relates to itself.
 

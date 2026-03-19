@@ -16,7 +16,7 @@ class ByClass(Injectable):
 
     def __get__(self, instance, parent) -> Any:
         if instance is None:
-            return self  # type: ignore
+            return self
 
         self.initiated_guard(instance)
         if self.cls in self._di._class_overrides_by_class:

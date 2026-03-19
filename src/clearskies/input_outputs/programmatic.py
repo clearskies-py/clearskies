@@ -37,8 +37,8 @@ class Programmatic(InputOutput):
 
         super().__init__()
 
-    def respond(self, response, status_code=200):
-        return (status_code, response, self.response_headers)
+    def respond(self, body, status_code=200):
+        return (status_code, body, self.response_headers)
 
     def get_full_path(self):
         return self.url

@@ -483,7 +483,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     def clear_credential_cache(self):
         if self.secret_key:
-            self._secret = None  # type: ignore
+            self._secret = None
 
     @property
     def alternate_secret(self):

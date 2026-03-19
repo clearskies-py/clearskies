@@ -31,8 +31,8 @@ class Boolean(Column):
     auto_doc_class: type[AutoDocSchema] = AutoDocBoolean
 
     _allowed_search_operators = ["="]
-    default = configs.Boolean()  # type: ignore
-    setable = configs.BooleanOrCallable()  # type: ignore
+    default = configs.Boolean()
+    setable = configs.BooleanOrCallable()
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties
@@ -91,7 +91,7 @@ class Boolean(Column):
 
     def __set__(self, instance, value: bool) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value

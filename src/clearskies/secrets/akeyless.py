@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
 from clearskies import configs, secrets
@@ -12,7 +11,7 @@ from clearskies.secrets.cache_storage.secret_cache import SecretCache
 from clearskies.secrets.exceptions import PermissionsError
 
 if TYPE_CHECKING:
-    from akeyless import ListItemsOutput, V2Api  # type: ignore[import-untyped]
+    from akeyless import ListItemsOutput, V2Api
 
 
 class Akeyless(secrets.Secrets):
@@ -101,7 +100,7 @@ class Akeyless(secrets.Secrets):
     """
     The Akeyless SDK module injected by the dependency injection system
     """
-    akeyless: ModuleType = inject.ByName("akeyless_sdk")  # type: ignore
+    akeyless = inject.ByName("akeyless_sdk")
 
     """
     The access ID for the Akeyless service
@@ -275,7 +274,7 @@ class Akeyless(secrets.Secrets):
             try:
                 secret = self.describe_secret(path)
             except Exception as e:
-                if e.status == 404:  # type: ignore
+                if getattr(e, "status", None) == 404:
                     if silent_if_not_found:
                         return ""
                     raise e
@@ -332,20 +331,20 @@ class Akeyless(secrets.Secrets):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
         try:
-            res: dict[str, object] = self.api.get_secret_value(  # type: ignore
+            res: dict[str, object] = self.api.get_secret_value(
                 self.akeyless.GetSecretValue(
                     names=[path], token=self._get_token(), json=True if json_attribute else False
                 )
             )
         except Exception as e:
-            if e.status == 404:  # type: ignore
+            if getattr(e, "status", None) == 404:
                 if silent_if_not_found:
                     return ""
                 raise KeyError(f"Secret '{path}' not found")
             raise e
 
         if json_attribute:
-            value = get_nested_attribute(res[path], json_attribute)  # type: ignore
+            value = get_nested_attribute(res[path], json_attribute)
         else:
             value = str(res[path])
 
@@ -383,13 +382,13 @@ class Akeyless(secrets.Secrets):
         if not "read" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "name": path,
             "token": self._get_token(),
         }
         if args:
-            kwargs["args"] = args  # type: ignore
-        res: dict[str, Any] = self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))  # type: ignore
+            kwargs["args"] = args
+        res: dict[str, Any] = self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))
 
         if json_attribute:
             value = get_nested_attribute(res, json_attribute)
@@ -431,15 +430,15 @@ class Akeyless(secrets.Secrets):
         if not "read" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secret '{path}'")
 
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "names": path,
             "token": self._get_token(),
             "json": True if json_attribute else False,
         }
         if args:
-            kwargs["args"] = args  # type: ignore
+            kwargs["args"] = args
 
-        res: dict[str, str] = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))["value"]  # type: ignore
+        res: dict[str, str] = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))["value"]
 
         if json_attribute:
             value = get_nested_attribute(res, json_attribute)
@@ -475,7 +474,7 @@ class Akeyless(secrets.Secrets):
         if not "list" in self.describe_permissions(path):
             raise PermissionsError(f"You do not have permission the secrets in '{path}'")
 
-        res: ListItemsOutput = self.api.list_items(  # type: ignore
+        res: ListItemsOutput = self.api.list_items(
             self.akeyless.ListItems(
                 path=path,
                 token=self._get_token(),
@@ -518,21 +517,21 @@ class Akeyless(secrets.Secrets):
         except Exception as e:
             self.create(path, value)
 
-    def list_sub_folders(self, main_folder: str) -> list[str]:
+    def list_sub_folders(self, path: str) -> list[str]:
         """
         Return the list of secrets/sub folders in the given folder.
 
         Checks permissions before listing subfolders and raises PermissionsError if the user doesn't
         have list permission for the path. Returns the relative subfolder names without the parent path.
         """
-        if not "list" in self.describe_permissions(main_folder):
-            raise PermissionsError(f"You do not have permission to list sub folders in '{main_folder}'")
+        if not "list" in self.describe_permissions(path):
+            raise PermissionsError(f"You do not have permission to list sub folders in '{path}'")
 
-        items = self.api.list_items(self.akeyless.ListItems(path=main_folder, token=self._get_token()))
+        items = self.api.list_items(self.akeyless.ListItems(path=path, token=self._get_token()))
 
         # akeyless will return the absolute path and end in a slash but we only want the folder name
-        main_folder_string_len = len(main_folder)
-        return [sub_folder[main_folder_string_len:-1] for sub_folder in items.folders]  # type: ignore
+        path_string_len = len(path)
+        return [sub_folder[path_string_len:-1] for sub_folder in items.folders]
 
     def get_ssh_certificate(self, cert_issuer: str, cert_username: str, path_to_public_file: str) -> Any:
         """
@@ -553,7 +552,7 @@ class Akeyless(secrets.Secrets):
             )
         )
 
-        return res.data  # type: ignore
+        return res.data
 
     def delete(self, path: str) -> bool:
         """
@@ -610,13 +609,13 @@ class Akeyless(secrets.Secrets):
         Uses the akeyless_cloud_id package to generate a cloud ID and authenticates with Akeyless
         using the configured access_id. Returns a tuple of (token, expiry_timestamp).
         """
-        from akeyless_cloud_id import CloudId  # type: ignore
+        from akeyless_cloud_id import CloudId
 
         res = self.api.auth(
             self.akeyless.Auth(access_id=self.access_id, access_type="aws_iam", cloud_id=CloudId().generate())
         )
         expiry = self._extract_expiry(res)
-        return (res.token, expiry)  # type: ignore
+        return (res.token, expiry)
 
     def auth_saml(self) -> tuple[str, float]:
         """
@@ -732,7 +731,7 @@ class Akeyless(secrets.Secrets):
         """
         return self.api.describe_permissions(
             self.akeyless.DescribePermissions(token=self._get_token(), path=path, type=type)
-        ).client_permissions  # type: ignore
+        ).client_permissions
 
 
 class AkeylessSaml(Akeyless):

@@ -3,19 +3,16 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
-import dateparser  # type: ignore
+import dateparser
 
 from clearskies import configs, decorators
-from clearskies.autodoc.schema import Datetime as AutoDocDatetime
-from clearskies.column import Column
+from clearskies.columns.date import Date
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
-    from clearskies.autodoc.schema import Schema as AutoDocSchema
-    from clearskies.query import Condition
 
 
-class Datetime(Column):
+class Datetime(Date):
     """
     Stores date+time data in a column.
 
@@ -104,14 +101,6 @@ class Datetime(Column):
     date_format = configs.String(default="%Y-%m-%d %H:%M:%S")
 
     """
-    A default value to set for this column.
-
-    The default is only used when creating a record for the first time, and only if
-    a value for this column has not been set.
-    """
-    default = configs.Datetime()  # type: ignore
-
-    """
     Sets a default date that the backend is going to provide.
 
     Some backends, depending on configuration, may provide a default value for the column
@@ -119,11 +108,6 @@ class Datetime(Column):
     when a given value is actually a non-value.
     """
     backend_default = configs.String(default="0000-00-00 00:00:00")
-
-    setable = configs.DatetimeOrCallable(default=None)  # type: ignore
-    _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
-    auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
-    _descriptor_config_map = None
 
     @decorators.parameters_to_properties
     def __init__(
@@ -182,14 +166,6 @@ class Datetime(Column):
             self.name: value.strftime(self.date_format),
         }
 
-    def to_json(self, model: Model) -> dict[str, Any]:
-        """Grabs the column out of the model and converts it into a representation that can be turned into JSON."""
-        value = self.__get__(model, model.__class__)
-        if value and (isinstance(value, datetime.datetime) or isinstance(value, datetime.date)):
-            value = value.isoformat()  # type: ignore
-
-        return {self.name: value}
-
     @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:
         pass
@@ -201,36 +177,12 @@ class Datetime(Column):
     def __get__(self, instance, cls):
         return super().__get__(instance, cls)
 
-    def __set__(self, instance, value: datetime.datetime) -> None:
+    def __set__(self, instance, value: datetime.datetime | datetime.date) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value
-
-    def equals(self, value: str | datetime.datetime) -> Condition:
-        return super().equals(value)
-
-    def spaceship(self, value: str | datetime.datetime) -> Condition:
-        return super().spaceship(value)
-
-    def not_equals(self, value: str | datetime.datetime) -> Condition:
-        return super().not_equals(value)
-
-    def less_than_equals(self, value: str | datetime.datetime) -> Condition:
-        return super().less_than_equals(value)
-
-    def greater_than_equals(self, value: str | datetime.datetime) -> Condition:
-        return super().greater_than_equals(value)
-
-    def less_than(self, value: str | datetime.datetime) -> Condition:
-        return super().less_than(value)
-
-    def greater_than(self, value: str | datetime.datetime) -> Condition:
-        return super().greater_than(value)
-
-    def is_in(self, values: list[str | datetime.datetime]) -> Condition:
-        return super().is_in(values)
 
     def input_error_for_value(self, value, operator=None):
         value = dateparser.parse(value)

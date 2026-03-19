@@ -106,9 +106,9 @@ class Jwks(Authentication, di.InjectableProperties):
 
     def validate_jwt(self, raw_jwt):
         try:
-            from jwcrypto import jwk, jwt  # type: ignore
-            from jwcrypto.common import JWException  # type: ignore
-        except:
+            from jwcrypto import jwk, jwt
+            from jwcrypto.common import JWException
+        except ImportError:
             raise ValueError(
                 "The JWKS authentication method requires the jwcrypto libraries to be installed.  These are optional dependencies of clearskies, so to include them do a `pip install 'clear-skies[jwcrypto]'`"
             )
