@@ -621,17 +621,15 @@ class Di:
                 self._prepared[name] = built_value
             return built_value
 
-        if name in self._class_overrides_by_name:
-            built_value = self.build_class(self._class_overrides_by_name[name], context=context)
-            if cache:
-                self._prepared[name] = built_value
-            return built_value
-
-        if name in self._classes:
-            class_entry = self._classes[name]["class"]
-            if not isinstance(class_entry, type):
-                raise TypeError(f"Expected a class for '{name}', got {type(class_entry)}")
-            built_value = self.build_class(class_entry, context=context)
+        if name in self._class_overrides_by_name or name in self._classes:
+            if name in self._class_overrides_by_name:
+                class_to_build = self._class_overrides_by_name[name]
+            else:
+                class_entry = self._classes[name]["class"]
+                if not isinstance(class_entry, type):
+                    raise TypeError(f"Expected a class for '{name}', got {type(class_entry)}")
+                class_to_build = class_entry
+            built_value = self.build_class(class_to_build, context=context)
             if cache:
                 self._prepared[name] = built_value
             return built_value

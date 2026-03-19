@@ -11,6 +11,7 @@ python-version = "3.13"
 exclude = [
     "tests/fixtures/",
     "docs/",
+    "tests/",
 ]
 
 [rules]

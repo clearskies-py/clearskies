@@ -1001,15 +1001,11 @@ class ApiBackend(Backend, InjectableProperties):
         if isinstance(response_data, list):
             if not response_data:
                 return []
-            if not self.check_dict_and_map_to_model(response_data[0], columns, query_data):
+            if not self.is_model_data(response_data[0], columns):
                 raise ValueError(
                     "The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
                 )
-            return [
-                mapped
-                for record in response_data
-                if (mapped := self.check_dict_and_map_to_model(record, columns, query_data)) is not None
-            ]
+            return [self.map_to_model(record, columns, query_data) for record in response_data]
 
         if not isinstance(response_data, dict):
             raise ValueError(
@@ -1058,6 +1054,91 @@ class ApiBackend(Backend, InjectableProperties):
 
         return response
 
+    def is_model_data(
+        self,
+        response_data: dict[str, Any],
+        columns: dict[str, Column],
+    ) -> bool:
+        """
+        Check whether a dictionary in the response looks like it contains data for a record.
+
+        Returns True if the response data has keys that overlap with the expected model columns
+        (either directly or in a nested dictionary).  This is the "check" half of the split from
+        ``check_dict_and_map_to_model``; use ``map_to_model`` for the actual mapping.
+        """
+        response_to_model_map = self.build_response_to_model_map(columns)
+        response_keys = set(response_data.keys())
+        map_keys = set(response_to_model_map.keys())
+
+        if response_keys.intersection(map_keys):
+            return True
+
+        # check nested api_to_model_map entries
+        for api_key in self.api_to_model_map:
+            if "." not in api_key:
+                continue
+            try:
+                value = json_functional.get_nested_attribute(response_data, api_key)
+            except KeyError:
+                continue
+            if value is not None:
+                return True
+
+        # recurse into child dictionaries
+        for value in response_data.values():
+            if isinstance(value, dict) and self.is_model_data(value, columns):
+                return True
+
+        return False
+
+    def map_to_model(
+        self,
+        response_data: dict[str, Any],
+        columns: dict[str, Column],
+        query_data: dict[str, Any] = {},
+    ) -> dict[str, Any]:
+        """
+        Map a response dictionary to a model record.
+
+        The caller **must** have already verified that the data looks like a model record
+        (e.g. via ``is_model_data``).  Unlike ``check_dict_and_map_to_model`` this method
+        always returns a ``dict`` and never ``None``.
+        """
+        response_to_model_map = self.build_response_to_model_map(columns)
+        response_keys = set(response_data.keys())
+        map_keys = set(response_to_model_map.keys())
+        matching = response_keys.intersection(map_keys)
+
+        mapped = {response_to_model_map[key]: response_data[key] for key in matching}
+
+        for api_key, column_name in self.api_to_model_map.items():
+            if "." not in api_key:
+                continue
+            try:
+                value = json_functional.get_nested_attribute(response_data, api_key)
+            except KeyError:
+                continue
+            if value is None:
+                continue
+            if isinstance(column_name, list):
+                for column in column_name:
+                    mapped[column] = value
+            else:
+                mapped[column_name] = value
+
+        for key in response_keys.difference(map_keys):
+            mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
+
+        # if we didn't map anything at the top level, recurse into child dictionaries
+        if not mapped:
+            for value in response_data.values():
+                if not isinstance(value, dict):
+                    continue
+                if self.is_model_data(value, columns):
+                    return {**query_data, **self.map_to_model(value, columns)}
+
+        return {**query_data, **mapped}
+
     def check_dict_and_map_to_model(
         self,
         response_data: dict[str, Any],
@@ -1068,52 +1149,12 @@ class ApiBackend(Backend, InjectableProperties):
         Check a dictionary in the response to decide if it contains the data for a record.
 
         If not, it will search the keys for something that looks like a record.
+
+        This is a convenience wrapper around ``is_model_data`` and ``map_to_model``.
         """
-        # first let's get a coherent map of expected-key-names in the response to model names
-        response_to_model_map = self.build_response_to_model_map(columns)
-
-        # and now we can see if that appears to be what we have
-        response_keys = set(response_data.keys())
-        map_keys = set(response_to_model_map.keys())
-        matching = response_keys.intersection(map_keys)
-
-        # we may need to be smarter about whether or not we think we found a match, but for now let's
-        # ignore that possibility.  If any columns match between the keys in our response dictionary and
-        # the keys that we are expecting to find data in, then just assume that we have found a record.
-        mapped = {response_to_model_map[key]: response_data[key] for key in matching}
-
-        for api_key, column_name in self.api_to_model_map.items():
-            if "." not in api_key:
-                continue
-            try:
-                value = json_functional.get_nested_attribute(response_data, api_key)
-            except KeyError:
-                # If the nested attribute is not found, just continue to the next key
-                continue
-            if value is None:
-                continue
-            if isinstance(column_name, list):
-                for column in column_name:
-                    mapped[column] = value
-            else:
-                mapped[column_name] = value
-        # finally, move over anything not mentioned in the map
-        for key in response_keys.difference(map_keys):
-            mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
-
-            # if nothing matches then clearly this isn't what we're looking for: repeat on all the children
-        if not mapped:
-            for key, value in response_data.items():
-                if not isinstance(value, dict):
-                    continue
-                remapped = self.check_dict_and_map_to_model(value, columns)
-                if remapped:
-                    return {**query_data, **remapped}
-
-            # no match anywhere :(
+        if not self.is_model_data(response_data, columns):
             return None
-
-        return {**query_data, **mapped}
+        return self.map_to_model(response_data, columns, query_data)
 
     def build_response_to_model_map(self, columns: dict[str, Column]) -> dict[str, str]:
         if self._response_to_model_map is not None:
