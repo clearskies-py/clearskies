@@ -46,7 +46,7 @@ class Sqlite(Cursor):
     """
     Connection timeout in seconds.
     """
-    connect_timeout = configs.Float(default=2.0)  # type: ignore[assignment]
+    connect_timeout = configs.Float(default=2.0)
     value_placeholder = "?"
     sys = inject.ByName("sys")
 
@@ -98,14 +98,14 @@ class Sqlite(Cursor):
             self._connection.isolation_level = None  # Enable autocommit for sqlite3
         else:
             if self.sys.version_info > (3, 12):  # noqa: UP036
-                self._connection.autocommit = False  # type: ignore[attr-defined]
+                setattr(self._connection, "autocommit", False)
             else:
                 self._connection.isolation_level = "DEFERRED"  # Disable autocommit
-        return self._connection  # type: ignore[return-value]
+        return self._connection
 
     @property
     def cursor(self) -> SQLiteCursor:
         """Get or create a database cursor instance."""
         if not hasattr(self, "_cursor"):
             self._cursor = self.connection.cursor()
-        return self._cursor  # type: ignore[return-value]
+        return cast(SQLiteCursor, self._cursor)

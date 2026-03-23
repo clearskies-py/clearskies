@@ -67,8 +67,8 @@ class Integer(Column):
     ```
     """
 
-    default = configs.Integer(default=None)  # type: ignore
-    setable = configs.IntegerOrCallable(default=None)  # type: ignore
+    default = configs.Integer(default=None)
+    setable = configs.IntegerOrCallable(default=None)
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
 
     auto_doc_class: type[AutoDocSchema] = AutoDocInteger
@@ -112,7 +112,7 @@ class Integer(Column):
 
     def __set__(self, instance, value: int) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from clearskies.contexts.context import Context
 from clearskies.input_outputs import Cli as CliInputOutput
 
@@ -126,5 +130,5 @@ class Cli(Context):
     `sys_argv`.  This contains `sys.argv`.
     """
 
-    def __call__(self):  # type: ignore
+    def __call__(self) -> Any:  # type: ignore[override]
         return self.execute_application(CliInputOutput())

@@ -80,11 +80,11 @@ class String(Column):
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         if self.name not in instance._data:
-            return None  # type: ignore
+            return None
 
         if self.name not in instance._transformed_data:
             instance._transformed_data[self.name] = self.from_backend(instance._data[self.name])
@@ -93,7 +93,7 @@ class String(Column):
 
     def __set__(self, instance: Model, value: str) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value

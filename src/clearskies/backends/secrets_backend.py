@@ -53,7 +53,7 @@ class SecretsBackend(Backend):
         if not query.conditions:
             raise KeyError(f"You must search by an id when using the secrets backend.")
 
-    def update(self, id: str, data: dict[str, Any], model: Model) -> RecordQueryResult:  # type: ignore[override]
+    def update(self, id: int | str, data: dict[str, Any], model: Model) -> RecordQueryResult:
         """
         Update the record with the given id with the information from the data dictionary.
 
@@ -99,7 +99,7 @@ class SecretsBackend(Backend):
             )
         return self.update(data[model.id_column_name], data, model)
 
-    def delete(self, id: str, model: Model) -> SuccessQueryResult:  # type: ignore[override]
+    def delete(self, id: int | str, model: Model) -> SuccessQueryResult:
         """
         Delete the record with the given id.
 

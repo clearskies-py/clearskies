@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from clearskies import authentication, autodoc, configs, decorators, exceptions
 from clearskies.endpoint import Endpoint
@@ -134,9 +134,9 @@ class List(Endpoint):
         sortable_column_names=["id", "name"],
         default_sort_column_name="name",
         where=[
-            lambda model, now: model.where("name=Jane")
-            if now > datetime.datetime(2025, 1, 1)
-            else model
+            lambda model, now: (
+                model.where("name=Jane") if now > datetime.datetime(2025, 1, 1) else model
+            )
         ],
     )
     ```
@@ -239,7 +239,9 @@ class List(Endpoint):
         if self.transform_input_types and input_output.query_parameters:
             input_output.query_parameters = self.force_query_parameters(input_output.query_parameters, self.model_class)
 
-        request_data = self.map_input_to_internal_names(input_output.request_data)  # type: ignore
+        request_data = self.map_input_to_internal_names(
+            input_output.request_data if isinstance(input_output.request_data, dict) else {}
+        )
         query_parameters = self.map_input_to_internal_names(input_output.query_parameters)
         pagination_data = {}
         for key in model.allowed_pagination_keys():
@@ -292,7 +294,7 @@ class List(Endpoint):
         if sort and direction:
             model = self.add_join(sort, model)
             [sort_column, sort_table] = self.resolve_references_for_query(sort)
-            model = model.sort_by(sort_column, direction, sort_table)  # type: ignore
+            model = model.sort_by(sort_column or "", direction, sort_table or "")
 
         return model
 
@@ -323,7 +325,8 @@ class List(Endpoint):
                 sort_column_map[external_name] = internal_name
             # sometimes the sort may be a list of directives
             if isinstance(data["sort"], list):
-                for index, sort_entry in enumerate(data["sort"]):
+                for index, _sort_entry in enumerate(data["sort"]):
+                    sort_entry = cast(dict[str, str], _sort_entry)
                     if "column" not in sort_entry:
                         continue
                     if sort_entry["column"] in sort_column_map:
@@ -490,7 +493,7 @@ class List(Endpoint):
         }
 
     def documentation_url_pagination_parameters(self) -> list[autodoc.request.Parameter]:
-        url_parameters = [
+        url_parameters: list[autodoc.request.Parameter] = [
             autodoc.request.URLParameter(
                 autodoc.schema.Integer(self.auto_case_internal_column_name("limit")),
                 description="The number of records to return",
@@ -501,7 +504,7 @@ class List(Endpoint):
             schema, description = parameter
             url_parameters.append(autodoc.request.URLParameter(schema, description=description))
 
-        return url_parameters  # type: ignore
+        return url_parameters
 
     def documentation_url_sort_parameters(self) -> list[autodoc.request.Parameter]:
         sort_columns = [self.auto_case_column_name(internal_name, True) for internal_name in self.sortable_column_names]
@@ -529,7 +532,7 @@ class List(Endpoint):
         ]
 
     def documentation_json_pagination_parameters(self) -> list[autodoc.request.Parameter]:
-        json_parameters = [
+        json_parameters: list[autodoc.request.Parameter] = [
             autodoc.request.JSONBody(
                 autodoc.schema.Integer(self.auto_case_internal_column_name("limit")),
                 description="The number of records to return",
@@ -540,7 +543,7 @@ class List(Endpoint):
             schema, description = parameter
             json_parameters.append(autodoc.request.JSONBody(schema, description=description))
 
-        return json_parameters  # type: ignore
+        return json_parameters
 
     def documentation_json_sort_parameters(self) -> list[autodoc.request.Parameter]:
         sort_columns = [self.auto_case_column_name(internal_name, True) for internal_name in self.sortable_column_names]

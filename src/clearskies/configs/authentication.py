@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.configs import config
 
@@ -17,7 +17,11 @@ class Authentication(config.Config):
             )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> AuthenticationType:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> AuthenticationType: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

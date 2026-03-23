@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from clearskies import typing
     from clearskies.input_outputs import InputOutput
+    from clearskies.security_header import SecurityHeader
 
 from clearskies import configs, configurable, di, exceptions
 from clearskies.authentication import Authorization, Public
@@ -40,7 +41,7 @@ class End(
     authorization = configs.Authorization(default=Authorization())
     security_headers = configs.SecurityHeaders(default=[])
 
-    cors_header: SecurityHeader = None  # type: ignore
+    cors_header: SecurityHeader | None = None
     has_cors: bool = False
 
     def add_url_prefix(self, prefix: str) -> None:

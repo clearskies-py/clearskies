@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class EndpointGroup(
-    end.End,  # type: ignore
+    end.End,
     configurable.Configurable,
     di.InjectableProperties,
 ):
@@ -235,7 +235,7 @@ class EndpointGroup(
     authorization = configs.Authorization(default=Authorization())
     security_headers = configs.SecurityHeaders(default=[])
 
-    cors_header: SecurityHeader = None  # type: ignore
+    cors_header: SecurityHeader | None = None
     has_cors: bool = False
     endpoints_initialized = False
 
@@ -326,7 +326,7 @@ class EndpointGroup(
         """Return the full (recursive) list of all endpoints associated with this endpoint group."""
         all_endpoints: list[Endpoint] = []
         for endpoint in self.endpoints:
-            if hasattr(endpoint, "all_endpoints"):
+            if isinstance(endpoint, EndpointGroup):
                 all_endpoints = [*all_endpoints, *endpoint.all_endpoints()]
             else:
                 all_endpoints.append(endpoint)

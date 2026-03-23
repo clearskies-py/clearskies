@@ -19,7 +19,7 @@ class Query(loggable.Loggable):
     """
     The model class
     """
-    model_class: type[Model] = None  # type: ignore
+    model_class: type[Model] = None  # type: ignore[assignment]  # always set in __init__
 
     """
     The list of where conditions for the query.
@@ -94,7 +94,7 @@ class Query(loggable.Loggable):
                     self.conditions_by_column[condition.column_name] = []
                 self.conditions_by_column[condition.column_name].append(condition)
 
-    def as_kwargs(self):
+    def as_kwargs(self) -> dict[str, Any]:
         """Return the properties of this query as a dictionary so it can be used as kwargs when creating another one."""
         return {
             "model_class": self.model_class,
@@ -133,42 +133,30 @@ class Query(loggable.Loggable):
             raise TypeError(
                 f"The limit in a query must be of type int but I received a value of type '{limit.__class__.__name__}'"
             )
-        return self.__class__(
-            **{
-                **self.as_kwargs(),
-                "limit": limit,
-            }
-        )
+        kwargs = self.as_kwargs()
+        kwargs["limit"] = limit
+        return self.__class__(**kwargs)
 
     def set_group_by(self, column_name) -> Self:
         self.validate_column(column_name, "group")
-        return self.__class__(
-            **{
-                **self.as_kwargs(),
-                "group_by": column_name,
-            }
-        )
+        kwargs = self.as_kwargs()
+        kwargs["group_by"] = column_name
+        return self.__class__(**kwargs)
 
     def set_pagination(self, pagination: dict[str, Any]) -> Self:
-        return self.__class__(
-            **{
-                **self.as_kwargs(),
-                "pagination": pagination,
-            }
-        )
+        kwargs = self.as_kwargs()
+        kwargs["pagination"] = pagination
+        return self.__class__(**kwargs)
 
     def add_select(self, select: str) -> Self:
-        new_kwargs = self.as_kwargs()
-        new_kwargs["selects"].append(select)
-        return self.__class__(**new_kwargs)
+        kwargs = self.as_kwargs()
+        kwargs["selects"].append(select)
+        return self.__class__(**kwargs)
 
     def set_select_all(self, select_all: bool) -> Self:
-        return self.__class__(
-            **{
-                **self.as_kwargs(),
-                "select_all": select_all,
-            }
-        )
+        kwargs = self.as_kwargs()
+        kwargs["select_all"] = select_all
+        return self.__class__(**kwargs)
 
     def validate_column(self: Self, column_name: str, action: str, table: str | None = None) -> None:
         # for now, only validate columns that belong to *our* table.

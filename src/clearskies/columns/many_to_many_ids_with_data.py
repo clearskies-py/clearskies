@@ -4,13 +4,14 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies import configs, decorators
-from clearskies.columns.many_to_many_ids import ManyToManyIds
+from clearskies.backends.memory_backend import MemoryBackend
+from clearskies.columns.many_to_many_ids import ManyToManyIds, PivotModel, RelatedModel
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
 
 
-class ManyToManyIdsWithData(ManyToManyIds):
+class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
     """
     A column to represent a many-to-many relationship with information stored in the relationship itself.
 
@@ -146,15 +147,15 @@ class ManyToManyIdsWithData(ManyToManyIds):
     """
     persist_unique_lookup_column_to_pivot_table = configs.Boolean(default=False)
 
-    default = configs.ListAnyDict(default=None)  # type: ignore
-    setable = configs.ListAnyDictOrCallable(default=None)  # type: ignore
+    default = configs.ListAnyDict(default=None)
+    setable = configs.ListAnyDictOrCallable(default=None)
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class,
-        pivot_model_class,
+        related_model_class: type[RelatedModel],
+        pivot_model_class: type[PivotModel],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_columns: list[str] = [],
@@ -187,9 +188,9 @@ class ManyToManyIdsWithData(ManyToManyIds):
     def __get__(self, instance, cls):
         return super().__get__(instance, cls)
 
-    def __set__(self, instance, value: list[dict[str, Any]]) -> None:  # type: ignore
+    def __set__(self, instance, value: list[dict[str, Any]]) -> None:  # type: ignore[override]
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value
@@ -221,8 +222,8 @@ class ManyToManyIdsWithData(ManyToManyIds):
         related_model = self.related_model
         pivot_model = self.pivot_model.as_query()
         # minor cheating
-        if hasattr(pivot_model.backend, "create_table"):
-            pivot_model.backend.create_table(pivot_model)
+        if isinstance(pivot_model.backend, MemoryBackend):
+            pivot_model.backend.create_table(pivot_model.__class__)
         new_ids = set()
         for pivot_record in data[self.name]:
             # first we need to identify which related column this belongs to.
@@ -245,7 +246,7 @@ class ManyToManyIdsWithData(ManyToManyIds):
                         # remove this column from the data - it was used to lookup the right
                         # record, but mostly won't exist in the model, unless we've been instructed
                         # to keep it
-                        if not self._config.get("persist_unique_lookup_column_to_pivot_table"):  # type: ignore
+                        if not self.persist_unique_lookup_column_to_pivot_table:
                             del pivot_record[pivot_column]
                         break
             if not related_column_id:

@@ -719,11 +719,11 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         return {**data, self.name: str(data[self.name])}
 
     @overload
-    def __get__(self, instance: None, cls: type) -> Self:
+    def __get__(self, instance: None, cls: type[Model]) -> Self:
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type):
+    def __get__(self, instance: Model, cls: type[Model]):
         pass
 
     def __get__(self, instance, cls):
@@ -737,20 +737,20 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
             return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         if self.name not in instance._data:
-            return None  # type: ignore
+            return None
 
         if self.name not in instance._transformed_data:
             instance._transformed_data[self.name] = self.from_backend(instance._data[self.name])
 
         return instance._transformed_data[self.name]
 
-    def __set__(self, instance: Model, value) -> None:
+    def __set__(self, instance: Model, value: Any) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value
@@ -774,17 +774,21 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
     def is_unique(self) -> bool:
         """Return True/False to denote if this column should always have unique values."""
         if self._is_unique is None:
-            self._is_unique = any([validator.is_unique for validator in self.validators])
+            self._is_unique = any(
+                [validator.is_unique for validator in self.validators if hasattr(validator, "is_unique")]
+            )
         return self._is_unique
 
     @property
     def is_required(self):
         """Return True/False to denote if this column should is required."""
         if self._is_required is None:
-            self._is_required = any([validator.is_required for validator in self.validators])
+            self._is_required = any(
+                [validator.is_required for validator in self.validators if hasattr(validator, "is_required")]
+            )
         return self._is_required
 
-    def additional_write_columns(self, is_create=False) -> dict[str, Self]:
+    def additional_write_columns(self, is_create=False) -> dict[str, Column]:
         """
         Return any additional columns that should be included in write operations.
 
@@ -792,13 +796,13 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         columns in the save operation.  This function adds those in so they can be included in the
         API call.
         """
-        additional_write_columns: dict[str, Self] = {}
+        additional_write_columns: dict[str, Column] = {}
         for validator in self.validators:
             if not isinstance(validator, Validator):
                 continue
             additional_write_columns = {
                 **additional_write_columns,
-                **validator.additional_write_columns(is_create=is_create),  # type: ignore
+                **validator.additional_write_columns(is_create=is_create),
             }
         return additional_write_columns
 
@@ -833,7 +837,7 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
                 return {self.name: error}
 
         for validator in self.validators:
-            if hasattr(validator, "injectable_properties"):
+            if isinstance(validator, InjectableProperties):
                 validator.injectable_properties(self.di)
 
             error = validator(model, self.name, data)
@@ -1192,7 +1196,7 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         final_values = []
         for value in values:
             final_values.append(self.to_backend({name: value}).get(name))
-        return ParsedCondition(name, "in", final_values)  # type: ignore
+        return ParsedCondition(name, "in", final_values)
 
     def is_not_null(self) -> Condition:
         name = self.name_for_building_condition()

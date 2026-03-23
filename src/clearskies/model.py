@@ -204,7 +204,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     _last_query_result: QueryResult | None = None
 
     id_column_name: str = ""
-    backend: Backend = None  # type: ignore
+    backend: Backend
 
     _di = inject.Di()
 
@@ -217,7 +217,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
             raise TypeError(
                 f"The 'id_column_name' property of a model must be a string that specifies the name of the id column, but that is not the case for model '{self.__class__.__name__}'."
             )
-        if not self.backend:
+        if not hasattr(self, "backend"):
             raise ValueError(
                 f"You must define the 'backend' property for every model class, but this is missing for model '{self.__class__.__name__}'"
             )
@@ -257,7 +257,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         return f"{singular}s"
 
     def supports_n_plus_one(self: Self):
-        return self.backend.supports_n_plus_one  # type: ignore
+        return self.backend.supports_n_plus_one
 
     def __bool__(self: Self) -> bool:  # noqa: D105
         if self._query:
@@ -511,15 +511,15 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
                 raise ValueError(
                     f"Updating records is not allowed for model '{self.__class__.__name__}' because the backend has can_update set to False."
                 )
-            result: RecordQueryResult = self.backend.update(self._data[self.id_column_name], to_save, self)  # type: ignore
+            result: RecordQueryResult = self.backend.update(self._data[self.id_column_name], to_save, self)
         else:
             if not self.backend.can_create:
                 raise ValueError(
                     f"Creating records is not allowed for model '{self.__class__.__name__}' because the backend has can_create set to False."
                 )
-            result: RecordQueryResult = self.backend.create(to_save, self)  # type: ignore
+            result: RecordQueryResult = self.backend.create(to_save, self)
         new_data = result.record
-        id = self.backend.column_from_backend(save_columns[self.id_column_name], new_data[self.id_column_name])  # type: ignore
+        id = self.backend.column_from_backend(save_columns[self.id_column_name], new_data[self.id_column_name])
 
         # if we had any temporary columns add them back in
         new_data = {
@@ -895,7 +895,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
                     del backend_data[column.name]
                 continue
 
-            backend_data = self.backend.column_to_backend(column, backend_data)  # type: ignore
+            backend_data = self.backend.column_to_backend(column, backend_data)
             if backend_data is None:
                 raise ValueError(
                     f"Column {column.name} of type {column.__class__.__name__} did not return any data for to_database"
@@ -1131,7 +1131,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     ) -> Self:
         """Add a hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler."""
         for column in self.get_columns(overrides=overrides).values():
-            models = column.where_for_request(model, input_output, routing_data, authorization_data)  # type: ignore
+            models = column.where_for_request(model, input_output, routing_data, authorization_data)
         return self.where_for_request(
             model, input_output, routing_data=routing_data, authorization_data=authorization_data, overrides=overrides
         )

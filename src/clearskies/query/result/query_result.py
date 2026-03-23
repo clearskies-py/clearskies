@@ -253,7 +253,7 @@ class QueryResult(
         print(record["name"])  # Records fetched one at a time
     ```
     """
-    generator: CallableType[[], Generator[AnyType, None, None]] | None = Callable(default=None)  # type: ignore[assignment]
+    generator = Callable(default=None)
 
     """
     Optional async function for asynchronous data access.
@@ -277,7 +277,7 @@ class QueryResult(
     # data = await result.as_async()
     ```
     """
-    async_data: CallableType[[], AnyType] | None = Callable(default=None)  # type: ignore[assignment]
+    async_data = Callable(default=None)
 
     @decorators.parameters_to_properties
     def __init__(

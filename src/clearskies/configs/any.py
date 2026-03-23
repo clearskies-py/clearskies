@@ -11,5 +11,5 @@ class Any(config.Config):
 
     def __get__(self, instance, parent) -> AnyType:
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

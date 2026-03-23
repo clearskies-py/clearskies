@@ -7,7 +7,7 @@ import dateparser
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Datetime as AutoDocDatetime
-from clearskies.columns.datetime import Datetime
+from clearskies.column import Column
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from clearskies.query import Condition
 
 
-class Date(Datetime):
+class Date(Column):
     """
     Stores date data in a column.
 
@@ -89,14 +89,31 @@ class Date(Datetime):
     ```
     """
 
+    """
+    The format string to use when sending to the backend (default: %Y-%m-%d)
+    """
     date_format = configs.String(default="%Y-%m-%d")
+
+    """
+    Sets a default date that the backend is going to provide.
+
+    Some backends, depending on configuration, may provide a default value for the column
+    instead of null.  By setting this equal to that default value, clearskies can detect
+    when a given value is actually a non-value.
+    """
     backend_default = configs.String(default="0000-00-00")
 
-    default = configs.Datetime()  # type: ignore
-    setable = configs.DatetimeOrCallable(default=None)  # type: ignore
+    """
+    A default value to set for this column.
+
+    The default is only used when creating a record for the first time, and only if
+    a value for this column has not been set.
+    """
+    default = configs.Datetime()
+
+    setable = configs.DatetimeOrCallable(default=None)
 
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
-
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime
     _descriptor_config_map = None
 
@@ -121,7 +138,7 @@ class Date(Datetime):
     ):
         pass
 
-    def from_backend(self, value) -> datetime.date | None:  # type: ignore
+    def from_backend(self, value) -> datetime.date | None:
         if not value or value == self.backend_default:
             return None
         if isinstance(value, str):
@@ -148,7 +165,15 @@ class Date(Datetime):
             self.name: value.strftime(self.date_format),
         }
 
-    @overload  # type: ignore
+    def to_json(self, model: Model) -> dict[str, Any]:
+        """Grabs the column out of the model and converts it into a representation that can be turned into JSON."""
+        value = self.__get__(model, model.__class__)
+        if value and (isinstance(value, datetime.datetime) or isinstance(value, datetime.date)):
+            value = value.isoformat()
+
+        return {self.name: value}
+
+    @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:
         pass
 
@@ -161,34 +186,34 @@ class Date(Datetime):
 
     def __set__(self, instance, value: datetime.datetime | datetime.date) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value
 
     def equals(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().equals(value)  # type: ignore
+        return super().equals(value)
 
     def spaceship(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().spaceship(value)  # type: ignore
+        return super().spaceship(value)
 
     def not_equals(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().not_equals(value)  # type: ignore
+        return super().not_equals(value)
 
     def less_than_equals(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().less_than_equals(value)  # type: ignore
+        return super().less_than_equals(value)
 
     def greater_than_equals(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().greater_than_equals(value)  # type: ignore
+        return super().greater_than_equals(value)
 
     def less_than(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().less_than(value)  # type: ignore
+        return super().less_than(value)
 
     def greater_than(self, value: str | datetime.datetime | datetime.date) -> Condition:
-        return super().greater_than(value)  # type: ignore
+        return super().greater_than(value)
 
-    def is_in(self, values: list[str | datetime.datetime | datetime.date]) -> Condition:  # type: ignore
-        return super().is_in(values)  # type: ignore
+    def is_in(self, values: list[str | datetime.datetime | datetime.date]) -> Condition:
+        return super().is_in(values)
 
     def input_error_for_value(self, value, operator=None):
         value = dateparser.parse(value)
@@ -215,10 +240,10 @@ class Date(Datetime):
             return False
 
         if type(value_1) == str:
-            value_1 = dateparser.parse(value_1)
+            value_1 = dateparser.parse(str(value_1))
             value_1 = datetime.date(value_1.year, value_1.month, value_1.day) if value_1 else None
         if type(value_2) == str:
-            value_2 = dateparser.parse(value_2)
+            value_2 = dateparser.parse(str(value_2))
             value_2 = datetime.date(value_2.year, value_2.month, value_2.day) if value_2 else None
 
         # two times can be the same but if one is datetime-aware and one is not, python will treat them as not equal.

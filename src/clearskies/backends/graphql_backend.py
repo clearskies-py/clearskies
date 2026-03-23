@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
-from clearskies.clients import graphql_client as client
+from clearskies.clients.graphql_client import GraphqlClient
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional.string import swap_casing
 from clearskies.query.result import (
@@ -185,13 +185,13 @@ class GraphqlBackend(Backend, InjectableProperties):
     """
     use_connection_for_relationships = configs.Boolean(default=True)
 
-    _client: client.GraphqlClient
+    _client: GraphqlClient
     di = inject.Di()
 
     @decorators.parameters_to_properties
     def __init__(
         self,
-        graphql_client: client.GraphqlClient | None = None,
+        graphql_client: GraphqlClient | None = None,
         graphql_client_name: str = "graphql_client",
         root_field: str = "",
         pagination_style: str = "cursor",
@@ -209,7 +209,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         self.finalize_and_validate_configuration()
 
     @property
-    def client(self) -> client.GraphqlClient:
+    def client(self) -> GraphqlClient:
         """
         Get the GraphQL client instance.
 
@@ -227,7 +227,7 @@ class GraphqlBackend(Backend, InjectableProperties):
             self._client = self.graphql_client
         else:
             self.logger.warning("No GraphQL client provided, creating default client.")
-            self._client = inject.ByName(self.graphql_client_name)  # type: ignore[assignment]
+            self._client = inject.ByName(self.graphql_client_name)
         self._client.injectable_properties(self.di)
         return self._client
 
@@ -271,14 +271,14 @@ class GraphqlBackend(Backend, InjectableProperties):
 
         # Strategy 1: Check for parent_models_class config (BelongsTo, BelongsToId)
         if hasattr(column, "config"):
-            model = column.config("parent_models_class")
+            model = column.config("parent_models_class")  # type: ignore[call-non-callable]
             if model:
-                return model  # type: ignore[return-value]
+                return model
 
             # Strategy 2: Check for child_models_class config (HasMany)
-            model = column.config("child_models_class")
+            model = column.config("child_models_class")  # type: ignore[call-non-callable]
             if model:
-                return model  # type: ignore[return-value]
+                return model
 
         # Strategy 3: For BelongsToModel, look up the corresponding BelongsToId column
         if column_type == "BelongsToModel":
@@ -294,14 +294,14 @@ class GraphqlBackend(Backend, InjectableProperties):
                         if hasattr(belongs_to_id_column, "parent_model_class"):
                             model = belongs_to_id_column.parent_model_class
                             if model:
-                                return model  # type: ignore[return-value]
+                                return model
 
         # Strategy 4: Check for model_class attribute
         if hasattr(column, "model_class") and column.model_class:
             # Make sure it's not the same as the parent model
             parent_columns = column.get_model_columns() if hasattr(column, "get_model_columns") else {}
             if parent_columns and column.model_class != type(parent_columns):
-                return column.model_class  # type: ignore[return-value]
+                return column.model_class
 
         # Could not determine relationship model
         return None
@@ -555,15 +555,15 @@ class GraphqlBackend(Backend, InjectableProperties):
                                 variables[var_name] = value
                         elif isinstance(value, int):
                             variable_definitions.append(f"${var_name}: Int")
-                            variables[var_name] = int(value)  # type: ignore[assignment]
+                            variables[var_name] = int(value)
                         else:
                             variable_definitions.append(f"${var_name}: String")
-                            variables[var_name] = str(value)  # type: ignore[assignment]
+                            variables[var_name] = str(value)
                 elif condition.operator == "in" and len(condition.values) > 0:
                     var_name = f"filter_{condition.column_name}_in_{i}"
                     args_parts.append(f"{api_column_name}_in: ${var_name}")
                     variable_definitions.append(f"${var_name}: [String!]")
-                    variables[var_name] = [str(v) for v in condition.values]  # type: ignore[assignment]
+                    variables[var_name] = [str(v) for v in condition.values]
 
         # Handle pagination - only for collections
         if not is_singular:
@@ -571,22 +571,22 @@ class GraphqlBackend(Backend, InjectableProperties):
                 if "cursor" in query.pagination:
                     args_parts.append("after: $after")
                     variable_definitions.append("$after: String")
-                    variables["after"] = str(query.pagination["cursor"])  # type: ignore[assignment]
+                    variables["after"] = str(query.pagination["cursor"])
 
                 if query.limit:
                     args_parts.append("first: $first")
                     variable_definitions.append("$first: Int")
-                    variables["first"] = int(query.limit)  # type: ignore[assignment]
+                    variables["first"] = int(query.limit)
             else:  # offset-based pagination
                 if query.limit:
                     args_parts.append("limit: $limit")
                     variable_definitions.append("$limit: Int")
-                    variables["limit"] = int(query.limit)  # type: ignore[assignment]
+                    variables["limit"] = int(query.limit)
 
                 if "start" in query.pagination:
                     args_parts.append("offset: $offset")
                     variable_definitions.append("$offset: Int")
-                    variables["offset"] = int(query.pagination["start"])  # type: ignore[assignment]
+                    variables["offset"] = int(query.pagination["start"])
 
         # Handle sorting - only for collections
         if not is_singular and query.sorts:
@@ -596,8 +596,8 @@ class GraphqlBackend(Backend, InjectableProperties):
             args_parts.append("sortDirection: $sortDirection")
             variable_definitions.append("$sortBy: String")
             variable_definitions.append("$sortDirection: String")
-            variables["sortBy"] = api_sort_column  # type: ignore[assignment]
-            variables["sortDirection"] = sort.direction.upper()  # type: ignore[assignment]
+            variables["sortBy"] = api_sort_column
+            variables["sortDirection"] = sort.direction.upper()
 
         # Build the query string
         args_str = f"({', '.join(args_parts)})" if args_parts else ""
@@ -734,14 +734,14 @@ class GraphqlBackend(Backend, InjectableProperties):
                 for part in name.split("__"):
                     api_part = self._model_to_api_name(part)
                     if isinstance(value, dict):
-                        value = value.get(api_part)  # type: ignore[assignment]
+                        value = value.get(api_part)
                     else:
                         value = None
                 flat[name] = value
             else:
                 # Simple field - convert name and extract value
                 api_field_name = self._model_to_api_name(name)
-                flat[name] = record.get(api_field_name)  # type: ignore[assignment]
+                flat[name] = record.get(api_field_name)
 
         return flat
 
@@ -781,7 +781,7 @@ class GraphqlBackend(Backend, InjectableProperties):
                     var_name = f"input_{key}"
                     variable_definitions.append(f"${var_name}: String")
                     args_parts.append(f"{api_field_name}: ${var_name}")
-                    variables[var_name] = str(value) if value is not None else None  # type: ignore[assignment]
+                    variables[var_name] = str(value) if value is not None else None
 
         var_def_str = f"({', '.join(variable_definitions)})" if variable_definitions else ""
         args_str = f"({', '.join(args_parts)})" if args_parts else ""
@@ -887,7 +887,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         self.logger.debug(f"Query attributes: {dir(query)}")
         if hasattr(query, "_pre_loaded_records"):
             self.logger.debug("Using pre-loaded relationship data, skipping GraphQL query")
-            pre_loaded = query._pre_loaded_records  # type: ignore[attr-defined]
+            pre_loaded = cast(list[dict[str, Any]], query._pre_loaded_records)
             # Clear the pre-loaded data to avoid reuse
             delattr(query, "_pre_loaded_records")
             return RecordsQueryResult(records=pre_loaded)
