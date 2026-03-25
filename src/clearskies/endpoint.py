@@ -1248,6 +1248,8 @@ class Endpoint(
         return more_input_errors
 
     def cors(self, input_output: InputOutput):
+        from clearskies.security_headers import Cors
+
         cors_header = self.cors_header if self.cors_header else Cors()
         for method in self.request_methods:
             cors_header.add_method(method)
