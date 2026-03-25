@@ -24,7 +24,7 @@ class Jwks(Authentication, di.InjectableProperties):
     """
     The audience to accept JWTs for.
     """
-    audience = configs.StringList(default=[])
+    audience = configs.String(default="")
 
     """
     The expected issuer of the JWTs.
