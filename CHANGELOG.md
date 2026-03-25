@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.58] - 2026-03-25
+
+### Fixed
+- Cors should check the request url
+
 ## [2.0.57] - 2026-03-25
+
+### Changed
+- Bump version to v2.0.57 by @github-actions[bot]
 
 ### Fixed
 - Cors import
@@ -1255,6 +1263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.58]: https://github.com/clearskies-py/clearskies/compare/v2.0.57..v2.0.58
 [2.0.57]: https://github.com/clearskies-py/clearskies/compare/v2.0.56..v2.0.57
 [2.0.56]: https://github.com/clearskies-py/clearskies/compare/v2.0.55..v2.0.56
 [2.0.55]: https://github.com/clearskies-py/clearskies/compare/v2.0.54..v2.0.55
