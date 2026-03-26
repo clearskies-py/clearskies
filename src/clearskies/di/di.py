@@ -1050,17 +1050,24 @@ class Di:
     def provide_subprocess(self) -> ModuleType:
         return subprocess_module
 
-    def get_mygrations_sql_paths(self) -> list[str]:
+    def get_mygrations_sql_paths(self, allowed_class_names: list[str] | None = None) -> list[str]:
         """
-        Return all auto-imported SQL migration paths, deduplicated, preserving insertion order.
+        Return auto-imported SQL migration paths, deduplicated, preserving insertion order.
 
         Paths are collected from all AdditionalMygrationsAutoImport subclasses that were
         discovered during add_modules().  Each subclass resolves its own relative paths
         against its own file location before returning them.
+
+        If `allowed_class_names` is provided and non-empty, only configs whose class name
+        appears in that list will contribute paths.  If it is None or empty, all configs
+        are included.
         """
+        allowed: set[str] | None = set(allowed_class_names) if allowed_class_names else None
         seen: set[str] = set()
         result: list[str] = []
         for mygrations_config in self._mygrations_configs:
+            if allowed is not None and mygrations_config.__class__.__name__ not in allowed:
+                continue
             for path in mygrations_config.sql_paths():
                 if path not in seen:
                     seen.add(path)

@@ -216,3 +216,84 @@ class TestAdditionalMygrationsAutoImport(unittest.TestCase):
             merged.extend(explicit_sql)
 
             assert merged == [dir_auto, dir_explicit]
+
+    # -------------------------------------------------------------------------
+    # get_mygrations_sql_paths() class name filtering
+    # -------------------------------------------------------------------------
+
+    def test_filter_by_class_name_includes_matching(self):
+        """Only configs whose class name is in the allow-list contribute paths."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dir_a = os.path.join(tmpdir, "a")
+            dir_b = os.path.join(tmpdir, "b")
+            os.makedirs(dir_a)
+            os.makedirs(dir_b)
+
+            class AlphaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_a])
+
+            class BetaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_b])
+
+            di = Di()
+            di._mygrations_configs = [AlphaMigrations(), BetaMigrations()]
+
+            # Only include AlphaMigrations
+            paths = di.get_mygrations_sql_paths(["AlphaMigrations"])
+            assert paths == [dir_a]
+
+    def test_filter_by_class_name_excludes_non_matching(self):
+        """Configs not in the allow-list are excluded."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dir_a = os.path.join(tmpdir, "a")
+            os.makedirs(dir_a)
+
+            class AlphaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_a])
+
+            di = Di()
+            di._mygrations_configs = [AlphaMigrations()]
+
+            paths = di.get_mygrations_sql_paths(["NonExistentClass"])
+            assert paths == []
+
+    def test_filter_empty_list_returns_all(self):
+        """An empty allow-list means no filtering — all configs contribute."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dir_a = os.path.join(tmpdir, "a")
+            dir_b = os.path.join(tmpdir, "b")
+            os.makedirs(dir_a)
+            os.makedirs(dir_b)
+
+            class AlphaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_a])
+
+            class BetaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_b])
+
+            di = Di()
+            di._mygrations_configs = [AlphaMigrations(), BetaMigrations()]
+
+            paths = di.get_mygrations_sql_paths([])
+            assert paths == [dir_a, dir_b]
+
+    def test_filter_none_returns_all(self):
+        """None as allow-list means no filtering — all configs contribute."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dir_a = os.path.join(tmpdir, "a")
+            os.makedirs(dir_a)
+
+            class AlphaMigrations(AdditionalMygrationsAutoImport):
+                def __init__(self):
+                    super().__init__(sql_dir=[dir_a])
+
+            di = Di()
+            di._mygrations_configs = [AlphaMigrations()]
+
+            paths = di.get_mygrations_sql_paths(None)
+            assert paths == [dir_a]
