@@ -92,6 +92,7 @@
                 "clearskies.configs.ModelDestinationName",
                 "clearskies.configs.ModelToIdColumn",
                 "clearskies.configs.Path",
+                "clearskies.configs.PathList",
                 "clearskies.configs.ReadableModelColumn",
                 "clearskies.configs.ReadableModelColumns",
                 "clearskies.configs.Schema",
@@ -199,7 +200,8 @@
                 "clearskies.endpoints.AdvancedSearch",
                 "clearskies.endpoints.RestfulApi",
                 "clearskies.endpoints.HealthCheck",
-                "clearskies.endpoints.Schema"
+                "clearskies.endpoints.Schema",
+                "clearskies.endpoints.Mygrations"
             ]
         },
         {
@@ -290,6 +292,24 @@
         {
             "title": "Injectable Properties",
             "source": "clearskies.di.injectable_properties.InjectableProperties",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
+            "parent": "Dependency Injection"
+        },
+        {
+            "title": "AdditionalConfig",
+            "source": "clearskies.di.AdditionalConfig",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
+            "parent": "Dependency Injection"
+        },
+        {
+            "title": "AdditionalConfigAutoImport",
+            "source": "clearskies.di.AdditionalConfigAutoImport",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
+            "parent": "Dependency Injection"
+        },
+        {
+            "title": "AdditionalMygrationsAutoImport",
+            "source": "clearskies.di.AdditionalMygrationsAutoImport",
             "builder": "clearskies_doc_builder.builders.SingleClass",
             "parent": "Dependency Injection"
         },
