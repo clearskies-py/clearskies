@@ -153,6 +153,7 @@ class Mygrations(Endpoint):
         sql: list[str] | None = None,
         include_module_migrations: bool = False,
         module_migrations: list[str] = [],
+        url: str = "",
     ):
         # we need to call the parent but don't have to pass along any of our kwargs.  They are all optional in our parent, and our parent class
         # just stores them in parameters, which we have already done.  However, the parent does do some extra initialization stuff that we need,
