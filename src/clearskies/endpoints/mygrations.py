@@ -51,6 +51,18 @@ class Mygrations(Endpoint):
     ./mygrate.py --command=plan
     ./mygrate.py --command=apply
     ```
+
+    **Auto-imported migration paths**
+
+    If any module that was imported into the Di container via `add_modules()` contains a class that
+    extends `clearskies.di.AdditionalMygrationsAutoImport`, the SQL paths declared by that class
+    will automatically be prepended to the `sql` list before migrations run.
+
+    The endpoint's explicit `sql` configuration takes deduplication priority: if an auto-imported
+    path matches one already declared in `sql`, only the endpoint's copy is used (at the end of
+    the final list).  Non-existent paths from auto-imported configs are silently skipped.
+
+    Discovery order is preserved; paths from modules discovered earlier appear first.
     """
 
     """
@@ -92,7 +104,7 @@ class Mygrations(Endpoint):
     command = configs.Select(["version", "check", "plan", "plan_export", "apply"], default="version")
 
     """
-    The SQL to use as a source of truth
+    The SQL to use as a source of truth.
 
     This is a list of strings, and each string value can be one of the following:
 
@@ -102,6 +114,10 @@ class Mygrations(Endpoint):
 
     The combination of all SQL you pass in (either directly or by referencing files/directories) becomes the
     source of truth that mygrations will attempt to bring your database to.
+
+    In addition, any paths declared via `AdditionalMygrationsAutoImport` subclasses found in modules
+    imported into the Di container are automatically prepended to this list (deduplicated, with this
+    explicit list taking dedup priority).
     """
     sql = configs.StringList(default=["./database"])
 
@@ -141,8 +157,20 @@ class Mygrations(Endpoint):
                 }
             )
 
+        # Collect auto-imported mygration paths (prepend), deduplicated.
+        # The endpoint's explicit sql list has dedup priority: seed the seen-set with it first
+        # so any auto-imported path that duplicates an explicit one is silently dropped.
+        auto_paths = self.di.get_mygrations_sql_paths()
+        seen: set[str] = set(self.sql)
+        merged_sql: list[str] = []
+        for path in auto_paths:
+            if path not in seen:
+                seen.add(path)
+                merged_sql.append(path)
+        merged_sql.extend(self.sql)
+
         [output, success] = execute(
-            command, {"connection": self.cursor.connection, "sql_files": self.sql}, print_results=False
+            command, {"connection": self.cursor.connection, "sql_files": merged_sql}, print_results=False
         )
 
         if not success:
