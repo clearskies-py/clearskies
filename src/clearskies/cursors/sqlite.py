@@ -103,6 +103,16 @@ class Sqlite(Cursor):
                 self._connection.isolation_level = "DEFERRED"  # Disable autocommit
         return self._connection  # type: ignore[return-value]
 
+    def set_autocommit(self, autocommit: bool) -> None:
+        """Update autocommit on the live sqlite3 connection."""
+        if autocommit:
+            self.connection.isolation_level = None
+        else:
+            if self.sys.version_info > (3, 12):  # noqa: UP036
+                self.connection.autocommit = False  # type: ignore[attr-defined]
+            else:
+                self.connection.isolation_level = "DEFERRED"
+
     @property
     def cursor(self) -> SQLiteCursor:
         """Get or create a database cursor instance."""
