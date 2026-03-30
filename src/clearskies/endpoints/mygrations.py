@@ -37,7 +37,7 @@ class Mygrations(Endpoint):
     cli = clearskies.contexts.Cli(
         clearskies.endpoints.Mygrations(
             allow_input=True,
-            cursor=clearskies.cursors.from_environment.Mysql(),
+            cursor_class=clearskies.cursors.from_environment.Mysql(),
             sql=["./database/"],
         )
     )
@@ -107,9 +107,15 @@ class Mygrations(Endpoint):
     sql = configs.StringList(default=["./database"])
 
     """
+    An optional Cursor instance to use for database connections.
+    If not provided, the endpoint will attempt to fetch a Cursor from the Di container using the `cursor_dependency_name`.
+    """
+    cursor_class = configs.Cursor(default=None)
+
+    """
     The dependency name to fetch the cursor from.
 
-    If you set both this and `cursor`, then `cursor` takes precedence.
+    If you set both this and `cursor_class`, then `cursor_class` takes precedence.
     """
     cursor_dependency_name = configs.String(default="cursor")
 
@@ -147,6 +153,7 @@ class Mygrations(Endpoint):
     @decorators.parameters_to_properties
     def __init__(
         self,
+        cursor_class: Cursor | None = None,
         cursor_dependency_name: str = "cursor",
         allow_input: bool = False,
         command: str = "version",
@@ -169,8 +176,14 @@ class Mygrations(Endpoint):
         -------
             The cursor object used for executing database queries.
         """
-        if not hasattr(self, "_cursor"):
-            self._cursor = self.di.build(self.cursor_dependency_name)
+        if hasattr(self, "_cursor"):
+            return self._cursor
+
+        if self.cursor_class is not None:
+            self._cursor = self.di.build(self.cursor_class)
+            return self._cursor
+
+        self._cursor = self.di.build(self.cursor_dependency_name)
         return self._cursor
 
     def handle(self, input_output: InputOutput):
