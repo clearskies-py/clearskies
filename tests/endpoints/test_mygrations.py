@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, NonCallableMagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import clearskies
 
@@ -22,19 +22,18 @@ class MygrationsTest(unittest.TestCase):
         assert status_code == 200
         assert response_data["status"] == "success"
 
-    def test_cursor_class_takes_precedence_over_di(self):
+    def test_direct_cursor_takes_precedence_over_di(self):
         di_cursor = MagicMock()
         di_cursor.autocommit = True
         di_cursor.connection = MagicMock()
 
-        explicit_cursor = NonCallableMagicMock()
+        explicit_cursor = MagicMock()
         explicit_cursor.autocommit = False
         explicit_cursor.connection = MagicMock()
-        explicit_cursor.set_autocommit = MagicMock()
 
         with patch("mygrations.core.commands.execute", return_value=[["mygrations 1.0"], True]) as mock_execute:
             context = clearskies.contexts.Context(
-                clearskies.endpoints.Mygrations(command="version", cursor_class=explicit_cursor),
+                clearskies.endpoints.Mygrations(command="version", cursor=explicit_cursor),
                 bindings={"cursor": di_cursor},
             )
             status_code, response_data, response_headers = context()

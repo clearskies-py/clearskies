@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from clearskies import configs, decorators
+from clearskies import configs
 from clearskies.endpoint import Endpoint
 from clearskies.exceptions import ClientError, InputErrors
 
@@ -37,7 +37,7 @@ class Mygrations(Endpoint):
     cli = clearskies.contexts.Cli(
         clearskies.endpoints.Mygrations(
             allow_input=True,
-            cursor_class=clearskies.cursors.from_environment.Mysql(),
+            cursor=clearskies.cursors.from_environment.Mysql(),
             sql=["./database/"],
         )
     )
@@ -108,14 +108,16 @@ class Mygrations(Endpoint):
 
     """
     An optional Cursor instance to use for database connections.
-    If not provided, the endpoint will attempt to fetch a Cursor from the Di container using the `cursor_dependency_name`.
+
+    If not provided, the endpoint will fetch a Cursor from the Di container
+    using `cursor_dependency_name`.
     """
-    cursor_class = configs.Cursor(default=None)
+    cursor_instance = configs.Cursor(default=None)
 
     """
     The dependency name to fetch the cursor from.
 
-    If you set both this and `cursor_class`, then `cursor_class` takes precedence.
+    If you also pass a `cursor` instance directly, the directly-passed cursor takes precedence.
     """
     cursor_dependency_name = configs.String(default="cursor")
 
@@ -150,10 +152,9 @@ class Mygrations(Endpoint):
 
     _cursor: Cursor
 
-    @decorators.parameters_to_properties
     def __init__(
         self,
-        cursor_class: Cursor | None = None,
+        cursor: Cursor | None = None,
         cursor_dependency_name: str = "cursor",
         allow_input: bool = False,
         command: str = "version",
@@ -162,28 +163,36 @@ class Mygrations(Endpoint):
         module_migrations: list[str] = [],
         url: str = "",
     ):
-        # we need to call the parent but don't have to pass along any of our kwargs.  They are all optional in our parent, and our parent class
-        # just stores them in parameters, which we have already done.  However, the parent does do some extra initialization stuff that we need,
-        # which is why we have to call the parent.
-        super().__init__()
+        if cursor is not None:
+            self.cursor_instance = cursor
+        self.cursor_dependency_name = cursor_dependency_name
+        self.allow_input = allow_input
+        self.command = command
+        if sql is not None:
+            self.sql = sql
+        self.include_module_migrations = include_module_migrations
+        self.module_migrations = [*module_migrations]
+        super().__init__(url=url)
 
     @property
     def cursor(self) -> Cursor:
         """
-        Lazily inject and return the database cursor instance.
+        Lazily resolve and return the database cursor instance.
 
-        Returns
-        -------
-            The cursor object used for executing database queries.
+        If a cursor was passed directly to the constructor it is used as-is.
+        Otherwise, the cursor is fetched from the Di container using `cursor_dependency_name`.
         """
         if hasattr(self, "_cursor"):
             return self._cursor
 
-        if self.cursor_class is not None:
-            self._cursor = self.di.build(self.cursor_class)
-            return self._cursor
+        if self.cursor_instance is not None:
+            from clearskies.di import InjectableProperties
 
-        self._cursor = self.di.build(self.cursor_dependency_name)
+            self._cursor = self.cursor_instance
+            if isinstance(self._cursor, InjectableProperties):
+                self._cursor.injectable_properties(self.di)
+        else:
+            self._cursor = self.di.build(self.cursor_dependency_name)
         return self._cursor
 
     def handle(self, input_output: InputOutput):
@@ -191,8 +200,6 @@ class Mygrations(Endpoint):
             from mygrations.core.commands import execute  # type: ignore
         except ModuleNotFoundError as e:
             raise ValueError("mygrations is not installed.")
-
-        self.di.inject_properties(self.cursor.__class__)
 
         command_config = getattr(self.__class__, "command")
         command = self._from_input_or_config("command", input_output)
