@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.58] - 2026-03-25
+
+### Fixed
+- Cors should check the request url
+
+## [2.0.57] - 2026-03-25
+
+### Changed
+- Bump version to v2.0.57 by @github-actions[bot]
+
+### Fixed
+- Cors import
+
+## [2.0.56] - 2026-03-25
+
+### Changed
+- Bump version to v2.0.56 by @github-actions[bot]
+
+### Fixed
+- Audience should be string
+
+## [2.0.55] - 2026-03-23
+
+### Changed
+- Bump version to v2.0.55 by @github-actions[bot]
+
+### Fixed
+- Typing for endpoint group
+
+## [2.0.54] - 2026-03-16
+
+### Changed
+- Bump version to v2.0.54 by @github-actions[bot]
+
+### Fixed
+- Akeyless expiry on the object
+
 ## [2.0.53] - 2026-03-13
 
 ### Added
@@ -12,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Address maintainer review feedback on SAML auth and token handling
 
 ### Changed
+- Bump version to v2.0.53 by @github-actions[bot]
 - Validate Akeyless auth token expiry and improve SAML authentication by @cmancone in [#73](https://github.com/clearskies-py/clearskies/pull/73)
 - Merge IntegerMinMax into Integer and add missing tests
 - Reauth on saml
@@ -1225,6 +1263,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.58]: https://github.com/clearskies-py/clearskies/compare/v2.0.57..v2.0.58
+[2.0.57]: https://github.com/clearskies-py/clearskies/compare/v2.0.56..v2.0.57
+[2.0.56]: https://github.com/clearskies-py/clearskies/compare/v2.0.55..v2.0.56
+[2.0.55]: https://github.com/clearskies-py/clearskies/compare/v2.0.54..v2.0.55
+[2.0.54]: https://github.com/clearskies-py/clearskies/compare/v2.0.53..v2.0.54
 [2.0.53]: https://github.com/clearskies-py/clearskies/compare/v2.0.52..v2.0.53
 [2.0.52]: https://github.com/clearskies-py/clearskies/compare/v2.0.51..v2.0.52
 [2.0.51]: https://github.com/clearskies-py/clearskies/compare/v2.0.50..v2.0.51

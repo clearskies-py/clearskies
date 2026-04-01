@@ -698,13 +698,13 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         self.name = name
         self.finalize_and_validate_configuration()
 
-    def from_backend(self, value):
+    def from_backend(self, value) -> Any:
         """
         Take the backend representation and returns a python representation.
 
         For instance, for an SQL date field, this will return a Python DateTime object
         """
-        return str(value)
+        return None if value is None else str(value)
 
     def to_backend(self, data: dict[str, Any]) -> dict[str, Any]:
         """

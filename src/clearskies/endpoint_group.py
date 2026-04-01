@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Callable, Self
 
 from clearskies import configs, configurable, decorators, di, end
@@ -241,7 +242,7 @@ class EndpointGroup(
     @decorators.parameters_to_properties
     def __init__(
         self,
-        endpoints: list[Endpoint | Self],
+        endpoints: Sequence[Endpoint | Self],
         url: str = "",
         response_headers: list[str | Callable[..., list[str]]] = [],
         security_headers: list[SecurityHeader] = [],

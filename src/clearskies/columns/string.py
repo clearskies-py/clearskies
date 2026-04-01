@@ -98,5 +98,8 @@ class String(Column):
 
         instance._next_data[self.name] = value
 
+    def from_backend(self, value) -> str | None:
+        return None if value is None else str(value)
+
     def input_error_for_value(self, value: str, operator: str | None = None) -> str:
         return "value should be a string" if not isinstance(value, str) else ""

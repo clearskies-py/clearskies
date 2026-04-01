@@ -1044,9 +1044,12 @@ class Endpoint(
         # and not fixing it.
         if input_output.supports_request_method:
             request_method = input_output.request_method.upper()
-            if request_method == "OPTIONS":
-                return True
-            if request_method not in self.request_methods:
+            # Allow OPTIONS through (for CORS preflight) but still check the URL below.
+            # Previously this returned True immediately for OPTIONS, which caused the first
+            # endpoint in a group to handle ALL preflight requests regardless of path — breaking
+            # CORS when different endpoints have different authentication (and therefore different
+            # access-control-allow-headers).
+            if request_method != "OPTIONS" and request_method not in self.request_methods:
                 return False
         if input_output.supports_url:
             expected_url = self.url.strip("/")
@@ -1276,7 +1279,11 @@ class Endpoint(
         return more_input_errors
 
     def cors(self, input_output: InputOutput):
+        from clearskies.security_headers import Cors
+
         cors_header = self.cors_header if self.cors_header else Cors()
+        cors_header.set_methods([])  # reset accumulated state from previous calls
+        cors_header.set_headers([])  # reset accumulated state from previous calls
         for method in self.request_methods:
             cors_header.add_method(method)
         if self.authentication:

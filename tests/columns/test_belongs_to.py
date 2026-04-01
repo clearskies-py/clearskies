@@ -128,3 +128,151 @@ class BelongsToTest(TestBase):
             {"id": "i-j-k-l", "name": "Puss in Boots", "owner": {"id": "5-6-7-8", "name": "Jane Doe"}},
             {"id": "e-f-g-h", "name": "Spot", "owner": {"id": "1-2-3-4", "name": "John Doe"}},
         ]
+
+    def test_belongs_to_id_returns_none_for_null_backend_value(self):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": Category,
+                        "records": [
+                            {"id": "toy-id", "name": "Toys"},
+                        ],
+                    },
+                    {
+                        "model_class": Product,
+                        "records": [
+                            {"id": "prod-1", "name": "Ball", "category_id": None},
+                        ],
+                    },
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        assert len(response["data"]) == 1
+        product_data = response["data"][0]
+        assert product_data["name"] == "Ball"
+        assert product_data["category_id"] is None
+
+    def test_belongs_to_model_returns_empty_parent_for_null_foreign_key(self):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+            category = clearskies.columns.BelongsToModel("category_id")
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": Category,
+                        "records": [
+                            {"id": "toy-id", "name": "Toys"},
+                        ],
+                    },
+                    {
+                        "model_class": Product,
+                        "records": [
+                            {"id": "prod-1", "name": "Ball", "category_id": None},
+                        ],
+                    },
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        assert len(response["data"]) == 1
+        product_data = response["data"][0]
+        assert product_data["name"] == "Ball"
+        assert product_data["category_id"] is None
+
+    def test_belongs_to_id_non_none_still_resolves(self):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+            category = clearskies.columns.BelongsToModel("category_id")
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": Category,
+                        "records": [
+                            {"id": "toy-id", "name": "Toys"},
+                        ],
+                    },
+                    {
+                        "model_class": Product,
+                        "records": [
+                            {"id": "prod-1", "name": "Ball", "category_id": "toy-id"},
+                        ],
+                    },
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        assert len(response["data"]) == 1
+        product_data = response["data"][0]
+        assert product_data["category_id"] == "toy-id"

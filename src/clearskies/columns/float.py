@@ -110,8 +110,8 @@ class Float(Column):
 
         instance._next_data[self.name] = float(value)
 
-    def from_backend(self, value) -> float:
-        return float(value)
+    def from_backend(self, value) -> float | None:
+        return None if value is None else float(value)
 
     def to_backend(self, data):
         if self.name not in data or data[self.name] is None:

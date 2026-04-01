@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import importlib
 import inspect
+import itertools
 import logging
 import os
 import socket as socket_module
@@ -19,6 +20,7 @@ from urllib3.util.retry import Retry
 import clearskies.input_outputs.input_output
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
+from clearskies.di.additional_mygrations_auto_import import AdditionalMygrationsAutoImport
 from clearskies.environment import Environment
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
@@ -226,6 +228,7 @@ class Di:
 
     _added_modules: dict[int, bool]
     _additional_configs: list[AdditionalConfig]
+    _mygrations_configs: list[AdditionalMygrationsAutoImport]
     _bindings: dict[str, Any]
     _from_bindings: dict[str, bool]
     _building: dict[int, str | None]
@@ -236,6 +239,7 @@ class Di:
     _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
+    _serial_counter = itertools.count()
     _predefined_classes_name_map: dict[type, str] = {
         requests.Session: "requests",
         clearskies.input_outputs.input_output.InputOutput: "input_output",
@@ -266,6 +270,7 @@ class Di:
         """
         self._added_modules = {}
         self._additional_configs = []
+        self._mygrations_configs = []
         self._bindings = {}
         self._from_bindings = {}
         self._building = {}
@@ -273,6 +278,7 @@ class Di:
         self._class_overrides_by_name = {}
         self._class_overrides_by_class = {}
         self._prepared = {}
+        self._serial = next(Di._serial_counter)
         if classes is not None:
             self.add_classes(classes)
         if modules is not None:
@@ -419,6 +425,18 @@ class Di:
                                 + ": auto imported configs can only have keyword arguments."
                             )
                         self.add_additional_configs([item()])
+                        continue
+                    if issubclass(item, AdditionalMygrationsAutoImport) and item is not AdditionalMygrationsAutoImport:
+                        init_args = inspect.getfullargspec(item)
+                        nargs = len(init_args.args) if init_args.args else 0
+                        nkwargs = len(init_args.defaults) if init_args.defaults else 0
+                        if nargs - 1 - nkwargs > 0:
+                            raise ValueError(
+                                "Error auto-importing mygrations config "
+                                + item.__name__
+                                + ": auto imported mygrations configs can only have keyword arguments."
+                            )
+                        self._mygrations_configs.append(item())
                         continue
                     self.add_classes([item])
                 if inspect.ismodule(item):
@@ -1044,3 +1062,27 @@ class Di:
 
     def provide_subprocess(self) -> ModuleType:
         return subprocess_module
+
+    def get_mygrations_sql_paths(self, allowed_class_names: list[str] | None = None) -> list[str]:
+        """
+        Return auto-imported SQL migration paths, deduplicated, preserving insertion order.
+
+        Paths are collected from all AdditionalMygrationsAutoImport subclasses that were
+        discovered during add_modules().  Each subclass resolves its own relative paths
+        against its own file location before returning them.
+
+        If `allowed_class_names` is provided and non-empty, only configs whose class name
+        appears in that list will contribute paths.  If it is None or empty, all configs
+        are included.
+        """
+        allowed: set[str] | None = set(allowed_class_names) if allowed_class_names else None
+        seen: set[str] = set()
+        result: list[str] = []
+        for mygrations_config in self._mygrations_configs:
+            if allowed is not None and mygrations_config.__class__.__name__ not in allowed:
+                continue
+            for path in mygrations_config.sql_paths():
+                if path not in seen:
+                    seen.add(path)
+                    result.append(path)
+        return result
