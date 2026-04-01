@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import importlib
 import inspect
+import itertools
 import logging
 import os
 import socket as socket_module
@@ -237,6 +238,7 @@ class Di:
     _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
+    _serial_counter = itertools.count()
     _predefined_classes_name_map: dict[type, str] = {
         requests.Session: "requests",
         clearskies.input_outputs.input_output.InputOutput: "input_output",
@@ -275,6 +277,7 @@ class Di:
         self._class_overrides_by_name = {}
         self._class_overrides_by_class = {}
         self._prepared = {}
+        self._serial = next(Di._serial_counter)
         if classes is not None:
             self.add_classes(classes)
         if modules is not None:

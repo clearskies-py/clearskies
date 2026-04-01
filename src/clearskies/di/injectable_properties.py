@@ -95,13 +95,7 @@ class InjectableProperties:
 
     @classmethod
     def injectable_properties(cls, di: Di):
-        # you would think that I would be able to just use a simple true/false flag attached to the class,
-        # but I'm having this weird issue where (when I tried that) the flag was being shared between classes.
-        # It shouldn't happen like that, but it is, so there is probably something subtle going on that I
-        # haven't figured out yet, but this also works identitally, so :shrug:.
-        # Also, keep track of the id of DI.  We use class level caching but tests often use multiple DI containers
-        # in one run, which means that we need to re-inject dependencies if we get a new DI container
-        cache_name = str(cls) + str(id(di))
+        cache_name = str(cls) + str(di._serial)
         if cache_name == cls._injectables_loaded:
             return
 
