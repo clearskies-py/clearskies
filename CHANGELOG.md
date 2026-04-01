@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.59] - 2026-04-01
+
+### Added
+- Add None value tests for Column, String, Boolean, Float from_backend()
+- Add cursor_class support to Mygrations endpoint with tests
+- Add support for url in mygration so it can be added to a scheme
+- Add module migration filtering to Mygrations
+- Add set_autocommit
+- Add auto configs and pathlist
+- Add AdditionalMygrationsAutoImport for dynamic migration path discovery
+
+### Changed
+- Dynamic Migration Path Discovery via `AdditionalMygrationsAutoImport` by @cmancone in [#77](https://github.com/clearskies-py/clearskies/pull/77)
+- Rename cursor_class to cursor, drop @parameters_to_properties
+
+### Fixed
+- Prevent false injectable_properties cache hits from id() reuse on Python 3.13 in [#78](https://github.com/clearskies-py/clearskies/pull/78)
+- Return None from from_backend() when value is None for Column, String, Boolean, Float
+
 ## [2.0.58] - 2026-03-25
+
+### Changed
+- Bump version to v2.0.58 by @github-actions[bot]
 
 ### Fixed
 - Cors should check the request url
@@ -1263,6 +1285,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.59]: https://github.com/clearskies-py/clearskies/compare/v2.0.58..v2.0.59
 [2.0.58]: https://github.com/clearskies-py/clearskies/compare/v2.0.57..v2.0.58
 [2.0.57]: https://github.com/clearskies-py/clearskies/compare/v2.0.56..v2.0.57
 [2.0.56]: https://github.com/clearskies-py/clearskies/compare/v2.0.55..v2.0.56
