@@ -109,24 +109,28 @@ class MemoryTable:
         "<=>": lambda column, values, null: lambda row: row.get(column, null) == values[0],
         "!=": lambda column, values, null: lambda row: row.get(column, null) != values[0],
         "<=": (
-            lambda column, values, null: lambda row: gentle_float_conversion(row.get(column, null))
-            <= gentle_float_conversion(values[0])
+            lambda column, values, null: (
+                lambda row: gentle_float_conversion(row.get(column, null)) <= gentle_float_conversion(values[0])
+            )
         ),
         ">=": (
-            lambda column, values, null: lambda row: gentle_float_conversion(row.get(column, null))
-            >= gentle_float_conversion(values[0])
+            lambda column, values, null: (
+                lambda row: gentle_float_conversion(row.get(column, null)) >= gentle_float_conversion(values[0])
+            )
         ),
         ">": (
-            lambda column, values, null: lambda row: gentle_float_conversion(row.get(column, null))
-            > gentle_float_conversion(values[0])
+            lambda column, values, null: (
+                lambda row: gentle_float_conversion(row.get(column, null)) > gentle_float_conversion(values[0])
+            )
         ),
         "<": (
-            lambda column, values, null: lambda row: gentle_float_conversion(row.get(column, null))
-            < gentle_float_conversion(values[0])
+            lambda column, values, null: (
+                lambda row: gentle_float_conversion(row.get(column, null)) < gentle_float_conversion(values[0])
+            )
         ),
         "=": cheating_equals,
-        "is not null": lambda column, values, null: lambda row: (column in row and row[column] is not None),
-        "is null": lambda column, values, null: lambda row: (column not in row or row[column] is None),
+        "is not null": lambda column, values, null: lambda row: column in row and row[column] is not None,
+        "is null": lambda column, values, null: lambda row: column not in row or row[column] is None,
         "is not": lambda column, values, null: lambda row: row.get(column, null) != values[0],
         "is": lambda column, values, null: lambda row: row.get(column, null) == str(values[0]),
         "like": lambda column, values, null: lambda row: row.get(column, null) == str(values[0]),
