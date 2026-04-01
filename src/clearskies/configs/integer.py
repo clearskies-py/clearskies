@@ -4,6 +4,8 @@ from clearskies.configs import config
 
 
 class Integer(config.Config):
+    """Configuration descriptor that validates and stores integer values with optional min/max bounds."""
+
     def __init__(self, required=False, default=None, min: int | None = None, max: int | None = None):
         super().__init__(required=required, default=default)
         self.min = min

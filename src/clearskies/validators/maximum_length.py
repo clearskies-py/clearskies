@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class MaximumLength(Validator):
+    """Validates that a column value does not exceed a maximum character length."""
+
     maximum_length = configs.Integer(required=True)
 
     def __init__(self, maximum_length: int):

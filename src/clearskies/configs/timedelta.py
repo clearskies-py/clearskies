@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class Timedelta(config.Config):
+    """Configuration descriptor that validates and stores timedelta values."""
+
     def __set__(self, instance, value: datetime.timedelta):
         if not isinstance(value, datetime.timedelta):
             error_prefix = self._error_prefix(instance)

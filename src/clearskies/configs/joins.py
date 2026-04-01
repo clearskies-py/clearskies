@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Joins(config.Config):
+    """Configuration descriptor that validates and stores query join expressions."""
+
     def __set__(self, instance, value: typing.join | list[typing.join]):
         if not isinstance(value, list):
             value = [value]

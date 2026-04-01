@@ -4,6 +4,8 @@ from clearskies.configs import config
 
 
 class Boolean(config.Config):
+    """Configuration descriptor that validates and stores boolean values."""
+
     def __set__(self, instance, value: bool):
         if not isinstance(value, bool):
             error_prefix = self._error_prefix(instance)

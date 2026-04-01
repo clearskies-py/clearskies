@@ -4,6 +4,8 @@ from clearskies.configs import select_list
 
 
 class ModelColumns(select_list.SelectList):
+    """Configuration descriptor that validates a list of column names against a model class."""
+
     def __init__(self, model_column_config_name="", allow_relationship_references=False, required=False, default=None):
         self.required = required
         self.default = default

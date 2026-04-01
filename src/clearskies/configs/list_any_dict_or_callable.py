@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class ListAnyDictOrCallable(config.Config):
+    """Configuration descriptor that accepts a list of dictionaries or a callable returning one."""
+
     def __set__(self, instance, value: list[dict[str, Any]] | Callable[..., list[dict[str, Any]]]):
         if not isinstance(value, list) and not callable(value):
             error_prefix = self._error_prefix(instance)

@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class InThePast(Validator, InjectableProperties):
+    """Validates that a date column value is in the past."""
+
     utcnow = inject.Utcnow()
 
     def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:

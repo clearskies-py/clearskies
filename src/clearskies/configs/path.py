@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class Path(config.Config):
+    """Configuration descriptor that validates and stores filesystem path values."""
+
     def __init__(self, required=False, default=None, check_for_existence: bool = True):
         self.required = required
         self.default = default

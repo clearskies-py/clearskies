@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class Timedelta(Validator, InjectableProperties):
+    """Base validator for date comparisons using a timedelta offset from the current time."""
+
     timedelta = configs.Timedelta(default=None)
 
     utcnow = inject.Utcnow()

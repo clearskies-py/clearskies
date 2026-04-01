@@ -5,6 +5,8 @@ from clearskies.security_header import SecurityHeader
 
 
 class Hsts(SecurityHeader):
+    """Security header that configures HTTP Strict-Transport-Security response headers."""
+
     max_age = configs.Integer(default=31536000)
     include_sub_domains = configs.Boolean()
 

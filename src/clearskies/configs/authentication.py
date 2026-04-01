@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Authentication(config.Config):
+    """Configuration descriptor that validates and stores an Authentication instance."""
+
     def __set__(self, instance, value: AuthenticationType):
         if not hasattr(value, "authenticate"):
             error_prefix = self._error_prefix(instance)

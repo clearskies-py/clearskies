@@ -4,6 +4,8 @@ from clearskies.configs import config
 
 
 class Float(config.Config):
+    """Configuration descriptor that validates and stores float values."""
+
     def __set__(self, instance, value: float):
         if not isinstance(value, float):
             error_prefix = self._error_prefix(instance)

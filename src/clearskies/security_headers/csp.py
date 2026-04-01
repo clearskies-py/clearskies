@@ -5,6 +5,8 @@ from clearskies.security_header import SecurityHeader
 
 
 class Csp(SecurityHeader):
+    """Security header that configures Content-Security-Policy response headers."""
+
     header_name = "content-security-policy"
     default_src = configs.String()
     script_src = configs.String()

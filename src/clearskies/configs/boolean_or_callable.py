@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class BooleanOrCallable(config.Config):
+    """Configuration descriptor that accepts a boolean or a callable returning a boolean."""
+
     def __set__(self, instance, value: bool | Callable[..., bool]):
         if not isinstance(value, bool) and not callable(value):
             error_prefix = self._error_prefix(instance)

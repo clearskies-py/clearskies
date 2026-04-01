@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class Any(config.Config):
+    """Configuration descriptor that accepts any value type."""
+
     def __set__(self, instance, value: AnyType):
         instance._set_config(self, value)
 

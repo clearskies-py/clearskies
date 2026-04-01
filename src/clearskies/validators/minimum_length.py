@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class MinimumLength(Validator):
+    """Validates that a column value meets a minimum character length."""
+
     minimum_length = configs.Integer(required=True)
 
     def __init__(self, minimum_length: int):

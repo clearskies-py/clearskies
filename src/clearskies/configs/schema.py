@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Schema(config.Config):
+    """Configuration descriptor that validates and stores a Schema class reference."""
+
     def __set__(self, instance, value: type[SchemaType]) -> None:
         if not hasattr(value, "get_columns"):
             error_prefix = self._error_prefix(instance)

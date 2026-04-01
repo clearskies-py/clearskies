@@ -5,6 +5,8 @@ from clearskies.functional import string
 
 
 class ModelToIdColumn(model_column.ModelColumn):
+    """Configuration descriptor that auto-resolves the foreign key id column name from a model class."""
+
     def __init__(
         self,
         model_column_config_name="",

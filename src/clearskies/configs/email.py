@@ -4,6 +4,8 @@ from clearskies.configs import string
 
 
 class Email(string.String):
+    """Configuration descriptor that validates and stores email address strings."""
+
     def __init__(
         self, required=False, default=None, regexp: str = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
     ):

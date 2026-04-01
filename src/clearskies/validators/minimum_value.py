@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class MinimumValue(Validator):
+    """Validates that a numeric column value meets a minimum."""
+
     minimum_value = configs.Integer(required=True)
 
     def __init__(self, minimum_value: int):

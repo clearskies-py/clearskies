@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class MaximumValue(Validator):
+    """Validates that a numeric column value does not exceed a maximum."""
+
     maximum_value = configs.Integer(required=True)
 
     def __init__(self, maximum_value: int):

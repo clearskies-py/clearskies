@@ -4,6 +4,8 @@ from clearskies.configs import config
 
 
 class StringOrCallable(config.Config):
+    """Configuration descriptor that accepts a string or a callable returning a string."""
+
     def __set__(self, instance, value: str | Callable[..., str]):
         if not isinstance(value, str) and not callable(value):
             error_prefix = self._error_prefix(instance)

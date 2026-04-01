@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class Timezone(config.Config):
+    """Configuration descriptor that validates and stores timezone values."""
+
     def __set__(self, instance, value: datetime.timezone | None):
         if value and not isinstance(value, datetime.timezone):
             error_prefix = self._error_prefix(instance)
