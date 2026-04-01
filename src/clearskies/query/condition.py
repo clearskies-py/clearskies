@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class Condition:
     """
     Parses a condition string, e.g. "column=value" or "table.column<=other_value".
@@ -63,9 +66,10 @@ class Condition:
     The values the condition is searching for.
 
     Note this is always a list, although most of the time there is only one value in the list.  Multiple values
-    are only present when searching with the IN operator.
+    are only present when searching with the IN operator.  When created from a string, these are strings.
+    When created programmatically (via ParsedCondition), they may be any type.
     """
-    values: list[str] = []
+    values: list[Any] = []
 
     """
     An SQL-ready string
@@ -222,7 +226,7 @@ class Condition:
 
 
 class ParsedCondition(Condition):
-    def __init__(self, column_name: str, operator: str, values: list[str], table_name: str = ""):
+    def __init__(self, column_name: str, operator: str, values: list[Any], table_name: str = ""):
         self.column_name = column_name
         if operator not in self.operators:
             raise ValueError(f"Unknown operator '{operator}'")

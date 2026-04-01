@@ -145,12 +145,12 @@ class GraphqlClient(configurable.Configurable, loggable.Loggable, InjectableProp
         from gql.transport.requests import RequestsHTTPTransport
 
         if hasattr(self, "_client"):
-            return self._client  # type: ignore
+            return self._client
 
         if self.authentication:
             # Inject dependencies if the authentication object supports it
-            if hasattr(self.authentication, "injectable_properties"):
-                self.authentication.injectable_properties(self.di)  # type: ignore[attr-defined]
+            if isinstance(self.authentication, InjectableProperties):
+                self.authentication.injectable_properties(self.di)
         transport = RequestsHTTPTransport(
             url=self.endpoint,
             headers=self.headers,

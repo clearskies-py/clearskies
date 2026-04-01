@@ -34,9 +34,8 @@ class ColumnTest(TestBase):
             date_of_birth = clearskies.columns.Date()
             age = clearskies.columns.Integer(
                 setable=lambda data, model, now: (
-                    now - dateparser.parse(model.latest("date_of_birth", data))
-                ).total_seconds()
-                / (86400 * 365),
+                    (now - dateparser.parse(model.latest("date_of_birth", data))).total_seconds() / (86400 * 365)
+                ),
             )
             created = clearskies.columns.Created()
 
@@ -64,9 +63,8 @@ class ColumnTest(TestBase):
             date_of_birth = clearskies.columns.Date(is_temporary=True)
             age = clearskies.columns.Integer(
                 setable=lambda data, model, now: (
-                    now - dateparser.parse(model.latest("date_of_birth", data))
-                ).total_seconds()
-                / (86400 * 365),
+                    (now - dateparser.parse(model.latest("date_of_birth", data))).total_seconds() / (86400 * 365)
+                ),
             )
             created = clearskies.columns.Created()
 

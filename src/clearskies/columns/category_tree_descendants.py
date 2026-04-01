@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.columns import CategoryTreeChildren
+from clearskies.columns.category_tree_children import CategoryModel
 
 if TYPE_CHECKING:
     from clearskies import Model
 
 
-class CategoryTreeDescendants(CategoryTreeChildren):
+class CategoryTreeDescendants(CategoryTreeChildren[CategoryModel]):
     """
     Return all descendants from a category tree column.
 
@@ -33,16 +34,16 @@ class CategoryTreeDescendants(CategoryTreeChildren):
         pass
 
     @overload
-    def __get__(self, instance: Model, cls: type[Model]) -> Model:
+    def __get__(self, instance: Model, cls: type[Model]) -> CategoryModel:
         pass
 
     def __get__(self, model, cls):
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             model.get_columns()
 
         return self.relatives(model, include_all=True)

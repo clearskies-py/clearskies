@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cmp_to_key
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from clearskies import functional
 from clearskies.autodoc.schema import Integer as AutoDocInteger
@@ -101,7 +101,7 @@ class MemoryTable:
     _id_index: dict[int | str, int] = {}
     id_column_name: str = ""
     _next_id: int = 1
-    _model_class: type[Model] = None  # type: ignore
+    _model_class: type[Model] | None = None
 
     # here be dragons.  This is not a 100% drop-in replacement for the equivalent SQL operators
     # https://codereview.stackexchange.com/questions/259198/in-memory-table-filtering-in-python
@@ -163,17 +163,16 @@ class MemoryTable:
                 raise ValueError(
                     f"Cannot update record: column '{column_name}' does not exist in table '{self._table_name}'"
                 )
-        self._rows[index] = {
-            **self._rows[index],  # type: ignore
-            **data,
-        }
-        return self._rows[index]  # type: ignore
+        updated = {**row, **data}
+        self._rows[index] = updated
+        return updated
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         for column_name in data.keys():
             if column_name not in self._column_names:
+                model_name = self._model_class.__name__ if self._model_class else "unknown"
                 raise ValueError(
-                    f"Cannot create record: column '{column_name}' does not exist for model '{self._model_class.__name__}'"
+                    f"Cannot create record: column '{column_name}' does not exist for model '{model_name}'"
                 )
         incoming_id = data.get(self.id_column_name)
         if not incoming_id:
@@ -239,7 +238,7 @@ class MemoryTable:
             end = len(rows)
             if query.limit and start + int(query.limit) <= number_rows:
                 end = start + int(query.limit)
-            if end < number_rows and type(next_page_data) == dict:
+            if end < number_rows and isinstance(next_page_data, dict):
                 next_page_data["start"] = start + int(query.limit)
             rows = rows[start:end]
         return rows
@@ -475,7 +474,8 @@ class MemoryBackend(Backend, InjectableProperties):
             raise TypeError(
                 f"'memory_backend_default_data' should be populated with a list, but I received a value of type '{self.default_data.__class__.__name__}'"
             )
-        for index, table_data in enumerate(self.default_data):
+        for index, _table_data in enumerate(self.default_data):
+            table_data = cast(dict[str, Any], _table_data)
             if "model_class" not in table_data:
                 raise TypeError(
                     f"Each entry in the 'memory_backend_default_data' list should have a key named 'model_class', but entry #{index + 1} is missing this key."
@@ -814,6 +814,7 @@ class MemoryBackend(Backend, InjectableProperties):
         # loop through each entry in rows, find a matching table in join_rows, and take action depending on join type
         rows = [*rows]
         matched_right_row_indexes = set()
+        rows_to_remove: set[int] = set()
         left_table_name = join.left_table_name
         left_column_name = join.left_column_name
         # we're
@@ -850,10 +851,10 @@ class MemoryBackend(Backend, InjectableProperties):
                     rows[row_index][join_table_name] = matching_row = None
                 else:
                     # we can't immediately delete the row because we're looping over the array it is in,
-                    # so just mark it as None and remove it later
-                    rows[row_index] = None  # type: ignore
+                    # so just mark it for removal and remove it later
+                    rows_to_remove.add(row_index)
 
-        rows = [row for row in rows if row is not None]
+        rows = [row for i, row in enumerate(rows) if i not in rows_to_remove]
 
         # now for outer/right rows we add on any unmatched rows
         if (join_type == "OUTER" or join_type == "RIGHT") and len(matched_right_row_indexes) < len(join_rows):
