@@ -258,6 +258,21 @@ class Cursor(ABC, configurable.Configurable, InjectableProperties, loggable.Logg
             return f"{table}.{column} {operator} {self.value_placeholder}"
         return None
 
+    def set_autocommit(self, autocommit: bool) -> None:
+        """
+        Update the autocommit setting on the live connection.
+
+        Subclasses must override this to apply the change to the underlying
+        driver connection. Raises NotImplementedError by default.
+
+        Args:
+            autocommit: True to enable autocommit, False to disable it.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement set_autocommit(). "
+            "Override this method to support runtime autocommit changes."
+        )
+
     def execute(self, sql: str, parameters: tuple | list = ()):
         """
         Execute a SQL statement with parameters.

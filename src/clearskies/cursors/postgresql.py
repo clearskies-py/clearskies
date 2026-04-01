@@ -113,6 +113,10 @@ class Postgresql(Cursor):
                 )
         return self._factory
 
+    def set_autocommit(self, autocommit: bool) -> None:
+        """Update autocommit on the live psycopg connection."""
+        self.connection.autocommit = autocommit  # type: ignore[attr-defined]
+
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {
             "user": self.username,
