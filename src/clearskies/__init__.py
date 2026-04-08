@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from . import (
     authentication,
     autodoc,
@@ -18,6 +20,7 @@ from . import (
     security_headers,
     validators,
 )
+
 from .action import Action
 from .column import Column
 from .configurable import Configurable

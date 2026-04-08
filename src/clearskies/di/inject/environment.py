@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from clearskies.di.injectable import Injectable
-from clearskies.environment import Environment as EnvironmentDependency
+
+if TYPE_CHECKING:
+    from clearskies.environment import Environment as EnvironmentDependency
 
 
 class Environment(Injectable):
