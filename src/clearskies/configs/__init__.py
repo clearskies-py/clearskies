@@ -63,6 +63,8 @@ class MyConfigurableClass(configs.Configurable):
 
 """
 
+from __future__ import annotations
+
 from .actions import Actions
 from .any import Any
 from .any_dict import AnyDict

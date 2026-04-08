@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from clearskies.di.injectable_properties import InjectableProperties
+
 if TYPE_CHECKING:
     from clearskies.configurable import Configurable
 
 
-class Config:
+class Config(InjectableProperties):
     """Base configuration descriptor for declaring and validating configuration options on Configurable classes."""
 
     def __init__(self, required: bool = False, default: Any = None) -> None:
