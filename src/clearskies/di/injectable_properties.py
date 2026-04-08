@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
 from clearskies.di.injectable import Injectable
 
@@ -99,7 +99,6 @@ class InjectableProperties:
         if cache_name == cls._injectables_loaded:
             return
 
-        injectable_descriptors: list[Any] = []
         injectable_properties: list[Self] = []
         for attribute_name in dir(cls):
             # Per the docs above, we want to inject properties for one of two things: the injectables from clearskies.di.inject,

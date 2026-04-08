@@ -6,10 +6,14 @@ from clearskies.configs import config
 
 if TYPE_CHECKING:
     from clearskies.authentication import Authentication as AuthenticationType
+    from clearskies.di import Di
 
 
 class Authentication(config.Config):
     """Configuration descriptor that validates and stores an Authentication instance."""
+
+    _injectables_loaded: str = ""
+    di: Di
 
     def __set__(self, instance, value: AuthenticationType):
         if not hasattr(value, "authenticate"):
@@ -22,4 +26,16 @@ class Authentication(config.Config):
     def __get__(self, instance, parent) -> AuthenticationType:
         if not instance:
             return self  # type: ignore
-        return instance._get_config(self)
+
+        authentication = instance._get_config(self)
+        if hasattr(self, "di") and self.di.has_class_override(authentication.__class__):
+            return self.di.get_override_by_class(authentication)
+        return authentication
+
+    @classmethod
+    def injectable_properties(cls, di: Di):
+        cache_name = str(cls) + str(di._serial)
+        if cache_name == cls._injectables_loaded:
+            return
+
+        cls.di = di

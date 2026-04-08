@@ -417,3 +417,21 @@ class EndpointTest(TestBase):
         assert response["data"]["routing_data"]["group_id"] == "abc-123"
         # request_data should be the full body
         assert response["data"]["request_data"]["routing_data"] == {"should": "not override"}
+
+    def test_authentication_with_override(self):
+        def my_handler(group_id):
+            return {"group_id": group_id}
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                my_handler,
+                url="/groups/{group_id}/members",
+                request_methods=["GET", "POST"],
+                authentication=clearskies.authentication.Jwks("https://example.com"),
+            ),
+            class_overrides={clearskies.authentication.Jwks: clearskies.authentication.Public()},
+        )
+        status_code, response, headers = context(url="/groups/12345/members")
+
+        assert status_code == 200
+        assert response["data"]["group_id"] == "12345"
