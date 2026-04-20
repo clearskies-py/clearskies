@@ -27,6 +27,10 @@ if TYPE_CHECKING:
     from clearskies.query import Query
 
 
+class NotModelData(Exception):
+    pass
+
+
 class ApiBackend(Backend, InjectableProperties):
     """
     Fetch and store data from an API endpoint.
@@ -1001,7 +1005,9 @@ class ApiBackend(Backend, InjectableProperties):
         if isinstance(response_data, list):
             if not response_data:
                 return []
-            if not self.is_model_data(response_data[0], columns):
+            try:
+                response = self.map_to_model(response_data[0], columns)
+            except NotModelData:
                 raise ValueError(
                     "The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
                 )
@@ -1054,43 +1060,6 @@ class ApiBackend(Backend, InjectableProperties):
 
         return response
 
-    def is_model_data(
-        self,
-        response_data: dict[str, Any],
-        columns: dict[str, Column],
-    ) -> bool:
-        """
-        Check whether a dictionary in the response looks like it contains data for a record.
-
-        Returns True if the response data has keys that overlap with the expected model columns
-        (either directly or in a nested dictionary).  This is the "check" half of the split from
-        ``check_dict_and_map_to_model``; use ``map_to_model`` for the actual mapping.
-        """
-        response_to_model_map = self.build_response_to_model_map(columns)
-        response_keys = set(response_data.keys())
-        map_keys = set(response_to_model_map.keys())
-
-        if response_keys.intersection(map_keys):
-            return True
-
-        # check nested api_to_model_map entries
-        for api_key in self.api_to_model_map:
-            if "." not in api_key:
-                continue
-            try:
-                value = json_functional.get_nested_attribute(response_data, api_key)
-            except KeyError:
-                continue
-            if value is not None:
-                return True
-
-        # recurse into child dictionaries
-        for value in response_data.values():
-            if isinstance(value, dict) and self.is_model_data(value, columns):
-                return True
-
-        return False
-
     def map_to_model(
         self,
         response_data: dict[str, Any],
@@ -1134,8 +1103,12 @@ class ApiBackend(Backend, InjectableProperties):
             for value in response_data.values():
                 if not isinstance(value, dict):
                     continue
-                if self.is_model_data(value, columns):
+                try:
                     return {**query_data, **self.map_to_model(value, columns)}
+                except NotModelData:
+                    pass
+
+            raise NotModelData("Input was not valid model data")
 
         return {**query_data, **mapped}
 
@@ -1152,9 +1125,10 @@ class ApiBackend(Backend, InjectableProperties):
 
         This is a convenience wrapper around ``is_model_data`` and ``map_to_model``.
         """
-        if not self.is_model_data(response_data, columns):
+        try:
+            return self.map_to_model(response_data, columns, query_data)
+        except NotModelData:
             return None
-        return self.map_to_model(response_data, columns, query_data)
 
     def build_response_to_model_map(self, columns: dict[str, Column]) -> dict[str, str]:
         if self._response_to_model_map is not None:
