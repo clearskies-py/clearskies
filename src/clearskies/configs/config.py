@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 
 class Config:
+    """Base configuration descriptor for declaring and validating configuration options on Configurable classes."""
+
     def __init__(self, required: bool = False, default: Any = None) -> None:
         self.required = required
         self.default = default

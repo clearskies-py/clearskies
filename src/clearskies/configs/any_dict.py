@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class AnyDict(config.Config):
+    """Configuration descriptor that validates and stores dictionary values with string keys."""
+
     def __set__(self, instance, value: dict[str, Any]):
         if not isinstance(value, dict):
             error_prefix = self._error_prefix(instance)

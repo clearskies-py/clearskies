@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Endpoint(config.Config):
+    """Configuration descriptor that validates and stores an Endpoint instance."""
+
     def __set__(self, instance, value: EndpointBase):
         if not hasattr(value, "success"):
             error_prefix = self._error_prefix(instance)

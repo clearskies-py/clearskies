@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Cursor(config.Config):
+    """Configuration descriptor that validates and stores a database cursor instance."""
+
     def __set__(self, instance, value: CursorBase):
         if value is not None and not hasattr(value, "build_connection_kwargs"):
             error_prefix = self._error_prefix(instance)

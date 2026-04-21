@@ -6,6 +6,8 @@ from clearskies.configs import config
 
 
 class IntegerOrCallable(config.Config):
+    """Configuration descriptor that accepts an integer or a callable returning an integer."""
+
     def __set__(self, instance, value: int | Callable[..., int]):
         if not isinstance(value, int) and not callable(value):
             error_prefix = self._error_prefix(instance)

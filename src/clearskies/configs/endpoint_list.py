@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class EndpointList(config.Config):
+    """Configuration descriptor that validates and stores a list of Endpoint instances."""
+
     def __set__(self, instance, value: list[EndpointBase]):
         if not isinstance(value, list):
             error_prefix = self._error_prefix(instance)

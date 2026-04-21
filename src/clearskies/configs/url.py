@@ -5,6 +5,8 @@ from clearskies.functional import routing
 
 
 class Url(string.String):
+    """Configuration descriptor that validates and stores URL path strings."""
+
     def __set__(self, instance, value: str):
         if value is None:
             return

@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Conditions(config.Config):
+    """Configuration descriptor that validates and stores query condition expressions."""
+
     def __set__(self, instance, value: typing.condition | list[typing.condition]):
         if not isinstance(value, list):
             value = [value]

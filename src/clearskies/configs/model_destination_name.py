@@ -4,6 +4,8 @@ from clearskies.configs.string import String
 
 
 class ModelDestinationName(String):
+    """Configuration descriptor that auto-resolves the destination name from a model class."""
+
     def __init__(self, model_column_config_name, required=False, default=None):
         self.required = required
         self.default = default

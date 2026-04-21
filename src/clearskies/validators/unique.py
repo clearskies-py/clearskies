@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Unique(Validator):
+    """Validates that a column value is unique across all records in the backend."""
+
     is_unique = True
 
     def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:

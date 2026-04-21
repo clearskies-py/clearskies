@@ -5,6 +5,8 @@ from clearskies.security_header import SecurityHeader
 
 
 class CacheControl(SecurityHeader):
+    """Security header that configures Cache-Control response headers."""
+
     max_age = configs.Integer()
     s_maxage = configs.Integer()
     stale_while_revalidate = configs.Integer()

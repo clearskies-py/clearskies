@@ -4,6 +4,8 @@ from clearskies.configs import select
 
 
 class ModelColumn(select.Select):
+    """Configuration descriptor that validates a value is a valid column name on a model class."""
+
     def __init__(self, model_column_config_name="", required=False, default=None):
         self.required = required
         self.default = default

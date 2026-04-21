@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class Required(Validator):
+    """Validates that a column value is present and non-empty."""
+
     is_required = True
 
     def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:

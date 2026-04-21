@@ -5,6 +5,8 @@ from clearskies.security_header import SecurityHeader
 
 
 class Cors(SecurityHeader):
+    """Security header that configures CORS (Cross-Origin Resource Sharing) response headers."""
+
     origin = configs.String()
     methods = configs.StringList(default=[])
     headers = configs.StringList(default=[])

@@ -4,6 +4,8 @@ from clearskies.configs import string
 
 
 class Select(string.String):
+    """Configuration descriptor that validates a string value against a list of allowed values."""
+
     def __init__(self, allowed_values: list[str], required=False, default=None):
         self.allowed_values = allowed_values
         self.required = required

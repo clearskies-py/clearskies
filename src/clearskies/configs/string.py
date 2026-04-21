@@ -7,6 +7,8 @@ from clearskies.configs import config
 
 
 class String(config.Config):
+    """Configuration descriptor that validates and stores string values with optional regexp validation."""
+
     def __init__(self, required=False, default=None, regexp: str = ""):
         self.required = required
         self.default = default

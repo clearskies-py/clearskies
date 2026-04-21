@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class InTheFuture(Validator, InjectableProperties):
+    """Validates that a date column value is in the future."""
+
     utcnow = inject.Utcnow()
 
     def check(self, model: Model, column_name: str, data: dict[str, Any]) -> str:
