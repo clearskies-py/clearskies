@@ -16,7 +16,7 @@ class ByStandardLib(Injectable):
 
     def __get__(self, instance, parent) -> Any:
         if instance is None:
-            return self  # type: ignore
+            return self
 
         self.initiated_guard(instance)
         return self._di.build_standard_lib(self.name, cache=self.cache)

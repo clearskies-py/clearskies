@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from typing import Callable as CallableType
+from typing import Self, overload
 
 from clearskies.configs import config
 
 
 class Callable(config.Config):
-    """Configuration descriptor that validates and stores callable values."""
-
-    def __set__(self, instance, value: CallableType):
+    def __set__(self, instance, value: CallableType | None):
         if value is not None and not callable(value):
             error_prefix = self._error_prefix(instance)
             raise TypeError(
@@ -16,7 +15,11 @@ class Callable(config.Config):
             )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> CallableType | None:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> CallableType | None: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

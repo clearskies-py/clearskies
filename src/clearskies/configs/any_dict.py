@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self, overload
 
 from clearskies.configs import config
 
@@ -20,7 +20,11 @@ class AnyDict(config.Config):
                 raise TypeError(f"{error_prefix} attempt to set a dictionary with a non-string key.")
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> dict[str, Any]:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> dict[str, Any]: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)

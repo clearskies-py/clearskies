@@ -47,13 +47,6 @@ repos:
           - --fix
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-requests, types-dateparser, types-PyMySQL]
-        files: \.py$
-
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
@@ -65,9 +58,13 @@ repos:
       - id: pytest
         name: pytest
         verbose: true
-        entry: bash -c 'poetry run pytest . --cache-clear'
+        entry: bash -c 'uv run pytest . --cache-clear'
         language: system
         types: [python]
         pass_filenames: false
         always_run: true
-        stages: ["pre-commit"]
+      - id: uv-ty
+        name: Run type checks with ty using uv
+        entry: bash -c 'uv run ty check src'
+        language: system
+        types: [python]

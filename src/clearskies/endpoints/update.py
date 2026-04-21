@@ -140,10 +140,8 @@ class Update(Get):
 
         schema_model_name = string.camel_case_to_snake_case(output_schema.__name__)
         output_data_schema = self.documentation_data_schema(output_schema, self.readable_column_names)
-        output_autodoc = (
-            autodoc.schema.Object(
-                self.auto_case_internal_column_name("data"), children=output_data_schema, model_name=schema_model_name
-            ),
+        output_autodoc = autodoc.schema.Object(
+            self.auto_case_internal_column_name("data"), children=output_data_schema, model_name=schema_model_name
         )
 
         authentication = self.authentication
@@ -162,7 +160,7 @@ class Update(Get):
                 self.description,
                 [
                     self.documentation_success_response(
-                        output_autodoc,  # type: ignore
+                        output_autodoc,
                         description=self.description,
                     ),
                     *standard_error_responses,

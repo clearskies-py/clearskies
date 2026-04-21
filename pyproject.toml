@@ -32,7 +32,6 @@ Changelog = "https://github.com/clearskies-py/clearskies/blob/main/CHANGELOG.md"
 # This is the dedicated section for uv"s configuration
 [dependency-groups]
 dev = [
-    "mypy>=1.16.1",
     "pre-commit>=4.3.0",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
@@ -41,6 +40,7 @@ dev = [
     "types-dateparser>=1.2.2.20250627",
     "types-jwcrypto>=1.5.0.20250516",
     "types-pymysql>=1.1.0.20250516",
+    "ty>=0.0.23",
 ]
 docs = [
     "clear-skies-doc-builder>=2.0.4",

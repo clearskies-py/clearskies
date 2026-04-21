@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import requests
+import requests.auth
 
 import clearskies.configurable
 from clearskies.authentication.authorization import Authorization
@@ -39,6 +40,6 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
     def documentation_security_scheme_name(self) -> str:
         return ""
 
-    def __call__(self, request: requests.models.PreparedRequest) -> requests.models.PreparedRequest:
-        request.headers = {**request.headers, **self.headers()}  # type: ignore
-        return request
+    def __call__(self, r: requests.models.PreparedRequest) -> requests.models.PreparedRequest:
+        r.headers.update(self.headers())
+        return r
