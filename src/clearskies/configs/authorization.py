@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.configs import config
 
@@ -23,9 +23,13 @@ class Authorization(config.Config):
             )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> AuthorizationType:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> AuthorizationType: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
 
         authorization = instance._get_config(self)
         if hasattr(self, "di") and self.di.has_class_override(authorization.__class__):

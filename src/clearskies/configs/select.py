@@ -23,7 +23,7 @@ class Select(string.String):
         if value not in self.allowed_values:
             error_prefix = self._error_prefix(instance)
             raise ValueError(
-                f"{error_prefix} attempt to set a value of type '{value}' which is not in the list of allowed values.  It must be one of '"  # type: ignore
+                f"{error_prefix} attempt to set a value of type '{value}' which is not in the list of allowed values.  It must be one of '"
                 + "', '".join(self.allowed_values)
                 + "'"
             )

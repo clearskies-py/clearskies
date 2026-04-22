@@ -36,7 +36,7 @@ class Wsgi(InputOutput):
         if "content-type" not in self.response_headers:
             self.response_headers.content_type = "application/json; charset=UTF-8"
 
-        self._start_response(f"{status_code} Ok", [header for header in self.response_headers.items()])  # type: ignore
+        self._start_response(f"{status_code} Ok", [header for header in self.response_headers.items()])
         if type(body) == bytes:
             final_body = body
         elif type(body) == str:

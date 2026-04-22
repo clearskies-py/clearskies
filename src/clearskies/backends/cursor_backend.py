@@ -17,7 +17,6 @@ from clearskies.query.result import (
 
 if TYPE_CHECKING:
     from clearskies import Model
-    from clearskies.di import Di
 
 
 class CursorBackend(Backend, InjectableProperties):
@@ -125,7 +124,7 @@ class CursorBackend(Backend, InjectableProperties):
 
     supports_n_plus_one = True
     global_table_prefix = inject.ByName("global_table_prefix")
-    di: Di = inject.Di()  # type: ignore[assignment]
+    di = inject.Di()
 
     def __init__(
         self,
@@ -376,9 +375,9 @@ class CursorBackend(Backend, InjectableProperties):
 
     def conditions_as_wheres_and_parameters(
         self, conditions: list[Condition], default_table_name: str
-    ) -> tuple[str, tuple[Any]]:
+    ) -> tuple[str, tuple[Any, ...]]:
         if not conditions:
-            return ("", ())  # type: ignore
+            return ("", ())
 
         parameters = []
         where_parts = []
@@ -395,7 +394,7 @@ class CursorBackend(Backend, InjectableProperties):
                     placeholder=self.cursor.value_placeholder,
                 )
             )
-        return (" WHERE " + " AND ".join(where_parts), tuple(parameters))  # type: ignore
+        return (" WHERE " + " AND ".join(where_parts), tuple(parameters))
 
     def group_by_clause(self, group_by: str) -> str:
         if not group_by:

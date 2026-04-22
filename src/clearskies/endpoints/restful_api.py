@@ -388,7 +388,10 @@ class RestfulApi(EndpointGroup):
         # these lines take all of the arguments we were initialized with and dumps it into a dict.  It's the
         # equivalent of combining both *args and **kwargs without using either
         my_args = inspect.getfullargspec(self.__class__)
-        local_variables = inspect.currentframe().f_locals  # type: ignore
+        frame = inspect.currentframe()
+        if frame is None:
+            raise RuntimeError("Unable to inspect current frame")
+        local_variables = frame.f_locals
         available_args = {arg: local_variables[arg] for arg in my_args.args[1:]}
 
         # we handle this one manually
@@ -419,7 +422,7 @@ class RestfulApi(EndpointGroup):
                 # The endpoint will use the base URL from the parent EndpointGroup
                 final_kwargs["url"] = ""
             final_kwargs["request_methods"] = endpoint_to_build["request_methods"]
-            endpoints.append(endpoint_class(*final_args, **final_kwargs))  # type: ignore
+            endpoints.append(endpoint_class(*final_args, **final_kwargs))
 
         super().__init__(
             endpoints,

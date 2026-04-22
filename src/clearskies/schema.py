@@ -65,7 +65,7 @@ class Schema:
             columns[attribute_name] = attribute
 
         for attribute_name, column in overrides.items():
-            columns[attribute_name] = column  # type: ignore
+            columns[attribute_name] = column
 
         if not overrides:
             cls._columns = columns

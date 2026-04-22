@@ -67,8 +67,8 @@ class Json(Column):
 
     """
 
-    setable = configs.Any(default=None)  # type: ignore
-    default = configs.Any(default=None)  # type: ignore
+    setable = configs.Any(default=None)
+    default = configs.Any(default=None)
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
@@ -103,7 +103,7 @@ class Json(Column):
 
     def __set__(self, instance, value: dict[str, Any]) -> None:
         # this makes sure we're initialized
-        if "name" not in self._config:  # type: ignore
+        if not self._config or "name" not in self._config:
             instance.get_columns()
 
         instance._next_data[self.name] = value

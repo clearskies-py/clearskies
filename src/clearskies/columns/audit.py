@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies import configs, decorators
 from clearskies.column import Column
-from clearskies.columns.has_many import HasMany
+from clearskies.columns.has_many import ChildModel, HasMany
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
@@ -280,7 +280,7 @@ class Audit(HasMany):
     def parent_columns(self) -> dict[str, Column]:
         if self._parent_columns == None:
             self._parent_columns = self.di.build(self.model_class, cache=True).columns()
-        return self._parent_columns  # type: ignore[return-value]
+        return self._parent_columns
 
     def record(self, model, action, data=None, record_data=None):
         audit_data = {
@@ -298,9 +298,15 @@ class Audit(HasMany):
 
         self.child_model.create(audit_data)
 
-    def __get__(self, model, cls):
+    @overload
+    def __get__(self, model: None, cls: type[Model]) -> Self: ...
+
+    @overload
+    def __get__(self, model: Model, cls: type[Model]) -> ChildModel: ...
+
+    def __get__(self, model, cls):  # type: ignore[override]
         if model is None:
             self.model_class = cls
-            return self  # type: ignore
+            return self
 
         return super().__get__(model, cls).where(f"class_name={self.model_class.__name__}")

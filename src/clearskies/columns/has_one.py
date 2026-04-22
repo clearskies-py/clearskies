@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from clearskies.autodoc.schema import Object as AutoDocObject
-from clearskies.columns.has_many import HasMany
+from clearskies.columns.has_many import ChildModel, HasMany
 
 if TYPE_CHECKING:
     from clearskies import Model
     from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
-class HasOne(HasMany):
+class HasOne(HasMany[ChildModel]):
     """
     This operates exactly like the HasMany relationship, except it assumes there is only ever one child.
 
@@ -20,7 +20,15 @@ class HasOne(HasMany):
 
     _descriptor_config_map = None
 
-    def __get__(self, model, cls):
+    @overload
+    def __get__(self, model: None, cls: type[Model]) -> Self:
+        pass
+
+    @overload
+    def __get__(self, model: Model, cls: type[Model]) -> ChildModel:
+        pass
+
+    def __get__(self, model, cls):  # type: ignore[override]
         if model is None:
             self.model_class = cls
             return self
@@ -54,10 +62,10 @@ class HasOne(HasMany):
     ) -> list[AutoDocSchema]:
         columns = self.child_columns
         child_id_column_name = self.child_model_class.id_column_name
-        child_properties = [columns[child_id_column_name].documentation()]
+        child_properties: list[AutoDocSchema] = [*columns[child_id_column_name].documentation()]
 
         for column_name in self.readable_child_column_names or []:
-            child_properties.extend(columns[column_name].documentation())  # type: ignore
+            child_properties.extend(columns[column_name].documentation())
 
         return [
             AutoDocObject(

@@ -24,7 +24,7 @@ from . import (
 from .action import Action
 from .column import Column
 from .configurable import Configurable
-from .end import End  # type: ignore
+from .end import End
 from .endpoint import Endpoint
 from .endpoint_group import EndpointGroup
 from .environment import Environment

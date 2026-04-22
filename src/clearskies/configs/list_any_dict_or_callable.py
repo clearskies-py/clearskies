@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Self, overload
 
 from clearskies.configs import config
 
@@ -29,7 +29,11 @@ class ListAnyDictOrCallable(config.Config):
                         )
         instance._set_config(self, value)
 
-    def __get__(self, instance, parent) -> list[dict[str, Any]] | Callable[..., list[dict[str, Any]]]:
+    @overload
+    def __get__(self, instance: None, parent: type) -> Self: ...
+    @overload
+    def __get__(self, instance: object, parent: type) -> list[dict[str, Any]] | Callable[..., list[dict[str, Any]]]: ...
+    def __get__(self, instance, parent):
         if not instance:
-            return self  # type: ignore
+            return self
         return instance._get_config(self)
