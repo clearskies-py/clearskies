@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Self, overload
+from typing import TYPE_CHECKING, Self, overload
 
 from clearskies.di.injectable import Injectable
-from clearskies.secrets.secrets import Secrets as SecretsHelper
+
+if TYPE_CHECKING:
+    from clearskies.secrets.secrets import Secrets as SecretsHelper
 
 
 class Secrets(Injectable):
