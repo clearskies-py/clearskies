@@ -73,6 +73,22 @@ class List(Column):
 
     setable = configs.Any(default=None)
     default = configs.Any(default=None)
+
+    """
+    The type (or tuple of types) that every list item must match.
+
+    When set, any API input that contains an item of the wrong type is rejected
+    with a descriptive ``400 input_errors`` response.  Backend data is always
+    returned as-is; ``value_type`` is not enforced on the way out of storage.
+
+    Example::
+
+        # only strings allowed
+        tags = clearskies.columns.List(value_type=str)
+
+        # strings or integers allowed
+        mixed = clearskies.columns.List(value_type=(str, int))
+    """
     value_type: configs.Type[type | tuple[type, ...]] = configs.Type(default=None)
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
@@ -124,24 +140,16 @@ class List(Column):
         return t.__name__
 
     def from_backend(self, value: str | list[Any] | None) -> list[Any] | None:
-        # Already a parsed list — return as-is; type enforcement is the API boundary's job.
-        if isinstance(value, list):
-            return value
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                return None
 
-        # Treat falsy non-list values (None, "") as absent.
-        if not value:
+        if not isinstance(value, list):
             return None
 
-        # Deserialise from a JSON string stored by the backend.
-        try:
-            parsed = json.loads(value)
-        except (json.JSONDecodeError, TypeError):
-            return None
-
-        if not isinstance(parsed, list):
-            return None
-
-        return parsed
+        return value
 
     def to_backend(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.name not in data or data[self.name] is None:
