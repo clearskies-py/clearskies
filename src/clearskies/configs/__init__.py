@@ -117,6 +117,7 @@ from .string_list_or_callable import StringListOrCallable
 from .string_or_callable import StringOrCallable
 from .timedelta import Timedelta
 from .timezone import Timezone
+from .type import Type
 from .url import Url
 from .validators import Validators
 from .writeable_model_column import WriteableModelColumn
@@ -175,6 +176,7 @@ __all__ = [
     "StringOrCallable",
     "Timedelta",
     "Timezone",
+    "Type",
     "Url",
     "Validators",
     "WriteableModelColumn",

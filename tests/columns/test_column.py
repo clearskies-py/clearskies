@@ -54,6 +54,12 @@ class ColumnTest(TestBase):
         assert response["data"]["date_of_birth"] == "2020-05-03"
 
     def test_is_temporary_calc(self):
+        dob = "2020-05-03"
+        now = datetime.datetime.now()
+        parsed_dob = dateparser.parse(dob)
+        assert parsed_dob is not None
+        expected_age = int((now - parsed_dob).total_seconds() / (86400 * 365))
+
         class Pet(clearskies.Model):
             id_column_name = "id"
             backend = clearskies.backends.MemoryBackend()
@@ -70,14 +76,15 @@ class ColumnTest(TestBase):
 
         context = clearskies.contexts.Context(
             clearskies.endpoints.Callable(
-                lambda pets: pets.create({"name": "Spot", "date_of_birth": "2020-05-03"}),
+                lambda pets: pets.create({"name": "Spot", "date_of_birth": dob}),
                 model_class=Pet,
                 readable_column_names=["id", "age", "date_of_birth"],
             ),
             classes=[Pet],
+            now=now,
         )
         status_code, response, response_headers = context()
-        assert response["data"]["age"] == 5
+        assert response["data"]["age"] == expected_age
         assert response["data"]["date_of_birth"] == None
 
     def test_validators(self):
@@ -160,7 +167,10 @@ class ColumnTest(TestBase):
                 ["Open", "On Hold", "Fulfilled"],
                 on_change_post_save=[
                     lambda model, data, order_histories: order_histories.create(
-                        {"order_id": model.latest("id", data), "event": "Order status changed to " + data["status"]}
+                        {
+                            "order_id": model.latest("id", data),
+                            "event": "Order status changed to " + data["status"],
+                        }
                     ),
                 ],
             )
