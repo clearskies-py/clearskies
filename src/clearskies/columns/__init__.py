@@ -22,6 +22,7 @@ from .has_many_self import HasManySelf
 from .has_one import HasOne
 from .integer import Integer
 from .json import Json
+from .list import List
 from .many_to_many_ids import ManyToManyIds
 from .many_to_many_ids_with_data import ManyToManyIdsWithData
 from .many_to_many_models import ManyToManyModels
@@ -58,6 +59,7 @@ __all__ = [
     "HasOne",
     "Integer",
     "Json",
+    "List",
     "ManyToManyIds",
     "ManyToManyIdsWithData",
     "ManyToManyModels",
