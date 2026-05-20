@@ -124,12 +124,8 @@ class List(Column):
         return t.__name__
 
     def from_backend(self, value: str | list[Any] | None) -> list[Any] | None:
-        # Already a parsed list — validate item types and return.
+        # Already a parsed list — return as-is; type enforcement is the API boundary's job.
         if isinstance(value, list):
-            if self.value_type:
-                for item in value:
-                    if not isinstance(item, self.value_type):
-                        return None
             return value
 
         # Treat falsy non-list values (None, "") as absent.
@@ -144,11 +140,6 @@ class List(Column):
 
         if not isinstance(parsed, list):
             return None
-
-        if self.value_type:
-            for item in parsed:
-                if not isinstance(item, self.value_type):
-                    return None
 
         return parsed
 

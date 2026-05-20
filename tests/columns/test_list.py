@@ -32,17 +32,18 @@ class ListFromBackendTest(TestBase):
     def test_list_correct_value_type_passes(self):
         assert self._col(value_type=str).from_backend(["a", "b"]) == ["a", "b"]
 
-    def test_list_wrong_value_type_returns_none(self):
-        assert self._col(value_type=str).from_backend([1, 2]) is None
+    def test_list_type_mismatch_from_backend_passes_through(self):
+        # Type enforcement is only at the API boundary; backend data is returned as-is.
+        assert self._col(value_type=str).from_backend([1, 2]) == [1, 2]
 
-    def test_list_partial_wrong_value_type_returns_none(self):
-        assert self._col(value_type=str).from_backend(["a", 1]) is None
+    def test_list_mixed_type_from_backend_passes_through(self):
+        assert self._col(value_type=str).from_backend(["a", 1]) == ["a", 1]
 
     def test_list_tuple_value_type_valid(self):
         assert self._col(value_type=(str, int)).from_backend(["a", 1]) == ["a", 1]
 
-    def test_list_tuple_value_type_invalid(self):
-        assert self._col(value_type=(str, int)).from_backend(["a", 1.5]) is None
+    def test_list_tuple_value_type_mismatch_from_backend_passes_through(self):
+        assert self._col(value_type=(str, int)).from_backend(["a", 1.5]) == ["a", 1.5]
 
     # --- JSON string inputs ---
 
@@ -61,8 +62,9 @@ class ListFromBackendTest(TestBase):
     def test_json_dict_not_list_returns_none(self):
         assert self._col().from_backend('{"key": "value"}') is None
 
-    def test_json_string_wrong_value_type_returns_none(self):
-        assert self._col(value_type=str).from_backend("[1, 2, 3]") is None
+    def test_json_string_type_mismatch_from_backend_passes_through(self):
+        # value_type does not filter backend data; mismatched items are returned as-is.
+        assert self._col(value_type=str).from_backend("[1, 2, 3]") == [1, 2, 3]
 
     def test_json_string_correct_value_type_passes(self):
         assert self._col(value_type=str).from_backend('["a", "b"]') == ["a", "b"]
@@ -71,8 +73,8 @@ class ListFromBackendTest(TestBase):
         result = self._col(value_type=(str, int)).from_backend('["hello", 42]')
         assert result == ["hello", 42]
 
-    def test_json_string_tuple_value_type_invalid(self):
-        assert self._col(value_type=(str, int)).from_backend("[1.5, 2.5]") is None
+    def test_json_string_tuple_value_type_mismatch_from_backend_passes_through(self):
+        assert self._col(value_type=(str, int)).from_backend("[1.5, 2.5]") == [1.5, 2.5]
 
 
 class ListToBackendTest(TestBase):
