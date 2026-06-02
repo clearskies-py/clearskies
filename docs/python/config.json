@@ -49,6 +49,7 @@
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.backends.CursorBackend",
+                "clearskies.backends.GraphqlBackend",
                 "clearskies.backends.MemoryBackend",
                 "clearskies.backends.ApiBackend"
             ]
