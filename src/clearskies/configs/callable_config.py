@@ -7,6 +7,8 @@ from clearskies.configs import config
 
 
 class Callable(config.Config):
+    """This is for a configuration that should be a callable."""
+
     def __set__(self, instance, value: CallableType | None):
         if value is not None and not callable(value):
             error_prefix = self._error_prefix(instance)
