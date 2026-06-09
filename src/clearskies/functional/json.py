@@ -10,7 +10,7 @@ def get_nested_attribute(data: dict[str, Any] | str, attr_path: str) -> Any:
     it as JSON first.
 
     Example:
-    ```
+    ```python
     data = {"database": {"credentials": {"username": "admin", "password": "secret"}}}
     username = get_nested_attribute(data, "database.credentials.username")
     # Returns "admin"

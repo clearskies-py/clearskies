@@ -36,7 +36,7 @@ class Audit(HasMany):
 
     Here's an example:
 
-    ```
+    ```python
     #!/usr/bin/env python
 
     import clearskies

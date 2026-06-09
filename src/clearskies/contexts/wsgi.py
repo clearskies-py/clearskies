@@ -14,7 +14,7 @@ class Wsgi(Context):
     your WSGI server, passing along the `environment` and `start_response` variables, and returning the response
     from the context.  Here's a simple example:
 
-    ```
+    ```python
     import clearskies
 
 
@@ -45,7 +45,7 @@ class Wsgi(Context):
     And see the response from this "hello world" app.  Note than in the above example I create the context outside
     of the application function.  Of course, you can do the opposite:
 
-    ```
+    ```python
     import clearskies
 
 

@@ -25,7 +25,7 @@ class WsgiRef(Context):
     environment and start_response variables), in this case you simply directly invoke the context to
     launch the server.  The default port is 8080:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
