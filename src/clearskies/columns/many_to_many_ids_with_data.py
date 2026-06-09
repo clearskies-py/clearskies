@@ -188,7 +188,7 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
     def __get__(self, instance, cls):
         return super().__get__(instance, cls)
 
-    def __set__(self, instance, value: list[dict[str, Any]]) -> None:  # type: ignore[override]
+    def __set__(self, instance, value: list[dict[str, Any]]) -> None:  # ty: ignore[invalid-method-override]
         # this makes sure we're initialized
         if not self._config or "name" not in self._config:
             instance.get_columns()

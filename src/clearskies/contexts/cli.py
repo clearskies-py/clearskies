@@ -130,5 +130,5 @@ class Cli(Context):
     `sys_argv`.  This contains `sys.argv`.
     """
 
-    def __call__(self) -> Any:  # type: ignore[override]
+    def __call__(self) -> Any:  # ty: ignore[invalid-method-override]
         return self.execute_application(CliInputOutput())

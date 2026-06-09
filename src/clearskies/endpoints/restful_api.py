@@ -401,7 +401,7 @@ class RestfulApi(EndpointGroup):
         endpoints = []
         for endpoint_to_build in endpoints_to_build:
             # grab our class and any pre-defined configs
-            endpoint_class = endpoint_to_build["class"]
+            endpoint_class: type = endpoint_to_build["class"]  # ty: ignore[invalid-assignment]
             url_suffix = endpoint_to_build.get("url_suffix")
 
             # now get the allowed args out of the init and fill them out with our own.

@@ -75,5 +75,5 @@ class Wsgi(Context):
 
     """
 
-    def __call__(self, env, start_response):  # type: ignore[override]
+    def __call__(self, env, start_response):  # ty: ignore[invalid-method-override]
         return self.execute_application(WsgiInputOutput(env, start_response))

@@ -19,7 +19,7 @@ class Query(loggable.Loggable):
     """
     The model class
     """
-    model_class: type[Model] = None  # type: ignore[assignment]  # always set in __init__
+    model_class: type[Model]
 
     """
     The list of where conditions for the query.

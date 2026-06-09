@@ -28,7 +28,7 @@ class HasOne(HasMany[ChildModel]):
     def __get__(self, model: Model, cls: type[Model]) -> ChildModel:
         pass
 
-    def __get__(self, model, cls):  # type: ignore[override]
+    def __get__(self, model, cls):  # ty: ignore[invalid-method-override]
         if model is None:
             self.model_class = cls
             return self

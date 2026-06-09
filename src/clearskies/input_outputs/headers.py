@@ -55,7 +55,7 @@ class Headers(dict[str, str]):
     @overload
     def get(self, key: str, default: _T, /) -> str | _T: ...
 
-    def get(self, key: str, default=None, /):  # type: ignore[override]
+    def get(self, key: str, default=None, /):  # ty: ignore[invalid-method-override]
         return super().get(key.upper().replace("_", "-"), default)
 
     def add(self, key: str, value: str) -> None:

@@ -344,7 +344,7 @@ class Akeyless(secrets.Secrets):
             raise e
 
         if json_attribute:
-            value = get_nested_attribute(res[path], json_attribute)
+            value = get_nested_attribute(res[path], json_attribute)  # ty: ignore[invalid-argument-type]
         else:
             value = str(res[path])
 

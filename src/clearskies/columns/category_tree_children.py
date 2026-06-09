@@ -78,7 +78,7 @@ class CategoryTreeChildren(Column, Generic[CategoryModel]):
 
         return self.relatives(model)
 
-    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
+    def __set__(self, model: Model, value: Model) -> None:  # ty: ignore[invalid-method-override]
         raise ValueError(
             f"Attempt to set a value to '{model.__class__.__name__}.{self.name}, but this column is not writeable"
         )
