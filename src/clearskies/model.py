@@ -60,7 +60,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     exceptions to the grammatical rules of making words plural.  In this case you can simply extend the method
     and change it according to your needs, e.g.:
 
-    ```
+    ```python
     from typing import Self
     import clearskies
 
@@ -85,7 +85,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     title case to snake case, but they are also available via the pluralized name.  Here's a quick example of all
     three approaches for dependency injection:
 
-    ```
+    ```python
     import clearskies
 
 
@@ -129,7 +129,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     Where `__init__.py` imports all the models:
 
-    ```
+    ```python
     from app.models.category import Category
     from app.models.order import Order
     from app.models.proudct import Product
@@ -141,7 +141,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
     Then in your main application you can just import the whole `models` module into your context:
 
-    ```
+    ```python
     import app.models
 
     cli = clearskies.contexts.cli(SomeApplication, modules=[app.models])
@@ -152,7 +152,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
     The base model class extends `clearskies.di.InjectableProperties` which means that you can inject dependencies into your model
     using the `di.inject` classes.  Here's an example that demonstrates dependency injection for models:
 
-    ```
+    ```python
     import datetime
     import clearskies
 
@@ -408,7 +408,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         value - it will return True if a record has been loaded and false otherwise.  You can see that with this
         example, where all the `if` statements will evaluate to `True`:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -453,7 +453,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         providing data to the `save` call, this will raise an exception, but you can make this happen with the
         `no_data` kwarg:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -559,7 +559,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         (either on the model class itself or in a column).  Here's an examle that extends the `pre_save` hook
         on the model to demonstrate how `is_changing` works:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -645,7 +645,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         via slightly verbose lines like: `data.get(column_name, getattr(self, column_name))`.  The `latest`
         method is just a substitue for this:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -708,7 +708,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         the save prcess while `was_changed` is available after the save has finished.  Otherwise, the logic for
         deciding if a column has changed is identical as for `is_changing`.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -765,7 +765,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         """
         Return the value of a column from before the most recent save.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -813,7 +813,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         both statements will be printed and the id and name in the "Alice" record will be returned,
         even though the record no longer exists:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -933,7 +933,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
         An here's an example of using it to set some additional data during a save:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -997,7 +997,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         any changes to the backend you must execute another save operation.  Since the backend is already updated,
         the return value from this function is ignored (it should return None):
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -1055,7 +1055,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         updated with the new data.  You can decide on the necessary actions using the `was_changed` and
         the `previous_value` functions.
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -1151,7 +1151,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         own queries directly.  Here's an example where the model restricts the list endpoint so that it only returns users with
         an age over 18:
 
-        ```
+        ```python
         from typing import Any, Self
         import clearskies
 
@@ -1216,7 +1216,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         can't accidentally use a single model instance for both purposes, mostly because when this happens it's usually a sign
         of a bug.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1448,7 +1448,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
         A basic example:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1549,7 +1549,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         Add a sort by clause to the query.  You can sort by up to two columns at once.
 
         Example:
-        ```
+        ```python
         import clearskies
 
 
@@ -1596,7 +1596,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         """
         Set the number of records to return.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1645,7 +1645,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         pagination data via this method, clearskies will raise a ValueError.
 
         Example:
-        ```
+        ```python
         import clearskies
 
 
@@ -1681,7 +1681,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
 
         However, if the return line in `my_application` is switched for either of these:
 
-        ```
+        ```python
         return orders.sort_by("total", "asc").pagination(start="asdf")
         return orders.sort_by("total", "asc").pagination(something_else=5)
         ```
@@ -1798,7 +1798,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         doesn't have a default limit, so in practice the `paginate_all` is unnecessary here, but this is done
         for demonstration purposes.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1857,7 +1857,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         In the following example we create a record in the backend and then make a new model instance using `model`, which
         we then use to udpate the record.  The returned name will be `Jane Doe`.
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1901,7 +1901,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         a new record.  Here's a simple exmaple.  Both print statements will be printed and it will return the id
         for the Alice record, and then null for `blank_id`:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1946,7 +1946,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         unambiguous shortcut to do exactly that.  So, you pass your save data to the `create` method and you will get
         back a new model:
 
-        ```
+        ```python
         import clearskies
 
 
@@ -1991,7 +1991,7 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         The `where` method returns an object meant to be iterated over.  If you are expecting your query to return a single
         record, then you can use first to turn that directly into the matching model so you don't have to iterate over it:
 
-        ```
+        ```python
         import clearskies
 
 

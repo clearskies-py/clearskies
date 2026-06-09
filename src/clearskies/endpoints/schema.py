@@ -23,7 +23,7 @@ class Schema(Endpoint):
     of your endpoint list.  The following example builds an application with two endpoint groups, each
     of which has a schema endpoint:
 
-    ```
+    ```python
     import clearskies
     from clearskies.validators import Required, Unique
     from clearskies import columns

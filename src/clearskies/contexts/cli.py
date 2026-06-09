@@ -12,7 +12,7 @@ class Cli(Context):
 
     This context converts a clearskies application into a CLI command.  Here's a simple example:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
@@ -34,7 +34,7 @@ class Cli(Context):
 
     Routing is still supported, with routes and route parameters becoming CLI args:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
@@ -63,7 +63,7 @@ class Cli(Context):
     If the endpoint expects a request method you can provide it by setting the `-X` or `--request_method=`
     kwargs.  So for tihs example:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
@@ -93,7 +93,7 @@ class Cli(Context):
     You can pass data as a json string with the -d flag or set individual named arguments.  The following
     example just reflects the request data back to the client:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
@@ -130,5 +130,5 @@ class Cli(Context):
     `sys_argv`.  This contains `sys.argv`.
     """
 
-    def __call__(self) -> Any:  # type: ignore[override]
+    def __call__(self) -> Any:  # ty: ignore[invalid-method-override]
         return self.execute_application(CliInputOutput())

@@ -25,7 +25,7 @@ class WsgiRef(Context):
     environment and start_response variables), in this case you simply directly invoke the context to
     launch the server.  The default port is 8080:
 
-    ```
+    ```python
     #!/usr/bin/env python
     import clearskies
 
@@ -78,7 +78,7 @@ class WsgiRef(Context):
         )
         self.port = port
 
-    def __call__(self):  # type: ignore[override]
+    def __call__(self):  # ty: ignore[invalid-method-override]
         with make_server("", self.port, self.handler) as httpd:
             print(f"Starting WSGI server on port {self.port}.  This is NOT intended for production usage.")
             httpd.serve_forever()

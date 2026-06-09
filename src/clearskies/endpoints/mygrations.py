@@ -31,7 +31,7 @@ class Mygrations(Endpoint):
     your database in line with your files.  Like most IaC, mygrations then relies on your standard
     plan/apply combination.  Here's a simple example:
 
-    ```
+    ```python
     import clearskies
 
     cli = clearskies.contexts.Cli(

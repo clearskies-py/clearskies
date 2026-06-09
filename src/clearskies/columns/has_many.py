@@ -514,7 +514,7 @@ class HasMany(Column, Generic[ChildModel]):
         instance._transformed_data[self.name] = children
         return children
 
-    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
+    def __set__(self, model: Model, value: Model) -> None:  # ty: ignore[invalid-method-override]
         raise ValueError(
             f"Attempt to set a value to {model.__class__.__name__}.{self.name}: this is not allowed because it is a HasMany column, which is not writeable."
         )

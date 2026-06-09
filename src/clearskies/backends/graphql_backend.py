@@ -246,7 +246,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         # Use the model's destination name and convert to API case
         return swap_casing(model.destination_name(), self.model_case, self.api_case)
 
-    def _is_relationship_column(self, column: "Column") -> bool:
+    def _is_relationship_column(self, column: Column) -> bool:
         """
         Check if a column represents a relationship that needs N+1 optimization.
 
@@ -261,7 +261,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         column_type = column.__class__.__name__
         return column_type in ["BelongsTo", "HasMany", "ManyToMany", "BelongsToId", "BelongsToModel"]
 
-    def _get_relationship_model(self, column: "Column") -> type["Model"] | None:
+    def _get_relationship_model(self, column: Column) -> type[Model] | None:
         """
         Extract the related model class from a relationship column.
 
@@ -270,38 +270,28 @@ class GraphqlBackend(Backend, InjectableProperties):
         column_type = column.__class__.__name__
 
         # Strategy 1: Check for parent_models_class config (BelongsTo, BelongsToId)
-        if hasattr(column, "config"):
-            model = column.config("parent_models_class")  # type: ignore[call-non-callable]
-            if model:
-                return model
+        if hasattr(column, "parent_model_class"):
+            return column.parent_model_class  # ty: ignore[invalid-return-type]
 
-            # Strategy 2: Check for child_models_class config (HasMany)
-            model = column.config("child_models_class")  # type: ignore[call-non-callable]
-            if model:
-                return model
+        # Strategy 2: Check for child_models_class config (HasMany)
+        elif hasattr(column, "child_model_class"):
+            return column.child_model_class  # ty: ignore[invalid-return-type]
 
         # Strategy 3: For BelongsToModel, look up the corresponding BelongsToId column
-        if column_type == "BelongsToModel":
-            # BelongsToModel stores the belongs_to_id column name in belongs_to_column_name attribute
-            if hasattr(column, "belongs_to_column_name"):
-                belongs_to_id_column_name = column.belongs_to_column_name
-                if belongs_to_id_column_name:
-                    # Get the model columns and look up the BelongsToId column
-                    model_columns = column.get_model_columns() if hasattr(column, "get_model_columns") else {}
-                    belongs_to_id_column = model_columns.get(belongs_to_id_column_name)
-                    if belongs_to_id_column:
-                        # BelongsToId has parent_model_class attribute
-                        if hasattr(belongs_to_id_column, "parent_model_class"):
-                            model = belongs_to_id_column.parent_model_class
-                            if model:
-                                return model
+        if hasattr(column, "belongs_to_column_name"):
+            # Get the model columns and look up the BelongsToId column
+            belongs_to_id_column_name = column.belongs_to_column_name
+            model_columns = column.get_model_columns() if hasattr(column, "get_model_columns") else {}
+            belongs_to_id_column = model_columns.get(belongs_to_id_column_name)
+            if belongs_to_id_column and hasattr(belongs_to_id_column, "parent_model_class"):
+                return belongs_to_id_column.parent_model_class
 
         # Strategy 4: Check for model_class attribute
         if hasattr(column, "model_class") and column.model_class:
             # Make sure it's not the same as the parent model
             parent_columns = column.get_model_columns() if hasattr(column, "get_model_columns") else {}
             if parent_columns and column.model_class != type(parent_columns):
-                return column.model_class
+                return column.model_class  # ty: ignore[invalid-return-type]
 
         # Could not determine relationship model
         return None

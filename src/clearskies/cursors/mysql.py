@@ -116,7 +116,7 @@ class Mysql(Cursor):
 
     def set_autocommit(self, autocommit: bool) -> None:
         """Update autocommit on the live pymysql connection."""
-        self.connection.autocommit(autocommit)  # type: ignore[attr-defined]
+        self.connection.autocommit(autocommit)  # ty: ignore[unresolved-attribute]
 
     def build_connection_kwargs(self) -> dict:
         connection_kwargs = {

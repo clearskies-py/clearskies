@@ -488,7 +488,7 @@ class Di:
         ```
         """
         if isinstance(additional_configs, list):
-            self._additional_configs.extend(list(additional_configs))
+            self._additional_configs.extend(additional_configs)  # ty: ignore[invalid-argument-type]
         else:
             self._additional_configs.append(additional_configs)
 

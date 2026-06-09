@@ -54,7 +54,7 @@ class BelongsToModel(Column, Generic[ParentModel]):
     def __get__(self, model: Model, cls: type[Model]) -> ParentModel:
         pass
 
-    def __get__(self, model, cls):  # type: ignore[override]
+    def __get__(self, model, cls):  # ty: ignore[invalid-method-override]
         if model is None:
             self.model_class = cls
             return self
@@ -101,7 +101,7 @@ class BelongsToModel(Column, Generic[ParentModel]):
         model._transformed_data[self.name] = parent_instance
         return parent_instance
 
-    def __set__(self, model: Model, value: Model) -> None:  # type: ignore[override]
+    def __set__(self, model: Model, value: Model) -> None:  # ty: ignore[invalid-method-override]
         # this makes sure we're initialized
         if not self._config or "name" not in self._config:
             model.get_columns()

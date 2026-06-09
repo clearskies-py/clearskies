@@ -36,7 +36,7 @@ class Audit(HasMany):
 
     Here's an example:
 
-    ```
+    ```python
     #!/usr/bin/env python
 
     import clearskies
@@ -304,7 +304,7 @@ class Audit(HasMany):
     @overload
     def __get__(self, model: Model, cls: type[Model]) -> ChildModel: ...
 
-    def __get__(self, model, cls):  # type: ignore[override]
+    def __get__(self, model, cls):  # ty: ignore[invalid-method-override]
         if model is None:
             self.model_class = cls
             return self

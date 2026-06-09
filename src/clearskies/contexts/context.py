@@ -26,7 +26,7 @@ class Context:
     standard or defined dependencies and should return the desired response.  It can also raise any exception from
     exceptions.
     """
-    application: Callable | Endpoint | EndpointGroup = None  # type: ignore[assignment]  # always set in __init__
+    application: Callable | Endpoint | EndpointGroup
 
     """
     Switch to routing based on the request body rather than a URL

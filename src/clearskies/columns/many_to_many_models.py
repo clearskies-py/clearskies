@@ -109,11 +109,11 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
         record_ids = []
         for index, record in enumerate(value):
             if isinstance(record, dict):
-                if not record.get(related_id_column_name):
+                if not record.get(related_id_column_name):  # ty: ignore[invalid-argument-type]
                     raise KeyError(
                         f"A list of dictionaries was set to '{self.model_class.__name__}.{self.name}', in which case each dictionary should contain the key '{related_id_column_name}', which should be the id of an entry for the '{related_model_class.__name__}' model.  However, no such key was found for entry #{index + 1}"
                     )
-                record_ids.append(record[related_id_column_name])
+                record_ids.append(record[related_id_column_name])  # ty: ignore[invalid-argument-type]
                 continue
 
             # if we get here then the entry should be a model for our related model class
