@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock
 
 import clearskies
-from clearskies.backends import GraphqlBackend
+from clearskies.backends import GraphqlBackend, GraphqlOffsetBackend
 from clearskies.clients import GraphqlClient
 from clearskies.query import Condition, Query
 
@@ -82,20 +82,20 @@ class TestGraphqlBackend(unittest.TestCase):
     def test_is_singular_resource_explicit(self):
         """Test singular resource detection with explicit configuration."""
         backend = GraphqlBackend(graphql_client=self.mock_client, is_collection=False)
-        assert backend._is_singular_resource("anything") is True
+        assert backend.is_singular_resource("anything") is True
 
     def test_is_singular_resource_plural_pattern(self):
         """Test detecting plural resources."""
         backend = GraphqlBackend(graphql_client=self.mock_client)
-        assert backend._is_singular_resource("users") is False
-        assert backend._is_singular_resource("projects") is False
+        assert backend.is_singular_resource("users") is False
+        assert backend.is_singular_resource("projects") is False
 
     def test_is_singular_resource_singular_pattern(self):
         """Test detecting singular resources."""
         backend = GraphqlBackend(graphql_client=self.mock_client)
-        assert backend._is_singular_resource("currentUser") is True
-        assert backend._is_singular_resource("viewer") is True
-        assert backend._is_singular_resource("me") is True
+        assert backend.is_singular_resource("currentUser") is True
+        assert backend.is_singular_resource("viewer") is True
+        assert backend.is_singular_resource("me") is True
 
     def test_build_graphql_fields_basic(self):
         """Test building GraphQL field selection."""
@@ -172,9 +172,8 @@ class TestGraphqlBackend(unittest.TestCase):
 
     def test_build_query_with_pagination_offset(self):
         """Test building query with offset-based pagination includes variables."""
-        backend = GraphqlBackend(
+        backend = GraphqlOffsetBackend(
             graphql_client=self.mock_client,
-            pagination_style="offset",
             is_collection=True,  # Explicitly mark as collection
         )
         query = Query(User)

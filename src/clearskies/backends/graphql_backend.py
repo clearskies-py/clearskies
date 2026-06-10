@@ -19,7 +19,7 @@ from clearskies.query.result import (
 
 if TYPE_CHECKING:
     from clearskies import Column, Model
-    from clearskies.query import Query
+    from clearskies.query import Condition, Query
 
 
 class GraphqlBackend(Backend, InjectableProperties):
@@ -451,7 +451,7 @@ class GraphqlBackend(Backend, InjectableProperties):
 
         return " ".join(fields) if fields else "id"
 
-    def _is_singular_resource(self, root_field: str) -> bool:
+    def is_singular_resource(self, root_field: str) -> bool:
         """
         Determine if a resource is singular (single object) or plural (collection).
 
@@ -462,8 +462,13 @@ class GraphqlBackend(Backend, InjectableProperties):
         using common GraphQL naming patterns.
         """
         # If explicitly configured, use that
+        self.logger.debug("Checking if model represents a singular reosurce.")
         if self.is_collection is not None:
-            return not self.is_collection
+            is_singular = not self.is_collection
+            style = "singular" if is_singular else "collection"
+            self.logger.debug(f"'is_collection' override is set.  Query will be {style}")
+            return is_singular
+        self.logger.debug("'is_collection' override not set, auto-detecting singular/collection.")
 
         # Auto-detect using common GraphQL naming patterns
         root_lower = root_field.lower()
@@ -475,11 +480,16 @@ class GraphqlBackend(Backend, InjectableProperties):
         # Check if it starts with a singular pattern
         for pattern in singular_patterns:
             if root_lower.startswith(pattern):
+                patterns = "'" + "', '".join(singular_patterns) + "'"
+                self.logger.debug(
+                    f"root field '{root_lower}' stars with one of '{patterns}' so it is a singular resource."
+                )
                 return True
 
         # If root_field ends with 's', it's likely plural (collection)
         # Exception: words ending in 'ss' (e.g., 'address', 'business')
         if root_field.endswith("s") and not root_field.endswith("ss"):
+            self.logger.debug("root field '{root_lower}' ends with 's' or 'ss', so it is a collection resource.")
             return False
 
         # If uncertain, check against common singular words
@@ -488,13 +498,24 @@ class GraphqlBackend(Backend, InjectableProperties):
         singular_endings = ["er", "or", "ion", "ment", "ness", "ship"]
         for ending in singular_endings:
             if root_lower.endswith(ending):
+                patterns = "'" + "', '".join(singular_endings) + "'"
+                self.logger.debug(
+                    f"root field '{root_lower}' ends with one of '{patterns}' so it is a singular resource."
+                )
                 return True
 
         # Final fallback: if it looks like a typical noun, assume singular
         # This is a safe default as it won't add pagination structure to non-paginated queries
+        self.logger.debug(f"No obvious hints were found about singular/collection resource, so I'm assuming singular.")
         return True
 
-    def _build_query(self, query: "Query") -> tuple[str, dict]:
+    def _build_query(
+        self,
+        query: Query,
+        args_parts: list[str] = [],
+        variables: dict[str, Any] = {},
+        variable_definitions: list[str] = [],
+    ) -> tuple[str, dict]:
         """
         Dynamically build a GraphQL query from a clearskies Query object.
 
@@ -503,132 +524,192 @@ class GraphqlBackend(Backend, InjectableProperties):
         model = query.model_class
         root_field = self._get_root_field_name(model)
         columns = model.get_columns()
+        variables = {**variables}
+        variable_definitions = [*variable_definitions]
+        args_parts = [*args_parts]
 
         # Build field selection
         fields = self._build_graphql_fields(columns)
 
-        # Determine if this is a singular resource or a collection
-        is_singular = self._is_singular_resource(root_field)
+        # Determine if this is a singular resource or a collection and handle singuular resources first (they are easy)
+        if self.is_singular_resource(root_field):
+            return (
+                self.query_for_single_resource(
+                    root_field,
+                    args_parts,
+                    variables,
+                    variable_definitions,
+                    fields,
+                ),
+                variables,
+            )
 
-        # Build query arguments
-        args_parts = []
-        variables = {}
-        variable_definitions = []
+        # Handle filters (where conditions)
+        for i, condition in enumerate(query.conditions):
+            # our variables are modified in-place
+            self.add_condition_to_variables(i, model, condition, args_parts, variables, variable_definitions)
 
-        # Handle filters (where conditions) - only for collections
-        if not is_singular:
-            for i, condition in enumerate(query.conditions):
-                # Convert model column name to API field name
-                api_column_name = self._model_to_api_name(condition.column_name)
+        self.add_pagination(query, args_parts, variables, variable_definitions)
+        self.add_sorts(query, args_parts, variables, variable_definitions)
 
-                if condition.operator == "=":
-                    value = condition.values[0]
-                    column = columns.get(condition.column_name)
+        return (
+            self.query_for_collection_resource(
+                root_field,
+                args_parts,
+                variables,
+                variable_definitions,
+                fields,
+            ),
+            variables,
+        )
 
-                    # Check if this is a Select/Enum column
-                    # For enum types, pass the value directly in the query (not as a variable)
-                    # This avoids GraphQL type mismatch issues with enum types
-                    if column and column.__class__.__name__ == "Select":
-                        # Pass enum value directly in the query without variables
-                        args_parts.append(f"{api_column_name}: {value}")
-                    else:
-                        # Use variables for non-enum types
-                        var_name = f"filter_{condition.column_name}_{i}"
-                        args_parts.append(f"{api_column_name}: ${var_name}")
-
-                        if isinstance(value, bool) or str(value).lower() in ("true", "false"):
-                            variable_definitions.append(f"${var_name}: Boolean")
-                            # Convert string 'true'/'false' to boolean
-                            if isinstance(value, str):
-                                variables[var_name] = value.lower() == "true"
-                            else:
-                                variables[var_name] = value
-                        elif isinstance(value, int):
-                            variable_definitions.append(f"${var_name}: Int")
-                            variables[var_name] = int(value)
-                        else:
-                            variable_definitions.append(f"${var_name}: String")
-                            variables[var_name] = str(value)
-                elif condition.operator == "in" and len(condition.values) > 0:
-                    var_name = f"filter_{condition.column_name}_in_{i}"
-                    args_parts.append(f"{api_column_name}_in: ${var_name}")
-                    variable_definitions.append(f"${var_name}: [String!]")
-                    variables[var_name] = [str(v) for v in condition.values]
-
-        # Handle pagination - only for collections
-        if not is_singular:
-            if self.pagination_style == "cursor":
-                if "cursor" in query.pagination:
-                    args_parts.append("after: $after")
-                    variable_definitions.append("$after: String")
-                    variables["after"] = str(query.pagination["cursor"])
-
-                if query.limit:
-                    args_parts.append("first: $first")
-                    variable_definitions.append("$first: Int")
-                    variables["first"] = int(query.limit)
-            else:  # offset-based pagination
-                if query.limit:
-                    args_parts.append("limit: $limit")
-                    variable_definitions.append("$limit: Int")
-                    variables["limit"] = int(query.limit)
-
-                if "start" in query.pagination:
-                    args_parts.append("offset: $offset")
-                    variable_definitions.append("$offset: Int")
-                    variables["offset"] = int(query.pagination["start"])
-
-        # Handle sorting - only for collections
-        if not is_singular and query.sorts:
-            sort = query.sorts[0]
-            api_sort_column = self._model_to_api_name(sort.column_name)
-            args_parts.append("sortBy: $sortBy")
-            args_parts.append("sortDirection: $sortDirection")
-            variable_definitions.append("$sortBy: String")
-            variable_definitions.append("$sortDirection: String")
-            variables["sortBy"] = api_sort_column
-            variables["sortDirection"] = sort.direction.upper()
-
-        # Build the query string
+    def query_for_single_resource(
+        self,
+        root_field: str,
+        args_parts: list[str],
+        variables: dict[str, Any],
+        variable_definitions: list[str],
+        fields: str,
+    ) -> str:
+        """Return the query string to fetch a single resource from the server."""
         args_str = f"({', '.join(args_parts)})" if args_parts else ""
         var_def_str = f"({', '.join(variable_definitions)})" if variable_definitions else ""
 
-        # Build different query structures for singular vs plural resources
-        if is_singular:
-            # Singular resource - returns a single object directly
-            query_str = f"""
-            query GetRecords{var_def_str} {{
-                {root_field}{args_str} {{
-                    {fields}
-                }}
+        return f"""
+        query GetRecords{var_def_str} {{
+            {root_field}{args_str} {{
+                {fields}
             }}
-            """
-        elif self.pagination_style == "cursor":
-            # Plural resource with cursor pagination - returns connection with nodes/pageInfo
-            query_str = f"""
-            query GetRecords{var_def_str} {{
-                {root_field}{args_str} {{
-                    nodes {{
-                        {fields}
-                    }}
-                    pageInfo {{
-                        endCursor
-                        hasNextPage
-                    }}
-                }}
-            }}
-            """
-        else:
-            # Plural resource with offset pagination - returns array
-            query_str = f"""
-            query GetRecords{var_def_str} {{
-                {root_field}{args_str} {{
-                    {fields}
-                }}
-            }}
-            """
+        }}
+        """
 
-        return query_str, variables
+    def query_for_collection_resource(
+        self,
+        root_field: str,
+        args_parts: list[str],
+        variables: dict[str, Any],
+        variable_definitions: list[str],
+        fields: str,
+    ) -> str:
+        """Return the query string to fetch a collection of resources from the server."""
+        args_str = f"({', '.join(args_parts)})" if args_parts else ""
+        var_def_str = f"({', '.join(variable_definitions)})" if variable_definitions else ""
+
+        return f"""
+        query GetRecords{var_def_str} {{
+            {root_field}{args_str} {{
+                nodes {{
+                    {fields}
+                }}
+                pageInfo {{
+                    endCursor
+                    hasNextPage
+                }}
+            }}
+        }}
+        """
+
+    def add_condition_to_variables(
+        self,
+        index: int,
+        model: type[Model],
+        condition: Condition,
+        args_parts: list[str],
+        variables: dict[str, Any],
+        variable_definitions: list[str],
+    ) -> None:
+        """
+        Process a condition and add it to the various parts of our query.
+
+        Note: there is no return value because all args are passed by reference and modified in-place.
+        """
+        api_column_name = self._model_to_api_name(condition.column_name)
+        columns = model.get_columns()
+
+        if condition.operator == "=":
+            value = condition.values[0]
+            column = columns.get(condition.column_name)
+
+            # Check if this is a Select/Enum column
+            # For enum types, pass the value directly in the query (not as a variable)
+            # This avoids GraphQL type mismatch issues with enum types
+            if column and column.__class__.__name__ == "Select":
+                # Pass enum value directly in the query without variables
+                args_parts.append(f"{api_column_name}: {value}")
+            else:
+                # Use variables for non-enum types
+                var_name = f"filter_{condition.column_name}_{index}"
+                args_parts.append(f"{api_column_name}: ${var_name}")
+
+                if isinstance(value, bool) or str(value).lower() in ("true", "false"):
+                    variable_definitions.append(f"${var_name}: Boolean")
+                    # Convert string 'true'/'false' to boolean
+                    if isinstance(value, str):
+                        variables[var_name] = value.lower() == "true"
+                    else:
+                        variables[var_name] = value
+                elif isinstance(value, int):
+                    variable_definitions.append(f"${var_name}: Int")
+                    variables[var_name] = int(value)
+                else:
+                    variable_definitions.append(f"${var_name}: String")
+                    variables[var_name] = str(value)
+        elif condition.operator == "in" and len(condition.values) > 0:
+            var_name = f"filter_{condition.column_name}_in_{index}"
+            args_parts.append(f"{api_column_name}_in: ${var_name}")
+            variable_definitions.append(f"${var_name}: [String!]")
+            variables[var_name] = [str(v) for v in condition.values]
+        else:
+            raise ValueError(f"I don't know how to process a condition with an operator of {condition.operator}")
+
+    def add_pagination(
+        self,
+        query: Query,
+        args_parts: list[str],
+        variables: dict[str, Any],
+        variable_definitions: list[str],
+    ) -> None:
+        """
+        Add the necessary variables to the query to account for cursor-based pagination.
+
+        Note: there is no return value because all args are passed by reference and modified in-place.
+        Note: this is always called, so pagination may not be set.
+        """
+        if "cursor" in query.pagination:
+            args_parts.append("after: $after")
+            variable_definitions.append("$after: String")
+            variables["after"] = str(query.pagination["cursor"])
+
+        if not query.limit:
+            return
+
+        args_parts.append("first: $first")
+        variable_definitions.append("$first: Int")
+        variables["first"] = int(query.limit)
+
+    def add_sorts(
+        self,
+        query: Query,
+        args_parts: list[str],
+        variables: dict[str, Any],
+        variable_definitions: list[str],
+    ) -> None:
+        if not len(query.sorts):
+            return
+
+        if len(query.sorts) > 1:
+            raise ValueError(
+                "The default graphql backend only supports sorting on a single column, but more than one sort directive has been provided."
+            )
+
+        sort = query.sorts[0]
+        api_sort_column = self._model_to_api_name(sort.column_name)
+        args_parts.append("sortBy: $sortBy")
+        args_parts.append("sortDirection: $sortDirection")
+        variable_definitions.append("$sortBy: String")
+        variable_definitions.append("$sortDirection: String")
+        variables["sortBy"] = api_sort_column
+        variables["sortDirection"] = sort.direction.upper()
 
     def _extract_records(self, response: dict) -> list[dict]:
         # Extract records from nested GraphQL response
@@ -882,7 +963,7 @@ class GraphqlBackend(Backend, InjectableProperties):
             delattr(query, "_pre_loaded_records")
             return RecordsQueryResult(records=pre_loaded)
 
-        response_next_page_data: dict[str, str | int] = {}
+        response_next_page_data: dict[str, str | int] | None = {}
         query_str, variables = self._build_query(query)
         self.logger.info(f"GraphQL Query:\n{query_str}")
         self.logger.info(f"Variables: {variables}")
@@ -899,29 +980,27 @@ class GraphqlBackend(Backend, InjectableProperties):
             self.logger.debug(f"Mapped records: {mapped}")
 
             # Handle pagination
-            if self.pagination_style == "cursor":
-                # Extract cursor from pageInfo
-                data = response.get("data", response)
-                root_field = self._get_root_field_name(query.model_class)
-                root_data = data.get(root_field, {})
-
-                if "pageInfo" in root_data:
-                    page_info = root_data["pageInfo"]
-                    if page_info.get("hasNextPage"):
-                        response_next_page_data["cursor"] = str(page_info.get("endCursor", ""))
-            else:
-                # Offset-based pagination
-                limit = query.limit
-                start = query.pagination.get("start", 0)
-                if limit and len(records) == limit:
-                    response_next_page_data["start"] = int(start) + int(limit)
+            response_next_page_data = self.extract_next_page_data(query, response, records)
 
             return RecordsQueryResult(
                 records=mapped, next_page_data=response_next_page_data if response_next_page_data else None
             )
+
         except Exception as e:
             self.logger.error(f"GraphQL records failed: {e}")
             raise Exception(f"GraphQL records failed: {e}")
+
+    def extract_next_page_data(self, query: Query, response: Any, records: list[Any]) -> dict[str, str | int] | None:
+        data = response.get("data", response)
+        root_field = self._get_root_field_name(query.model_class)
+        root_data = data.get(root_field, {})
+
+        if "pageInfo" in root_data:
+            page_info = root_data["pageInfo"]
+            if page_info.get("hasNextPage"):
+                return {"cursor": str(page_info.get("endCursor", ""))}
+
+        return None
 
     def validate_pagination_data(self, data: dict[str, Any], case_mapping: Callable[[str], str]) -> str:
         """Validate pagination data based on the configured pagination style."""
