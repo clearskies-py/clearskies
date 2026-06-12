@@ -50,7 +50,9 @@
             "classes": [
                 "clearskies.backends.CursorBackend",
                 "clearskies.backends.MemoryBackend",
-                "clearskies.backends.ApiBackend"
+                "clearskies.backends.ApiBackend",
+                "clearskies.backends.GraphqlBackend",
+                "clearskies.backends.GraphqlOffsetBackend",
             ]
         },
         {
