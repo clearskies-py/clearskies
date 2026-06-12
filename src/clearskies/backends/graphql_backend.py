@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from clearskies import configs, decorators
-from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
 from clearskies.backends.backend import Backend
@@ -24,23 +23,201 @@ if TYPE_CHECKING:
 
 class GraphqlBackend(Backend, InjectableProperties):
     """
-    Autonomous backend for integrating clearskies models with GraphQL APIs.
+    Backend for integrating clearskies models with GraphQL APIs.
 
     Dynamically constructs GraphQL queries by introspecting the clearskies Model.
-    Supports CRUD operations, pagination, filtering, and relationships.
+    Supports CRUD operations, pagination, filtering, and relationships.  For pagination, GraphQL servers
+    can often be broadly divided into two classes: those that use cursor-style pagination and those that use
+    offset style pagination. These tend to use slightly different styles for returning records and requesting
+    pagination data.  This base class assumes cursor-based pagination.  If your server uses offsets, just
+    use the `clearskies.backends.GraphqlOffsetBackend` class instead.  Finally, this assumes your model
+    is using snake_case column names and that the server uses camelCase column names.  As a result, it
+    automatically changes the casing.  You can adjust this behavior with the `model_case` and
+    `api_case` configuration settings.
 
-    Configuration:
-    - graphql_client: GraphqlClient instance (required)
-    - root_field: Override the root field name (optional, defaults to model.destination_name())
-    - pagination_style: "cursor" for Relay-style or "offset" for limit/offset (default: "cursor")
-    - api_case: Case convention used by the GraphQL API (default: "camelCase")
-    - model_case: Case convention used by clearskies models (default: "snake_case")
-    - is_collection: Explicitly set if this resource is a collection (True) or singular (False/None=auto-detect)
-    - include_relationships: Enable automatic relationship fetching (default: False for performance)
-    - max_relationship_depth: Maximum depth for nested relationships (default: 2)
-    - nested_relationships: Allow relationships within relationships (default: False)
-    - relationship_limit: Default limit for HasMany/ManyToMany relationships (default: 10)
-    - use_connection_for_relationships: Use connection pattern for collections (default: True)
+    ## Basic Usage
+
+    Consider the following example application:
+
+    ```python
+    #!/usr/bin/env python3
+
+    import clearskies
+
+
+    class Product(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.GraphqlBackend(
+            graphql_client=clearskies.clients.GraphqlClient(
+                endpoint="https://example.net/gql",
+                authentication=clearskies.authentication.Public(),
+            )
+        )
+
+        id = clearskies.columns.String()
+        category = clearskies.columns.Select(["Toy", "Auto", "Pet", "Hair"])
+        name = clearskies.columns.String()
+        description = clearskies.columns.String()
+        price = clearskies.columns.Float()
+        created_at = clearskies.columns.Created()
+
+
+    cli = clearskies.contexts.Cli(
+        clearskies.endpoints.List(
+            model_class=Product,
+            readable_column_names=["id", "category", "name", "description", "price", "created_at"],
+            sortable_column_names=["name", "price"],
+            default_sort_column_name="name",
+        ),
+        classes=[Product],
+    )
+    cli()
+    ```
+
+    It would construct the following graphql query:
+
+    ```
+    query GetRecords($first: Int, $sortBy: String, $sortDirection: String) {
+        products(first: $first, sortBy: $sortBy, sortDirection: $sortDirection) {
+            nodes {
+                category createdAt description id name price
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+        }
+    }
+    ```
+
+    and variables:
+
+    ```
+    {"first": 50, "sortBy": "name", "sortDirection": "ASC"}
+    ```
+
+    using the same model, if you were to filter on some columns like so:
+
+    ```python
+    for product in products.where("category=Toy"):
+        pass
+    ```
+
+    it would produce the following query:
+
+    ```
+    query GetRecords($filter_name_0: String) {
+        products(name: $filter_name_0) {
+            nodes {
+                category createdAt description id name price
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+        }
+    }
+    ```
+
+    and variables:
+
+    ```
+    {"filter_name_0": "Bob"}
+    ```
+
+    ## Relationships
+
+    If your record has relationships, the GQL backend will automatically add these to the query.  Consider
+    the following application where we fetch our products, which belong to a category and also have a price
+    history:
+
+    ```python
+    #!/usr/bin/env python3
+
+    import clearskies
+
+    shared_backend = clearskies.backends.GraphqlBackend(
+        graphql_client=clearskies.clients.GraphqlClient(
+            endpoint="https://example.net/gql",
+            authentication=clearskies.authentication.Public(),
+        )
+    )
+
+
+    class Category(clearskies.Model):
+        id_column_name = "id"
+        backend = shared_backend
+
+        id = clearskies.columns.String()
+        name = clearskies.columns.String()
+
+
+    class PriceHistory(clearskies.Model):
+        id_column_name = "id"
+        backend = shared_backend
+
+        id = clearskies.columns.String()
+        product_id = clearskies.columns.String()
+        price = clearskies.columns.Float()
+        created_at = clearskies.columns.Datetime()
+
+
+    class Product(clearskies.Model):
+        id_column_name = "id"
+        backend = shared_backend
+
+        id = clearskies.columns.String()
+        category_id = clearskies.columns.BelongsToId(Category, readable_parent_columns=["id", "name"])
+        category = clearskies.columns.BelongsToModel("category_id")
+        name = clearskies.columns.String()
+        description = clearskies.columns.String()
+        price = clearskies.columns.Float()
+        created_at = clearskies.columns.Datetime()
+
+        histories = clearskies.columns.HasMany(PriceHistory)
+
+
+    cli = clearskies.contexts.Cli(
+        lambda products: [product.id for product in products], classes=[Product]
+    )
+    cli()
+    ```
+
+    The Graphql backend will execute the following query to the server:
+
+    ```
+    query GetRecords {
+        products {
+            nodes {
+                id
+                name
+                description
+                price
+                createdAt
+                category {
+                    id
+                    name
+                }
+                histories(first: 10) {
+                    nodes {
+                        createdAt
+                        id
+                        price
+                        productId
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                    }
+                }
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+        }
+    }
+    ```
     """
 
     # Tell clearskies that count() may not be reliable for all GraphQL APIs
@@ -94,35 +271,57 @@ class GraphqlBackend(Backend, InjectableProperties):
         root_field="allProjects"  # Override default "projects"
     )
     ```
+
+    So for a model called `Product` the backend will generate a simple query like so by default:
+
+    ```
+    query GetRecords {
+        products {
+            nodes {
+                category createdAt description id name price
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+        }
+    }
+    ```
+
+    but if you changed the root field to `some_other_name` it would create the following query:
+
+    ```
+    query GetRecords {
+        some_other_name {
+            nodes {
+                category createdAt description id name price
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+        }
+    }
+    ```
+
     """
     root_field = configs.String(default="")
 
     """
-    The pagination strategy used by the GraphQL API.
-
-    Supported values:
-    - "cursor": Relay-style cursor pagination with pageInfo { endCursor, hasNextPage }
-    - "offset": Traditional limit/offset pagination
-
-    Defaults to "cursor" which is the most common pattern in GraphQL APIs.
-    """
-    pagination_style = configs.String(default="cursor")
-
-    """
     The case convention used by the GraphQL API for field names.
 
-    Common values: "camelCase", "snake_case", "PascalCase", "kebab-case"
+    Allowed values: "camelCase", "snake_case", "TitleCase"
     Defaults to "camelCase" which is the GraphQL standard.
     """
-    api_case = configs.String(default="camelCase")
+    api_case = configs.Select(["snake_case", "camelCase", "TitleCase"], default="camelCase")
 
     """
     The case convention used by clearskies model column names.
 
-    Common values: "snake_case", "camelCase", "PascalCase", "kebab-case"
+    Allowed values: "snake_case", "camelCase", "TitleCase"
     Defaults to "snake_case" which is the Python/clearskies standard.
     """
-    model_case = configs.String(default="snake_case")
+    model_case = configs.Select(["snake_case", "camelCase", "TitleCase"], default="snake_case")
 
     """
     Explicitly set whether the resource is a collection or singular.
@@ -194,7 +393,6 @@ class GraphqlBackend(Backend, InjectableProperties):
         graphql_client: GraphqlClient | None = None,
         graphql_client_name: str = "graphql_client",
         root_field: str = "",
-        pagination_style: str = "cursor",
         api_case: str = "camelCase",
         model_case: str = "snake_case",
         is_collection: bool | None = None,
@@ -270,11 +468,14 @@ class GraphqlBackend(Backend, InjectableProperties):
         column_type = column.__class__.__name__
 
         # Strategy 1: Check for parent_models_class config (BelongsTo, BelongsToId)
-        if hasattr(column, "parent_model_class"):
-            return column.parent_model_class  # ty: ignore[invalid-return-type]
+        # left for future reference, but we don't want to extract the belongs to id column.
+        # we'll automatically extract the belongs to model column and, generally, that one
+        # is more likely to be named in a way that it will be understood by the server.
+        # if hasattr(column, "parent_model_class"):
+        # return column.parent_model_class
 
         # Strategy 2: Check for child_models_class config (HasMany)
-        elif hasattr(column, "child_model_class"):
+        if hasattr(column, "child_model_class"):
             return column.child_model_class  # ty: ignore[invalid-return-type]
 
         # Strategy 3: For BelongsToModel, look up the corresponding BelongsToId column
@@ -287,7 +488,7 @@ class GraphqlBackend(Backend, InjectableProperties):
                 return belongs_to_id_column.parent_model_class
 
         # Strategy 4: Check for model_class attribute
-        if hasattr(column, "model_class") and column.model_class:
+        if hasattr(column, "model_class") and column.model_class and not hasattr(column, "parent_model_class"):
             # Make sure it's not the same as the parent model
             parent_columns = column.get_model_columns() if hasattr(column, "get_model_columns") else {}
             if parent_columns and column.model_class != type(parent_columns):
@@ -462,7 +663,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         using common GraphQL naming patterns.
         """
         # If explicitly configured, use that
-        self.logger.debug("Checking if model represents a singular reosurce.")
+        self.logger.debug("Checking if model represents a singular resource.")
         if self.is_collection is not None:
             is_singular = not self.is_collection
             style = "singular" if is_singular else "collection"
@@ -482,14 +683,14 @@ class GraphqlBackend(Backend, InjectableProperties):
             if root_lower.startswith(pattern):
                 patterns = "'" + "', '".join(singular_patterns) + "'"
                 self.logger.debug(
-                    f"root field '{root_lower}' stars with one of '{patterns}' so it is a singular resource."
+                    f"root field '{root_lower}' starts with one of '{patterns}' so it is a singular resource."
                 )
                 return True
 
         # If root_field ends with 's', it's likely plural (collection)
         # Exception: words ending in 'ss' (e.g., 'address', 'business')
         if root_field.endswith("s") and not root_field.endswith("ss"):
-            self.logger.debug("root field '{root_lower}' ends with 's' or 'ss', so it is a collection resource.")
+            self.logger.debug(f"root field '{root_lower}' ends with 's', so it is a collection resource.")
             return False
 
         # If uncertain, check against common singular words
@@ -531,7 +732,7 @@ class GraphqlBackend(Backend, InjectableProperties):
         # Build field selection
         fields = self._build_graphql_fields(columns)
 
-        # Determine if this is a singular resource or a collection and handle singuular resources first (they are easy)
+        # Determine if this is a singular resource or a collection and handle singular resources first (they are easy)
         if self.is_singular_resource(root_field):
             return (
                 self.query_for_single_resource(
@@ -1010,53 +1211,33 @@ class GraphqlBackend(Backend, InjectableProperties):
         if extra_keys:
             return f"Invalid pagination key(s): '{','.join(extra_keys)}'. Allowed keys: {', '.join(allowed_keys)}"
 
-        if self.pagination_style == "cursor":
-            if data and "cursor" not in data:
-                key_name = case_mapping("cursor")
-                return f"You must specify '{key_name}' when setting pagination"
-        else:  # offset
-            if data and "start" not in data:
-                key_name = case_mapping("start")
-                return f"You must specify '{key_name}' when setting pagination"
-            if "start" in data:
-                try:
-                    int(data["start"])
-                except Exception:
-                    key_name = case_mapping("start")
-                    return f"Invalid pagination data: '{key_name}' must be a number"
+        if "cursor" not in data:
+            key_name = case_mapping("cursor")
+            return f"You must specify '{key_name}' when setting pagination"
+
+        if not isinstance(data["cursor"], str):
+            key_name = case_mapping("cursor")
+            return f"'{key_name}' must be a string."
 
         return ""
 
     def allowed_pagination_keys(self) -> list[str]:
         """Return allowed pagination keys based on style."""
-        if self.pagination_style == "cursor":
-            return ["cursor"]
-        return ["start"]
+        return ["cursor"]
 
     def documentation_pagination_next_page_response(self, case_mapping: Callable) -> list[Any]:
         """Return pagination documentation for responses."""
-        if self.pagination_style == "cursor":
-            return [AutoDocString(case_mapping("cursor"), example="eyJpZCI6IjEyMyJ9")]
-        return [AutoDocInteger(case_mapping("start"), example=0)]
+        return [AutoDocString(case_mapping("cursor"), example="")]
 
     def documentation_pagination_next_page_example(self, case_mapping: Callable) -> dict[str, Any]:
         """Return example pagination data."""
-        if self.pagination_style == "cursor":
-            return {case_mapping("cursor"): "eyJpZCI6IjEyMyJ9"}
-        return {case_mapping("start"): 0}
+        return {case_mapping("cursor"): ""}
 
     def documentation_pagination_parameters(self, case_mapping: Callable) -> list[tuple[AutoDocSchema, str]]:
         """Return pagination parameter documentation."""
-        if self.pagination_style == "cursor":
-            return [
-                (
-                    AutoDocString(case_mapping("cursor"), example="eyJpZCI6IjEyMyJ9"),
-                    "A cursor token to fetch the next page of results",
-                )
-            ]
         return [
             (
-                AutoDocInteger(case_mapping("start"), example=0),
-                "The zero-indexed record number to start listing results from",
+                AutoDocString(case_mapping("cursor"), example=""),
+                "A cursor token to fetch the next page of results",
             )
         ]

@@ -19,15 +19,15 @@ class GraphqlOffsetBackend(GraphqlBackend):
         if extra_keys:
             return f"Invalid pagination key(s): '{','.join(extra_keys)}'. Allowed keys: {', '.join(allowed_keys)}"
 
-        if data and "start" not in data:
+        if "start" not in data:
             key_name = case_mapping("start")
             return f"You must specify '{key_name}' when setting pagination"
-        if "start" in data:
-            try:
-                int(data["start"])
-            except Exception:
-                key_name = case_mapping("start")
-                return f"Invalid pagination data: '{key_name}' must be a number"
+
+        try:
+            int(data["start"])
+        except Exception:
+            key_name = case_mapping("start")
+            return f"Invalid pagination data: '{key_name}' must be a number"
 
         return ""
 
