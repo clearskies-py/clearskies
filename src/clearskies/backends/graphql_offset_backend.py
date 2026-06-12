@@ -9,7 +9,61 @@ from clearskies.query import Query
 
 
 class GraphqlOffsetBackend(GraphqlBackend):
-    """Manage GraphQL interactions with a server that uses offset pagination instead of cursor-based pagination."""
+    """
+    Manage GraphQL interactions with a server that uses offset pagination instead of cursor-based pagination.
+
+    Consider the following basic application:
+
+    ```python
+    #!/usr/bin/env python3
+
+    import clearskies
+
+    shared_backend = clearskies.backends.GraphqlOffsetBackend(
+        graphql_client=clearskies.clients.GraphqlClient(
+            endpoint="https://example.net/gql",
+            authentication=clearskies.authentication.Public(),
+        )
+    )
+
+
+    class Product(clearskies.Model):
+        id_column_name = "id"
+        backend = shared_backend
+
+        id = clearskies.columns.String()
+        name = clearskies.columns.String()
+        description = clearskies.columns.String()
+        price = clearskies.columns.Float()
+        created_at = clearskies.columns.Datetime()
+
+
+    cli = clearskies.contexts.Cli(
+        lambda products: [product.id for product in products.limit(20)], classes=[Product]
+    )
+    cli()
+    ```
+
+    It would generate the following query:
+
+    ```
+    query GetRecords($limit: Int) {
+        products(limit: $limit) {
+            createdAt description id name price
+        }
+    }
+    ```
+
+    with the following variables:
+
+    ```
+    {"limit": 20}
+    ```
+
+    It does not ask for any pagination data.  Instead, it calculates whether or not there is a next page based on the number of records returned.
+
+    Otherwise, this backend acts identically to the default `GraphqlBackend`.
+    """
 
     def validate_pagination_data(self, data: dict[str, Any], case_mapping: Callable[[str], str]) -> str:
         """Validate pagination data based on the configured pagination style."""
