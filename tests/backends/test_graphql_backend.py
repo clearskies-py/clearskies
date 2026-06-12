@@ -152,7 +152,6 @@ class TestGraphqlBackend(unittest.TestCase):
         """Test building query with cursor-based pagination includes variables."""
         backend = GraphqlBackend(
             graphql_client=self.mock_client,
-            pagination_style="cursor",
             is_collection=True,  # Explicitly mark as collection
         )
         query = Query(User)
@@ -278,19 +277,19 @@ class TestGraphqlBackend(unittest.TestCase):
 
     def test_allowed_pagination_keys_cursor(self):
         """Test allowed pagination keys for cursor style."""
-        backend = GraphqlBackend(graphql_client=self.mock_client, pagination_style="cursor")
+        backend = GraphqlBackend(graphql_client=self.mock_client)
         keys = backend.allowed_pagination_keys()
         assert keys == ["cursor"]
 
     def test_allowed_pagination_keys_offset(self):
         """Test allowed pagination keys for offset style."""
-        backend = GraphqlBackend(graphql_client=self.mock_client, pagination_style="offset")
+        backend = GraphqlOffsetBackend(graphql_client=self.mock_client)
         keys = backend.allowed_pagination_keys()
         assert keys == ["start"]
 
     def test_validate_pagination_data_cursor(self):
         """Test pagination data validation for cursor style."""
-        backend = GraphqlBackend(graphql_client=self.mock_client, pagination_style="cursor")
+        backend = GraphqlBackend(graphql_client=self.mock_client)
 
         # Valid
         error = backend.validate_pagination_data({"cursor": "abc"}, str)
@@ -302,7 +301,7 @@ class TestGraphqlBackend(unittest.TestCase):
 
     def test_validate_pagination_data_offset(self):
         """Test pagination data validation for offset style."""
-        backend = GraphqlBackend(graphql_client=self.mock_client, pagination_style="offset")
+        backend = GraphqlOffsetBackend(graphql_client=self.mock_client)
 
         # Valid
         error = backend.validate_pagination_data({"start": 10}, str)
