@@ -263,7 +263,11 @@ class Callable(Endpoint):
                 )
 
         # or did they return a list of models?
-        if isinstance(response, list) and all(isinstance(item, self.model_class) for item in response):
+        if (
+            isinstance(response, list)
+            and self.model_class
+            and all(isinstance(item, self.model_class) for item in response)
+        ):
             return self.success(input_output, [self.model_as_json(model, input_output) for model in response])
 
         # if none of the above, just return the data
