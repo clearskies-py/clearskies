@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.60] - 2026-06-23
+
+### Added
+- Add python declaration to docstrings by @cmancone in [#84](https://github.com/clearskies-py/clearskies/pull/84)
+- Add python declaration to docstrings by @cmancone
+- Add custom css
+- Add dostring for class Callable
+- Add modules nav to doc site, update links by @cmancone in [#83](https://github.com/clearskies-py/clearskies/pull/83)
+- Add List column with configurable item-type enforcement by @cmancone in [#82](https://github.com/clearskies-py/clearskies/pull/82)
+- Address review comments on List column
+- Add List column with optional element-type enforcement
+- Add missing docstrings
+
+### Changed
+- Docs for offset backend by @cmancone in [#85](https://github.com/clearskies-py/clearskies/pull/85)
+- PR comment responses and docs by @cmancone
+- Validation only applies if model class is set by @cmancone in [#86](https://github.com/clearskies-py/clearskies/pull/86)
+- Type fixes by @cmancone
+- Update to latest dependencies
+- Allow class overrides for authentication and authorization by @cmancone in [#79](https://github.com/clearskies-py/clearskies/pull/79)
+- Merge branch 'main' into ty-check-fix by @tnijboer
+
+### Fixed
+- Gql reorg by @cmancone
+
+### Removed
+- Remove value_type enforcement from from_backend
+- Remove type: ignore suppressions and improve type safety by @cmancone in [#76](https://github.com/clearskies-py/clearskies/pull/76)
+
 ## [2.0.59] - 2026-04-01
 
 ### Added
@@ -17,10 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add AdditionalMygrationsAutoImport for dynamic migration path discovery
 
 ### Changed
+- Bump version to v2.0.59 by @github-actions[bot]
+- Merge branch 'main' into ty-check-fix by @tnijboer
 - Dynamic Migration Path Discovery via `AdditionalMygrationsAutoImport` by @cmancone in [#77](https://github.com/clearskies-py/clearskies/pull/77)
 - Rename cursor_class to cursor, drop @parameters_to_properties
 
 ### Fixed
+- Exceptions to avoid duplicate methods by @cmancone in [#81](https://github.com/clearskies-py/clearskies/pull/81)
 - Prevent false injectable_properties cache hits from id() reuse on Python 3.13 in [#78](https://github.com/clearskies-py/clearskies/pull/78)
 - Return None from from_backend() when value is None for Column, String, Boolean, Float
 
@@ -58,11 +90,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.54] - 2026-03-16
 
+### Added
+- Add typing for relationships
+
 ### Changed
 - Bump version to v2.0.54 by @github-actions[bot]
+- Split check_dict_and_map_to_model into is_model_data + map_to_model
+- Update workflow to include ty
 
 ### Fixed
 - Akeyless expiry on the object
+
+### Removed
+- Remove type: ignore suppressions and improve type safety across codebase
 
 ## [2.0.53] - 2026-03-13
 
@@ -1285,6 +1325,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.60]: https://github.com/clearskies-py/clearskies/compare/v2.0.59..v2.0.60
 [2.0.59]: https://github.com/clearskies-py/clearskies/compare/v2.0.58..v2.0.59
 [2.0.58]: https://github.com/clearskies-py/clearskies/compare/v2.0.57..v2.0.58
 [2.0.57]: https://github.com/clearskies-py/clearskies/compare/v2.0.56..v2.0.57
