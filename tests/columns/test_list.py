@@ -1,4 +1,5 @@
 import json
+from typing import cast
 
 import clearskies
 from tests.test_base import TestBase
@@ -299,3 +300,37 @@ class ListContextTest(TestBase):
         _, response, _ = context(request_method="POST", body={"items": [10, "twenty"]})
         assert response["status"] == "input_errors"
         assert "items" in response["input_errors"]
+
+
+class ListAutodocTest(TestBase):
+    def _col(self, **kwargs):
+        col = clearskies.columns.List(**kwargs)
+        col.name = "items"
+        return col
+
+    def test_documentation_defaults_to_array_of_strings(self):
+        docs = self._col().documentation()
+        assert len(docs) == 1
+        schema = cast(clearskies.autodoc.schema.Array, docs[0])
+        assert isinstance(schema, clearskies.autodoc.schema.Array)
+        assert isinstance(schema.item_definition, clearskies.autodoc.schema.String)
+
+    def test_documentation_uses_integer_items_for_int_value_type(self):
+        docs = self._col(value_type=int).documentation()
+        schema = cast(clearskies.autodoc.schema.Array, docs[0])
+        assert isinstance(schema.item_definition, clearskies.autodoc.schema.Integer)
+
+    def test_documentation_uses_number_items_for_float_value_type(self):
+        docs = self._col(value_type=float).documentation()
+        schema = cast(clearskies.autodoc.schema.Array, docs[0])
+        assert isinstance(schema.item_definition, clearskies.autodoc.schema.Number)
+
+    def test_documentation_uses_boolean_items_for_bool_value_type(self):
+        docs = self._col(value_type=bool).documentation()
+        schema = cast(clearskies.autodoc.schema.Array, docs[0])
+        assert isinstance(schema.item_definition, clearskies.autodoc.schema.Boolean)
+
+    def test_documentation_uses_one_of_for_tuple_value_type(self):
+        docs = self._col(value_type=(str, int)).documentation()
+        schema = cast(clearskies.autodoc.schema.Array, docs[0])
+        assert isinstance(schema.item_definition, clearskies.autodoc.schema.OneOf)

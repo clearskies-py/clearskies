@@ -4,10 +4,12 @@ import json
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 from clearskies import configs, decorators
+from clearskies.autodoc import schema as autodoc_schema
 from clearskies.column import Column
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
 class List(Column):
@@ -182,3 +184,27 @@ class List(Column):
                     return f"all items must be of type {type_name}, but got an item of type {item.__class__.__name__}"
 
         return ""
+
+    def _autodoc_item_schema_for_type(self, item_type: type) -> AutoDocSchema:
+        if item_type is bool:
+            return autodoc_schema.Boolean("item")
+        if item_type is int:
+            return autodoc_schema.Integer("item")
+        if item_type is float:
+            return autodoc_schema.Number("item")
+        if item_type is str:
+            return autodoc_schema.String("item")
+        return autodoc_schema.String("item")
+
+    def documentation(self, name=None, example=None, value=None) -> list[AutoDocSchema]:
+        array_name = name if name is not None else self.name
+
+        if self.value_type is None:
+            item_definition = autodoc_schema.String("item")
+        elif isinstance(self.value_type, tuple):
+            options = [self._autodoc_item_schema_for_type(item_type) for item_type in self.value_type]
+            item_definition = options[0] if len(options) == 1 else autodoc_schema.OneOf("item", options)
+        else:
+            item_definition = self._autodoc_item_schema_for_type(self.value_type)
+
+        return [autodoc_schema.Array(array_name, item_definition, value=value)]
