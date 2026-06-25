@@ -47,6 +47,7 @@ docs = [
 ]
 test = [
     "pytest-postgresql>=7.0.2",
+    "openapi-spec-validator>=0.7.1",
 ]
 
 [build-system]
