@@ -4,12 +4,14 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
+from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.column import Column
 from clearskies.columns.belongs_to_id import BelongsToId
 from clearskies.functional import validations
 
 if TYPE_CHECKING:
     from clearskies import Model
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
     from clearskies.schema import Schema
 
 ParentModel = TypeVar("ParentModel", bound="Model")
@@ -146,3 +148,24 @@ class BelongsToModel(Column, Generic[ParentModel]):
         return {
             self.name: json,
         }
+
+    def documentation(
+        self, name: str | None = None, example: str | None = None, value: str | None = None
+    ) -> list[AutoDocSchema]:
+        belongs_to_column = getattr(self.model_class, self.belongs_to_column_name)
+        columns = belongs_to_column.parent_columns
+        parent_properties: list[AutoDocSchema] = []
+        for column_name in belongs_to_column.readable_parent_columns or []:
+            column_docs = columns[column_name].documentation()
+            if isinstance(column_docs, list):
+                parent_properties.extend(column_docs)
+            else:
+                parent_properties.append(column_docs)
+
+        return [
+            AutoDocObject(
+                name if name is not None else self.name,
+                parent_properties,
+                value=value,
+            )
+        ]
