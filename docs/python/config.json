@@ -52,7 +52,7 @@
                 "clearskies.backends.MemoryBackend",
                 "clearskies.backends.ApiBackend",
                 "clearskies.backends.GraphqlBackend",
-                "clearskies.backends.GraphqlOffsetBackend",
+                "clearskies.backends.GraphqlOffsetBackend"
             ]
         },
         {
