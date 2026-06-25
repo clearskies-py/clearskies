@@ -37,6 +37,11 @@ class Request:
 
     """Additional top-level properties to include in the documentation output."""
     root_properties: dict[str, Any] | None = None
+    tags: list[str] = []
+    external_docs: dict[str, Any] | None = None
+    deprecated: bool = False
+    security: list[dict[str, list[str]]] | None = None
+    servers: list[dict[str, Any]] | None = None
 
     def __init__(
         self,
@@ -46,6 +51,11 @@ class Request:
         request_methods: str | list[str] = "GET",
         parameters: list[Parameter] | None = None,
         root_properties: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
+        external_docs: dict[str, Any] | None = None,
+        deprecated: bool = False,
+        security: list[dict[str, list[str]]] | None = None,
+        servers: list[dict[str, Any]] | None = None,
     ):
         # clearskies supports path parameters via {parameter} and :parameter but we want to normalize to {parameter} for
         # autodoc purposes
@@ -63,6 +73,11 @@ class Request:
         self.request_methods = [request_methods] if isinstance(request_methods, str) else list(request_methods)
         self.set_parameters(parameters)
         self.root_properties = root_properties if root_properties is not None else {}
+        self.tags = tags if tags is not None else []
+        self.external_docs = external_docs
+        self.deprecated = deprecated
+        self.security = security
+        self.servers = servers
 
     def set_request_methods(self, request_methods: str | list[str]) -> Self:
         """Set the allowed HTTP methods for this request."""

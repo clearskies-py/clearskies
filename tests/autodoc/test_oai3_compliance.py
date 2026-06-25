@@ -83,6 +83,34 @@ class TestOAI3Compliance(unittest.TestCase):
         # Verify operationId follows proper naming convention
         self.assertEqual(operation["operationId"], "getHealth")
 
+    def test_operation_level_openapi_fields(self):
+        response = Response(
+            schema=String("message"),
+            status=200,
+            description="Success",
+        )
+        test_request = Request(
+            description="Health check endpoint",
+            responses=[response],
+            relative_path="/health",
+            request_methods=["GET"],
+            tags=["system"],
+            external_docs={"description": "Details", "url": "https://example.com/docs"},
+            deprecated=True,
+            security=[{"bearerAuth": []}],
+            servers=[{"url": "https://api.example.com", "description": "Prod"}],
+        )
+
+        self.oai3_json.set_requests([test_request])
+        output = json.loads(self.oai3_json.compact())
+
+        operation = output["paths"]["/health"]["get"]
+        self.assertEqual(operation["tags"], ["system"])
+        self.assertIn("externalDocs", operation)
+        self.assertTrue(operation["deprecated"])
+        self.assertEqual(operation["security"], [{"bearerAuth": []}])
+        self.assertEqual(operation["servers"][0]["url"], "https://api.example.com")
+
     def test_operation_id_generation(self):
         """Test that operationId is generated correctly for various paths."""
         test_cases = [
