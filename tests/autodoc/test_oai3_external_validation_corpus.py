@@ -1,7 +1,10 @@
 import json
 import unittest
 
-from openapi_spec_validator import validate
+import pytest
+
+openapi_spec_validator = pytest.importorskip("openapi_spec_validator")
+validate = openapi_spec_validator.validate
 
 from clearskies.autodoc import schema as autodoc_schema
 from clearskies.autodoc.formats.oai3_json import Oai3Json, OAI3SchemaResolver
