@@ -108,6 +108,7 @@ class Datetime(Date):
     when a given value is actually a non-value.
     """
     backend_default = configs.String(default="0000-00-00 00:00:00")
+    _descriptor_config_map = None
 
     @decorators.parameters_to_properties
     def __init__(

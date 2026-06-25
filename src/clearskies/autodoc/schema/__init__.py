@@ -8,6 +8,7 @@ from .enum import Enum
 from .integer import Integer
 from .long import Long
 from .number import Number
+from .one_of import OneOf
 from .object import Object
 from .password import Password
 from .schema import Schema
@@ -24,6 +25,7 @@ __all__ = [
     "Integer",
     "Long",
     "Number",
+    "OneOf",
     "Object",
     "Password",
     "Schema",

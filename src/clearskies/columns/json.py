@@ -4,10 +4,12 @@ import json
 from typing import TYPE_CHECKING, Any, Callable, Self, overload
 
 from clearskies import configs, decorators
+from clearskies.autodoc import schema as autodoc_schema
 from clearskies.column import Column
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
+    from clearskies.autodoc.schema import Schema as AutoDocSchema
 
 
 class Json(Column):
@@ -98,7 +100,7 @@ class Json(Column):
     def __get__(self, instance: Model, cls: type[Model]) -> dict[str, Any]:
         pass
 
-    def __get__(self, instance, cls):
+    def __get__(self, instance, cls) -> dict[str, Any] | list[Any] | Self:
         return super().__get__(instance, cls)
 
     def __set__(self, instance, value: dict[str, Any]) -> None:
@@ -124,3 +126,15 @@ class Json(Column):
 
         value = data[self.name]
         return {**data, self.name: value if isinstance(value, str) else json.dumps(value)}
+
+    def documentation(self, name=None, example=None, value=None) -> list[AutoDocSchema]:
+        actual_name = name if name is not None else self.name
+        return [
+            autodoc_schema.OneOf(
+                actual_name,
+                [
+                    autodoc_schema.Object(actual_name, []),
+                    autodoc_schema.Array(actual_name, autodoc_schema.String("item")),
+                ],
+            )
+        ]
