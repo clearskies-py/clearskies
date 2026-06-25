@@ -53,10 +53,16 @@ Comprehensive test suite that validates:
 8. **Request Body**
    - Proper structure with `description`, `required`, and `content`
    - Supports `application/json` content type
+   - Supports schema-composed request bodies via `Request(root_properties={"requestBody": ...})`
 
 9. **Multiple Operations on Same Path**
    - Correctly handles multiple HTTP methods on the same path
    - Each operation has unique `operationId`
+
+10. **Schema Hint Helpers**
+   - Runtime-string/documentation-object patterns are built with core schema objects (`OneOf`, `Object`, `String`)
+   - Uses existing column `documentation()` plus resolver conversion, avoiding duplicate local type maps
+   - Powered by core `OneOf` autodoc schema support in OAI3 conversion
 
 ## Running the Tests
 

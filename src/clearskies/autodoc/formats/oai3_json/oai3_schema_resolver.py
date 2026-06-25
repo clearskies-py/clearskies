@@ -6,6 +6,7 @@ class OAI3SchemaResolver:
     class_map = {
         raw_schema.Array: formatted_schema.Array,
         raw_schema.Enum: formatted_schema.Enum,
+        raw_schema.OneOf: formatted_schema.OneOf,
         raw_schema.Object: formatted_schema.Object,
     }
 

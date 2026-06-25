@@ -80,6 +80,27 @@ class Request:
             if self.request.root_properties:
                 data[method_lower] = {**data[method_lower], **self.request.root_properties}
 
+            if "requestBody" in data[method_lower]:
+                request_body = data[method_lower]["requestBody"]
+                if "content" in request_body and "application/json" in request_body["content"]:
+                    content = request_body["content"]["application/json"]
+                    if isinstance(content.get("schema"), Object):
+                        content = {
+                            **content,
+                            "schema": self.oai3_schema_resolver(content["schema"]).convert(include_required=True),
+                        }
+                        request_body = {
+                            **request_body,
+                            "content": {
+                                **request_body["content"],
+                                "application/json": content,
+                            },
+                        }
+                        data[method_lower] = {
+                            **data[method_lower],
+                            "requestBody": request_body,
+                        }
+
             if self.json_body_parameters:
                 # For OAI3, there should only be one JSON body root parameter, so it should either be an
                 # object or an array.  If we have an array then wrap it in an object
