@@ -11,7 +11,7 @@ from unittest.mock import Mock
 
 from clearskies.autodoc.formats.oai3_json import Oai3Json, OAI3SchemaResolver
 from clearskies.autodoc.request import JSONBody, Request, URLParameter
-from clearskies.autodoc.response import Response
+from clearskies.autodoc.response import Link, Response
 from clearskies.autodoc.schema import (
     Array,
     Enum,
@@ -175,6 +175,48 @@ class TestOAI3Compliance(unittest.TestCase):
         # Empty descriptions should default to "Response"
         self.assertEqual(operation["responses"]["204"]["description"], "Response")
 
+    def test_response_headers_links_and_multiple_content_types(self):
+        response = Response(
+            schema=String("message"),
+            status=200,
+            description="Ok",
+            headers={
+                "X-RateLimit-Remaining": {
+                    "description": "Remaining requests",
+                    "schema": {"type": "integer"},
+                }
+            },
+            links={
+                "next": Link(
+                    operation_id="getNext",
+                    description="Next page",
+                    parameters={"id": "$response.body#/id"},
+                )
+            },
+            content={
+                "application/json": {"schema": String("message")},
+                "application/xml": {"schema": String("message")},
+            },
+        )
+
+        request = Request(
+            description="Test",
+            responses=[response],
+            relative_path="/test",
+            request_methods=["GET"],
+        )
+
+        self.oai3_json.set_requests([request])
+        output = json.loads(self.oai3_json.compact())
+
+        converted_response = output["paths"]["/test"]["get"]["responses"]["200"]
+        self.assertIn("headers", converted_response)
+        self.assertIn("X-RateLimit-Remaining", converted_response["headers"])
+        self.assertIn("links", converted_response)
+        self.assertIn("next", converted_response["links"])
+        self.assertIn("application/json", converted_response["content"])
+        self.assertIn("application/xml", converted_response["content"])
+
     def test_enum_nullable_without_null_in_values(self):
         """Test that enum schemas use nullable: true instead of including null in enum values."""
         from clearskies.autodoc.formats.oai3_json.schema import Enum as OAI3Enum
@@ -319,6 +361,58 @@ class TestOAI3Compliance(unittest.TestCase):
         self.assertIn("components", output)
         self.assertIn("schemas", output["components"])
         self.assertIn("User", output["components"]["schemas"])
+
+    def test_components_with_parameters_responses_and_request_bodies(self):
+        self.oai3_json.set_components(
+            {
+                "parameters": {
+                    "Page": {
+                        "name": "page",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer"},
+                    }
+                },
+                "responses": {
+                    "NotFound": {
+                        "description": "Not found",
+                    }
+                },
+                "requestBodies": {
+                    "CreateUser": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {},
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        )
+
+        response = Response(
+            schema=String("message"),
+            status=200,
+            description="Success",
+        )
+        test_request = Request(
+            description="Test",
+            responses=[response],
+            relative_path="/test",
+            request_methods=["GET"],
+        )
+
+        self.oai3_json.set_requests([test_request])
+        output = json.loads(self.oai3_json.compact())
+
+        self.assertIn("components", output)
+        self.assertIn("parameters", output["components"])
+        self.assertIn("responses", output["components"])
+        self.assertIn("requestBodies", output["components"])
 
     def test_array_schema(self):
         """Test that array schemas are properly formatted."""

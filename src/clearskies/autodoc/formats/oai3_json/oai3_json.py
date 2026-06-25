@@ -9,19 +9,25 @@ class Oai3Json:
     formatted: Any = None
     models: Any = None
     security_schemes: Any = None
+    component_parameters: Any = None
+    component_responses: Any = None
+    component_request_bodies: Any = None
 
     def __init__(self, oai3_schema_resolver):
         self.oai3_schema_resolver = oai3_schema_resolver
         self.requests = []
         self.formatted = []
         self.models = {}
+        self.component_parameters = {}
+        self.component_responses = {}
+        self.component_request_bodies = {}
 
     def set_requests(self, requests):
         self.requests = requests
         self.formatted = [self.format_request(request) for request in self.requests]
 
     def set_components(self, components):
-        supported = ["models", "securitySchemes"]
+        supported = ["models", "securitySchemes", "parameters", "responses", "requestBodies"]
         for key in components.keys():
             if key not in supported:
                 raise ValueError(
@@ -31,12 +37,27 @@ class Oai3Json:
             self.set_models(components["models"])
         if "securitySchemes" in components:
             self.set_security_schemes(components["securitySchemes"])
+        if "parameters" in components:
+            self.set_parameters(components["parameters"])
+        if "responses" in components:
+            self.set_responses(components["responses"])
+        if "requestBodies" in components:
+            self.set_request_bodies(components["requestBodies"])
 
     def set_models(self, models):
         self.models = models
 
     def set_security_schemes(self, security_schemes):
         self.security_schemes = security_schemes
+
+    def set_parameters(self, parameters):
+        self.component_parameters = parameters
+
+    def set_responses(self, responses):
+        self.component_responses = responses
+
+    def set_request_bodies(self, request_bodies):
+        self.component_request_bodies = request_bodies
 
     def format_request(self, request):
         formatted_request = Request(self.oai3_schema_resolver)
@@ -89,6 +110,15 @@ class Oai3Json:
 
         if self.security_schemes:
             components["securitySchemes"] = {name: scheme_data for (name, scheme_data) in self.security_schemes.items()}
+
+        if self.component_parameters:
+            components["parameters"] = self.component_parameters
+
+        if self.component_responses:
+            components["responses"] = self.component_responses
+
+        if self.component_request_bodies:
+            components["requestBodies"] = self.component_request_bodies
 
         # Only include components key if it has content
         if components:
