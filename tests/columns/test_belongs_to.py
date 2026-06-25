@@ -276,3 +276,32 @@ class BelongsToTest(TestBase):
         assert len(response["data"]) == 1
         product_data = response["data"][0]
         assert product_data["category_id"] == "toy-id"
+
+    def test_belongs_to_model_documentation_returns_object_shape(self):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(
+                Category,
+                readable_parent_columns=["id", "name"],
+            )
+            category = clearskies.columns.BelongsToModel("category_id")
+
+        # Ensure descriptors are initialized with model context before inspecting docs.
+        Product().get_columns()
+        docs = Product.category.documentation()
+        assert len(docs) == 1
+        assert isinstance(docs[0], clearskies.autodoc.schema.Object)
+        assert docs[0].name == "category"
+        child_names = [child.name for child in (docs[0].children or [])]
+        assert child_names == ["id", "name"]

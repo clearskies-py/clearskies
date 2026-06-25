@@ -4,8 +4,12 @@ from . import schema as formatted_schema
 
 class OAI3SchemaResolver:
     class_map = {
+        raw_schema.AllOf: formatted_schema.AllOf,
+        raw_schema.AnyOf: formatted_schema.AnyOf,
         raw_schema.Array: formatted_schema.Array,
         raw_schema.Enum: formatted_schema.Enum,
+        raw_schema.Not: formatted_schema.Not,
+        raw_schema.OneOf: formatted_schema.OneOf,
         raw_schema.Object: formatted_schema.Object,
     }
 
