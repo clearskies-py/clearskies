@@ -107,6 +107,7 @@ from .readable_model_columns import ReadableModelColumns
 from .schema import Schema
 from .searchable_model_columns import SearchableModelColumns
 from .secret_cache import SecretCache
+from .secrets import Secrets
 from .security_headers import SecurityHeaders
 from .select import Select
 from .select_list import SelectList
@@ -166,6 +167,7 @@ __all__ = [
     "Schema",
     "SearchableModelColumns",
     "SecretCache",
+    "Secrets",
     "SecurityHeaders",
     "Select",
     "SelectList",

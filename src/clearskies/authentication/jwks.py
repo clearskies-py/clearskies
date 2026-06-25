@@ -18,26 +18,35 @@ class Jwks(Authentication, di.InjectableProperties):
 
     """
     The URL of the JWKS
+
+    When authenticating a request coming in to an endpoint, clearskies will fetch the JWKS from this URL
+    and use the public keys to validate the JWT presented by the client.
     """
     jwks_url = configs.String(required=True)
 
     """
     The audience to accept JWTs for.
+
+    If provided, JWTs will be rejected if their `aud` claim doesn't exactly match the value given here.
+    If you do not provide an audience, then all audiences will be accepted.
     """
     audience = configs.String(default="")
 
     """
     The expected issuer of the JWTs.
+
+    If provided, JWTs will be rejected if their `iss` claim doesn't exactly match the value given here.
+    If you do not provide an issuer, then all audiences will be accepted.
     """
     issuer = configs.String(default="")
 
     """
-    The allowed algorithms
+    The allowed algorithms.
     """
     algorithms = configs.StringList(default=["RS256"])
 
     """
-    The number of seconds for which the JWKS URL contents can be cached
+    The number of seconds for which the JWKS URL contents can be cached.
     """
     jwks_cache_time = configs.Integer(default=86400)
 
@@ -105,7 +114,7 @@ class Jwks(Authentication, di.InjectableProperties):
             from jwcrypto.common import JWException
         except ImportError:
             raise ValueError(
-                "The JWKS authentication method requires the jwcrypto libraries to be installed.  These are optional dependencies of clearskies, so to include them do a `pip install 'clear-skies[jwcrypto]'`"
+                "The JWKS authentication method requires the jwcrypto library to be installed.  This is an optional dependency of clearskies, so to include it do a `pip install 'clear-skies[jwcrypto]'`"
             )
 
         keys = jwk.JWKSet()
