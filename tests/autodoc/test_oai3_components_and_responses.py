@@ -77,6 +77,40 @@ class TestOai3ComponentsAndResponses(unittest.TestCase):
                         },
                     }
                 },
+                "headers": {
+                    "RateLimit": {
+                        "description": "Rate limit",
+                        "schema": {"type": "integer"},
+                    }
+                },
+                "examples": {
+                    "ThingExample": {
+                        "summary": "Example",
+                        "value": {"name": "thing"},
+                    }
+                },
+                "links": {
+                    "NextThing": {
+                        "operationId": "getThing",
+                        "parameters": {"id": "$response.body#/id"},
+                    }
+                },
+                "callbacks": {
+                    "onEvent": {
+                        "{$request.body#/callbackUrl}": {
+                            "post": {
+                                "requestBody": {
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {"type": "object", "properties": {}},
+                                        }
+                                    }
+                                },
+                                "responses": {"200": {"description": "ok"}},
+                            }
+                        }
+                    }
+                },
             }
         )
 
@@ -94,6 +128,10 @@ class TestOai3ComponentsAndResponses(unittest.TestCase):
         self.assertIn("parameters", output["components"])
         self.assertIn("responses", output["components"])
         self.assertIn("requestBodies", output["components"])
+        self.assertIn("headers", output["components"])
+        self.assertIn("examples", output["components"])
+        self.assertIn("links", output["components"])
+        self.assertIn("callbacks", output["components"])
 
 
 if __name__ == "__main__":

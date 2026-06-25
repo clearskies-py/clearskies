@@ -12,6 +12,10 @@ class Oai3Json:
     component_parameters: Any = None
     component_responses: Any = None
     component_request_bodies: Any = None
+    component_headers: Any = None
+    component_examples: Any = None
+    component_links: Any = None
+    component_callbacks: Any = None
 
     def __init__(self, oai3_schema_resolver):
         self.oai3_schema_resolver = oai3_schema_resolver
@@ -21,13 +25,27 @@ class Oai3Json:
         self.component_parameters = {}
         self.component_responses = {}
         self.component_request_bodies = {}
+        self.component_headers = {}
+        self.component_examples = {}
+        self.component_links = {}
+        self.component_callbacks = {}
 
     def set_requests(self, requests):
         self.requests = requests
         self.formatted = [self.format_request(request) for request in self.requests]
 
     def set_components(self, components):
-        supported = ["models", "securitySchemes", "parameters", "responses", "requestBodies"]
+        supported = [
+            "models",
+            "securitySchemes",
+            "parameters",
+            "responses",
+            "requestBodies",
+            "headers",
+            "examples",
+            "links",
+            "callbacks",
+        ]
         for key in components.keys():
             if key not in supported:
                 raise ValueError(
@@ -43,6 +61,14 @@ class Oai3Json:
             self.set_responses(components["responses"])
         if "requestBodies" in components:
             self.set_request_bodies(components["requestBodies"])
+        if "headers" in components:
+            self.set_headers(components["headers"])
+        if "examples" in components:
+            self.set_examples(components["examples"])
+        if "links" in components:
+            self.set_links(components["links"])
+        if "callbacks" in components:
+            self.set_callbacks(components["callbacks"])
 
     def set_models(self, models):
         self.models = models
@@ -58,6 +84,18 @@ class Oai3Json:
 
     def set_request_bodies(self, request_bodies):
         self.component_request_bodies = request_bodies
+
+    def set_headers(self, headers):
+        self.component_headers = headers
+
+    def set_examples(self, examples):
+        self.component_examples = examples
+
+    def set_links(self, links):
+        self.component_links = links
+
+    def set_callbacks(self, callbacks):
+        self.component_callbacks = callbacks
 
     def format_request(self, request):
         formatted_request = Request(self.oai3_schema_resolver)
@@ -119,6 +157,18 @@ class Oai3Json:
 
         if self.component_request_bodies:
             components["requestBodies"] = self.component_request_bodies
+
+        if self.component_headers:
+            components["headers"] = self.component_headers
+
+        if self.component_examples:
+            components["examples"] = self.component_examples
+
+        if self.component_links:
+            components["links"] = self.component_links
+
+        if self.component_callbacks:
+            components["callbacks"] = self.component_callbacks
 
         # Only include components key if it has content
         if components:
