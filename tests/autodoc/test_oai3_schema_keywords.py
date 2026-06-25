@@ -24,6 +24,18 @@ class TestOai3SchemaKeywords(unittest.TestCase):
         schema.pattern = "^[a-z]+$"
         schema.deprecated = True
         schema.nullable = True
+        schema.multiple_of = 2
+        schema.exclusive_minimum = 1
+        schema.exclusive_maximum = 100
+        schema.min_properties = 1
+        schema.max_properties = 5
+        schema.additional_properties = False
+        schema.read_only = True
+        schema.write_only = False
+        schema.discriminator = {"propertyName": "kind"}
+        schema.xml = {"name": "Name"}
+        schema.external_docs = {"url": "https://example.com/docs"}
+        schema.examples = {"sample": "abc"}
 
         converted = resolver(schema).convert()
         self.assertEqual(converted["minLength"], 2)
@@ -31,6 +43,18 @@ class TestOai3SchemaKeywords(unittest.TestCase):
         self.assertEqual(converted["pattern"], "^[a-z]+$")
         self.assertTrue(converted["deprecated"])
         self.assertTrue(converted["nullable"])
+        self.assertEqual(converted["multipleOf"], 2)
+        self.assertEqual(converted["exclusiveMinimum"], 1)
+        self.assertEqual(converted["exclusiveMaximum"], 100)
+        self.assertEqual(converted["minProperties"], 1)
+        self.assertEqual(converted["maxProperties"], 5)
+        self.assertFalse(converted["additionalProperties"])
+        self.assertTrue(converted["readOnly"])
+        self.assertFalse(converted["writeOnly"])
+        self.assertEqual(converted["discriminator"]["propertyName"], "kind")
+        self.assertEqual(converted["xml"]["name"], "Name")
+        self.assertEqual(converted["externalDocs"]["url"], "https://example.com/docs")
+        self.assertIn("examples", converted)
 
     def test_array_keyword_constraints(self):
         resolver = OAI3SchemaResolver()
