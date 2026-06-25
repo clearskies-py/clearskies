@@ -30,10 +30,23 @@ class Parameter:
         # Provide a default if missing
         description = self.parameter.description if self.parameter.description else ""
 
-        return {
+        output = {
             "name": self.parameter.definition.name,
             "description": description,
             "required": self.required,
             "in": self.location_map[self.parameter.location],
             "schema": self.oai3_schema_resolver(self.parameter.definition).convert(),
         }
+
+        if self.parameter.style is not None:
+            output["style"] = self.parameter.style
+        if self.parameter.explode is not None:
+            output["explode"] = self.parameter.explode
+        if self.parameter.allow_reserved is not None:
+            output["allowReserved"] = self.parameter.allow_reserved
+        if self.parameter.deprecated is not None:
+            output["deprecated"] = self.parameter.deprecated
+        if self.parameter.allow_empty_value is not None:
+            output["allowEmptyValue"] = self.parameter.allow_empty_value
+
+        return output

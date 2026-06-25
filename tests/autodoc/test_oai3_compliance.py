@@ -239,6 +239,11 @@ class TestOAI3Compliance(unittest.TestCase):
             definition=Integer("page"),
             description="Page number",
             required=False,
+            style="form",
+            explode=True,
+            allow_reserved=True,
+            deprecated=True,
+            allow_empty_value=False,
         )
 
         from clearskies.autodoc.formats.oai3_json.parameter import Parameter as OAI3Parameter
@@ -254,6 +259,11 @@ class TestOAI3Compliance(unittest.TestCase):
         self.assertIn("schema", converted)
         self.assertIsInstance(converted["schema"], dict)
         self.assertEqual(converted["schema"]["type"], "integer")
+        self.assertEqual(converted["style"], "form")
+        self.assertTrue(converted["explode"])
+        self.assertTrue(converted["allowReserved"])
+        self.assertTrue(converted["deprecated"])
+        self.assertFalse(converted["allowEmptyValue"])
 
     def test_components_only_when_not_empty(self):
         """Test that components object is only included when it has content."""
@@ -383,6 +393,43 @@ class TestOAI3Compliance(unittest.TestCase):
         self.assertIn("content", request_body)
         self.assertIn("application/json", request_body["content"])
         self.assertIn("schema", request_body["content"]["application/json"])
+
+    def test_request_body_multiple_content_types(self):
+        json_body = JSONBody(
+            definition=Object("request", [String("name")]),
+            description="JSON payload",
+            required=True,
+            content_type="application/json",
+        )
+        form_body = JSONBody(
+            definition=Object("request", [String("name")]),
+            description="Form payload",
+            required=False,
+            content_type="application/x-www-form-urlencoded",
+        )
+
+        response = Response(
+            schema=String("message"),
+            status=201,
+            description="Created",
+        )
+
+        test_request = Request(
+            description="Create user",
+            responses=[response],
+            relative_path="/users",
+            request_methods=["POST"],
+            parameters=[json_body, form_body],
+        )
+
+        self.oai3_json.set_requests([test_request])
+        output = json.loads(self.oai3_json.compact())
+
+        operation = output["paths"]["/users"]["post"]
+        request_body = operation["requestBody"]
+
+        self.assertIn("application/json", request_body["content"])
+        self.assertIn("application/x-www-form-urlencoded", request_body["content"])
 
     def test_multiple_operations_same_path(self):
         """Test that multiple HTTP methods on the same path are handled correctly."""

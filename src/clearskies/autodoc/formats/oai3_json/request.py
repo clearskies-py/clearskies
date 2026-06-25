@@ -83,24 +83,32 @@ class Request:
                     data[method_lower] = {**data[method_lower], **root_properties}
 
             if self.json_body_parameters:
-                # For OAI3, there should only be one JSON body root parameter, so it should either be an
-                # object or an array.  If we have an array then wrap it in an object
-                if type(self.json_body_parameters) == list:
-                    definitions = [parameter.definition for parameter in self.json_body_parameters]
-                    json_body = Object("body", definitions)
-                    is_required = len([1 for param in self.json_body_parameters if param.required]) >= 1
-                else:
-                    json_body = self.json_body_parameters[0].definition
-                    is_required = len([1 for param in json_body.definition.children if param.required]) >= 1
+                content: dict[str, Any] = {}
+                parameter_descriptions = [param.description for param in self.json_body_parameters if param.description]
 
+                grouped_by_content_type: dict[str, list[Any]] = {}
+                for parameter in self.json_body_parameters:
+                    content_type = getattr(parameter, "content_type", "application/json")
+                    grouped_by_content_type.setdefault(content_type, []).append(parameter)
+
+                is_required = len([1 for param in self.json_body_parameters if param.required]) >= 1
+
+                for content_type, body_parameters in grouped_by_content_type.items():
+                    definitions = [parameter.definition for parameter in body_parameters]
+                    json_body = Object("body", definitions)
+                    content[content_type] = {
+                        "schema": self.oai3_schema_resolver(json_body).convert(),
+                    }
+
+                request_body_description = (
+                    self.request.description
+                    if self.request.description
+                    else (parameter_descriptions[0] if parameter_descriptions else "")
+                )
                 data[method_lower]["requestBody"] = {
-                    "description": self.request.description,
+                    "description": request_body_description,
                     "required": is_required,
-                    "content": {
-                        "application/json": {
-                            "schema": self.oai3_schema_resolver(json_body).convert(),
-                        },
-                    },
+                    "content": content,
                 }
 
         return data
