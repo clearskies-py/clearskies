@@ -35,8 +35,12 @@ class Parameter:
             "description": description,
             "required": self.required,
             "in": self.location_map[self.parameter.location],
-            "schema": self.oai3_schema_resolver(self.parameter.definition).convert(),
         }
+
+        if self.parameter.content is not None:
+            output["content"] = self.parameter.content
+        else:
+            output["schema"] = self.oai3_schema_resolver(self.parameter.definition).convert()
 
         if self.parameter.style is not None:
             output["style"] = self.parameter.style
@@ -48,5 +52,9 @@ class Parameter:
             output["deprecated"] = self.parameter.deprecated
         if self.parameter.allow_empty_value is not None:
             output["allowEmptyValue"] = self.parameter.allow_empty_value
+        if self.parameter.example is not None:
+            output["example"] = self.parameter.example
+        if self.parameter.examples is not None:
+            output["examples"] = self.parameter.examples
 
         return output
