@@ -29,6 +29,47 @@ class TestOai3ParameterOptions(unittest.TestCase):
         self.assertTrue(output["deprecated"])
         self.assertTrue(output["allowEmptyValue"])
 
+    def test_parameter_example_and_examples_are_rendered(self):
+        parameter = URLParameter(
+            definition=String("q"),
+            description="Search",
+            required=False,
+            example="hello",
+            examples={
+                "a": {
+                    "summary": "A",
+                    "value": "abc",
+                }
+            },
+        )
+
+        formatted = OAI3Parameter(OAI3SchemaResolver())
+        formatted.set_parameter(parameter)
+        output = formatted.convert()
+
+        self.assertEqual(output["example"], "hello")
+        self.assertIn("examples", output)
+        self.assertIn("a", output["examples"])
+
+    def test_parameter_content_is_rendered_instead_of_schema(self):
+        parameter = URLParameter(
+            definition=String("q"),
+            description="Search",
+            required=False,
+            content={
+                "application/json": {
+                    "schema": {"type": "object"},
+                }
+            },
+        )
+
+        formatted = OAI3Parameter(OAI3SchemaResolver())
+        formatted.set_parameter(parameter)
+        output = formatted.convert()
+
+        self.assertIn("content", output)
+        self.assertNotIn("schema", output)
+
 
 if __name__ == "__main__":
     unittest.main()
