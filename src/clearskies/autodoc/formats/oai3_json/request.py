@@ -78,28 +78,9 @@ class Request:
             data[method_lower] = method_data
 
             if self.request.root_properties:
-                data[method_lower] = {**data[method_lower], **self.request.root_properties}
-
-            if "requestBody" in data[method_lower]:
-                request_body = data[method_lower]["requestBody"]
-                if "content" in request_body and "application/json" in request_body["content"]:
-                    content = request_body["content"]["application/json"]
-                    if isinstance(content.get("schema"), Object):
-                        content = {
-                            **content,
-                            "schema": self.oai3_schema_resolver(content["schema"]).convert(include_required=True),
-                        }
-                        request_body = {
-                            **request_body,
-                            "content": {
-                                **request_body["content"],
-                                "application/json": content,
-                            },
-                        }
-                        data[method_lower] = {
-                            **data[method_lower],
-                            "requestBody": request_body,
-                        }
+                root_properties = self._normalize_openapi_schemas(self.request.root_properties)
+                if isinstance(root_properties, dict):
+                    data[method_lower] = {**data[method_lower], **root_properties}
 
             if self.json_body_parameters:
                 # For OAI3, there should only be one JSON body root parameter, so it should either be an
@@ -123,3 +104,16 @@ class Request:
                 }
 
         return data
+
+    def _normalize_openapi_schemas(self, value: Any):
+        if isinstance(value, dict):
+            if "schema" in value and hasattr(value["schema"], "_type"):
+                include_required = isinstance(value["schema"], Object)
+                return {
+                    **value,
+                    "schema": self.oai3_schema_resolver(value["schema"]).convert(include_required=include_required),
+                }
+            return {key: self._normalize_openapi_schemas(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._normalize_openapi_schemas(item) for item in value]
+        return value

@@ -50,6 +50,9 @@ class TestOAI3Compliance(unittest.TestCase):
         # Verify required top-level fields
         self.assertIn("openapi", output)
         self.assertEqual(output["openapi"], "3.0.0")
+        self.assertIn("info", output)
+        self.assertIn("title", output["info"])
+        self.assertIn("version", output["info"])
         self.assertIn("paths", output)
         self.assertIsInstance(output["paths"], dict)
 
