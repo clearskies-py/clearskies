@@ -75,6 +75,18 @@ class Request:
                 "parameters": [parameter.convert() for parameter in self.formatted_parameters],
                 "responses": {str(response.status_code): response.convert() for response in self.formatted_responses},
             }
+
+            if self.request.tags:
+                method_data["tags"] = self.request.tags
+            if self.request.external_docs:
+                method_data["externalDocs"] = self.request.external_docs
+            if self.request.deprecated:
+                method_data["deprecated"] = True
+            if self.request.security is not None:
+                method_data["security"] = self.request.security
+            if self.request.servers is not None:
+                method_data["servers"] = self.request.servers
+
             data[method_lower] = method_data
 
             if self.request.root_properties:
