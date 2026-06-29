@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.61] - 2026-06-29
+
+### Added
+- Add BelongsToModel documentation schema in [#88](https://github.com/clearskies-py/clearskies/pull/88)
+- Add external validation corpus coverage
+- Add configurable OpenAPI version output
+- Support full OpenAPI component sections
+- Add operation-level OpenAPI fields
+- Add parameter examples and content support
+- Support multi-content request bodies in OAI3
+- Add allOf/anyOf/not and schema constraints
+- Add default OpenAPI info metadata
+- Add OneOf support for OAI3 request bodies
+
+### Changed
+- Document List column as OpenAPI array
+- Install all deps
+- Expand OpenAPI schema keyword coverage
+- Extend OpenAPI components and response objects
+
+### Fixed
+- Skip external validation tests when dependency missing
+- Validate generated OpenAPI with external validator
+- Normalize nested schema nodes in root_properties
+- Extra comma by @cmancone in [#87](https://github.com/clearskies-py/clearskies/pull/87)
+
 ## [2.0.60] - 2026-06-23
 
 ### Added
@@ -19,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add missing docstrings
 
 ### Changed
+- Bump version to v2.0.60 by @github-actions[bot]
 - Docs for offset backend by @cmancone in [#85](https://github.com/clearskies-py/clearskies/pull/85)
 - PR comment responses and docs by @cmancone
 - Validation only applies if model class is set by @cmancone in [#86](https://github.com/clearskies-py/clearskies/pull/86)
@@ -1325,6 +1352,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.61]: https://github.com/clearskies-py/clearskies/compare/v2.0.60..v2.0.61
 [2.0.60]: https://github.com/clearskies-py/clearskies/compare/v2.0.59..v2.0.60
 [2.0.59]: https://github.com/clearskies-py/clearskies/compare/v2.0.58..v2.0.59
 [2.0.58]: https://github.com/clearskies-py/clearskies/compare/v2.0.57..v2.0.58
