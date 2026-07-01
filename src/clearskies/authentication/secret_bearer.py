@@ -457,6 +457,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     _secret: str | None = None
     _alternate_secret: str | None = None
+    _force_secret_refresh: bool = False
 
     @decorators.parameters_to_properties
     def __init__(
@@ -476,9 +477,13 @@ class SecretBearer(Authentication, di.InjectableProperties):
     @property
     def secret(self):
         if self._secret is None:
-            self._secret = (
-                self.secrets.get(self.secret_key) if self.secret_key else self.environment.get(self.environment_key)
-            )
+            if self.secret_key:
+                try:
+                    self._secret = self.secrets.get(self.secret_key, refresh=self._force_secret_refresh)
+                finally:
+                    self._force_secret_refresh = False
+            else:
+                self._secret = self.environment.get(self.environment_key)
         return self._secret
 
     def clear_credential_cache(self):
@@ -500,9 +505,8 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     def headers(self, retry_auth: bool = False):
         if retry_auth:
-            self._alternate_secret = None
-            if self.secret_key:
-                self._secret = self.secrets.get(self.secret_key, refresh=True)
+            self._force_secret_refresh = True
+            self.clear_credential_cache()
 
         self._configured_guard()
         return {"Authorization": f"{self.header_prefix}{self.secret}"}

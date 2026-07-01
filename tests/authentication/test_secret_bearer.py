@@ -29,7 +29,7 @@ class SecretBearerTest(unittest.TestCase):
         assert status_code == 401
 
     def test_secret_key(self):
-        def fetch_secret(path):
+        def fetch_secret(path, refresh=False):
             if path == "/path/to/my/secret":
                 return "SUPERSECRET"
             raise KeyError(f"Attempt to fetch non-existent secret: {path}")
@@ -52,7 +52,7 @@ class SecretBearerTest(unittest.TestCase):
         assert status_code == 401
 
     def test_alternate_secret_key(self):
-        def fetch_secret(path):
+        def fetch_secret(path, refresh=False):
             if path == "/path/to/my/secret":
                 return "SUPERSECRET"
             if path == "/path/to/alternate/secret":

@@ -42,10 +42,25 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
     def documentation_security_scheme_name(self) -> str:
         return ""
 
-    def reauth(self, response: requests.models.Response, **kwargs: Any) -> requests.models.Response:
-        if response.status_code not in (401, 403):
-            return response
+    def handle_401(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
+        return self._retry_auth(response, **kwargs)
 
+    def handle_403(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
+        return self._retry_auth(response, **kwargs)
+
+    def handle_default(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
+        return response
+
+    def handle_auth_response(
+        self, response: requests.models.Response, *args: Any, **kwargs: Any
+    ) -> requests.models.Response:
+        handler = getattr(self, f"handle_{response.status_code}", self.handle_default)
+        return handler(response, *args, **kwargs)
+
+    def reauth(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
+        return self.handle_auth_response(response, *args, **kwargs)
+
+    def _retry_auth(self, response: requests.models.Response, **kwargs: Any) -> requests.models.Response:
         request = response.request
         if not request:
             return response
@@ -71,6 +86,6 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
         return connection.send(retry_request, **kwargs)
 
     def __call__(self, r: requests.models.PreparedRequest) -> requests.models.PreparedRequest:
-        r.register_hook("response", self.reauth)
+        r.register_hook("response", self.handle_auth_response)
         r.headers.update(self.headers())
         return r
