@@ -475,22 +475,22 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     @property
     def secret(self):
-        if not self._secret:
+        if self._secret is None:
             self._secret = (
                 self.secrets.get(self.secret_key) if self.secret_key else self.environment.get(self.environment_key)
             )
         return self._secret
 
     def clear_credential_cache(self):
-        if self.secret_key:
-            self._secret = None
+        self._secret = None
+        self._alternate_secret = None
 
     @property
     def alternate_secret(self):
         if not self.alternate_secret_key and not self.alternate_environment_key:
             return ""
 
-        if not self._alternate_secret:
+        if self._alternate_secret is None:
             self._alternate_secret = (
                 self.secrets.get(self.alternate_secret_key)
                 if self.alternate_secret_key
@@ -498,10 +498,13 @@ class SecretBearer(Authentication, di.InjectableProperties):
             )
         return self._alternate_secret
 
-    def headers(self, retry_auth=False):
-        self._configured_guard()
+    def headers(self, retry_auth: bool = False):
         if retry_auth:
-            self.clear_credential_cache()
+            self._alternate_secret = None
+            if self.secret_key:
+                self._secret = self.secrets.get(self.secret_key, refresh=True)
+
+        self._configured_guard()
         return {"Authorization": f"{self.header_prefix}{self.secret}"}
 
     def authenticate(self, input_output):
