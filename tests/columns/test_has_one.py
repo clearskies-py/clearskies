@@ -12,7 +12,7 @@ class HasOneTest(TestBase):
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
-            gitlab_project_id = clearskies.columns.String()
+            project_id = clearskies.columns.String()
             visibility = clearskies.columns.String()
             merge_method = clearskies.columns.String()
 
@@ -24,7 +24,7 @@ class HasOneTest(TestBase):
             name = clearskies.columns.String()
             settings = clearskies.columns.HasOne(
                 ProjectSetting,
-                foreign_column_name="gitlab_project_id",
+                foreign_column_name="project_id",
                 readable_child_column_names=["visibility", "merge_method"],
             )
 
@@ -32,7 +32,7 @@ class HasOneTest(TestBase):
             project = projects.create({"name": "My Project"})
             project_settings.create(
                 {
-                    "gitlab_project_id": project.id,
+                    "project_id": project.id,
                     "visibility": "private",
                     "merge_method": "merge",
                 }
@@ -51,6 +51,46 @@ class HasOneTest(TestBase):
         assert response_data["data"]["visibility"] == "private"
         assert response_data["data"]["merge_method"] == "merge"
 
+    def test_has_one_accepts_positional_foreign_column_name(self):
+        """Test HasOne preserves positional argument compatibility with HasMany."""
+
+        class ProjectSetting(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            project_id = clearskies.columns.String()
+            visibility = clearskies.columns.String()
+
+        class Project(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            settings = clearskies.columns.HasOne(ProjectSetting, "project_id")
+
+        def test_has_one(projects: Project, project_settings: ProjectSetting):
+            project = projects.create({"name": "My Project"})
+            project_settings.create(
+                {
+                    "project_id": project.id,
+                    "visibility": "private",
+                }
+            )
+
+            return project.settings.visibility
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                test_has_one,
+            ),
+            classes=[Project, ProjectSetting],
+        )
+        status_code, response_data, response_headers = context()
+        assert response_data["status"] == "success"
+        assert response_data["data"] == "private"
+
     def test_has_one_to_json(self):
         """Test that HasOne.to_json returns a dict (not a list) for a single child."""
 
@@ -59,7 +99,7 @@ class HasOneTest(TestBase):
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
-            gitlab_project_id = clearskies.columns.String()
+            project_id = clearskies.columns.String()
             visibility = clearskies.columns.String()
             merge_method = clearskies.columns.String()
 
@@ -71,7 +111,7 @@ class HasOneTest(TestBase):
             name = clearskies.columns.String()
             settings = clearskies.columns.HasOne(
                 ProjectSetting,
-                foreign_column_name="gitlab_project_id",
+                foreign_column_name="project_id",
                 readable_child_column_names=["visibility", "merge_method"],
             )
 
@@ -79,7 +119,7 @@ class HasOneTest(TestBase):
             project = projects.create({"name": "My Project"})
             setting = project_settings.create(
                 {
-                    "gitlab_project_id": project.id,
+                    "project_id": project.id,
                     "visibility": "private",
                     "merge_method": "merge",
                 }
@@ -111,7 +151,7 @@ class HasOneTest(TestBase):
             backend = clearskies.backends.MemoryBackend()
 
             id = clearskies.columns.Uuid()
-            gitlab_project_id = clearskies.columns.String()
+            project_id = clearskies.columns.String()
             visibility = clearskies.columns.String()
 
         class Project(clearskies.Model):
@@ -122,7 +162,7 @@ class HasOneTest(TestBase):
             name = clearskies.columns.String()
             settings = clearskies.columns.HasOne(
                 ProjectSetting,
-                foreign_column_name="gitlab_project_id",
+                foreign_column_name="project_id",
                 readable_child_column_names=["visibility"],
             )
 
@@ -231,9 +271,10 @@ class HasOneTest(TestBase):
                 foreign_column_name="project_id",
             )
 
-        def attempt_set(projects: Project):
+        def attempt_set(projects: Project, project_settings: ProjectSetting):
             project = projects.create({"name": "Test"})
-            project.settings = "something"
+            setting = project_settings.create({"project_id": project.id, "visibility": "private"})
+            project.settings = setting
 
         context = clearskies.contexts.Context(
             clearskies.endpoints.Callable(attempt_set),
