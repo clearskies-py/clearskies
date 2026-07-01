@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.65] - 2026-07-01
+
+### Fixed
+- Fix typing issues
+
 ## [2.0.64] - 2026-07-01
 
 ### Added
 - Add typing for model references
+
+### Changed
+- Bump version to v2.0.64 by @github-actions[bot]
 
 ## [2.0.63] - 2026-07-01
 
@@ -1375,6 +1383,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.65]: https://github.com/clearskies-py/clearskies/compare/v2.0.64..v2.0.65
 [2.0.64]: https://github.com/clearskies-py/clearskies/compare/v2.0.63..v2.0.64
 [2.0.63]: https://github.com/clearskies-py/clearskies/compare/v2.0.62..v2.0.63
 [2.0.62]: https://github.com/clearskies-py/clearskies/compare/v2.0.61..v2.0.62
