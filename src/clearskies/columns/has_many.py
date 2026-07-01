@@ -12,6 +12,7 @@ from clearskies.functional import string, validations
 if TYPE_CHECKING:
     from clearskies import Column, Model, typing
     from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.model import ModelClassReference
 
 ChildModel = TypeVar("ChildModel", bound="Model")
 
@@ -409,7 +410,7 @@ class HasMany(Column, Generic[ChildModel]):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        child_model_class: type[ChildModel],
+        child_model_class: type[ChildModel] | type[ModelClassReference[ChildModel]],
         foreign_column_name: str | None = None,
         readable_child_column_names: list[str] = [],
         where: typing.condition | list[typing.condition] = [],

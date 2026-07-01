@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, overload
 
 from clearskies.autodoc.schema import Object as AutoDocObject
-from clearskies.columns.has_many import ChildModel, HasMany
+from clearskies.columns.has_many import HasMany
 
 if TYPE_CHECKING:
     from clearskies import Model
     from clearskies.autodoc.schema import Schema as AutoDocSchema
+    from clearskies.model import ModelClassReference
 
 
-class HasOne(HasMany[ChildModel]):
+ChildModelT = TypeVar("ChildModelT", bound="Model")
+
+
+class HasOne(HasMany[ChildModelT], Generic[ChildModelT]):
     """
     This operates exactly like the HasMany relationship, except it assumes there is only ever one child.
 
@@ -20,7 +24,12 @@ class HasOne(HasMany[ChildModel]):
 
     _descriptor_config_map = None
 
-    def __init__(self, child_model_class: type[ChildModel], *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        child_model_class: type[ChildModelT] | type[ModelClassReference[ChildModelT]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(child_model_class, *args, **kwargs)
 
     @overload
@@ -28,7 +37,7 @@ class HasOne(HasMany[ChildModel]):
         pass
 
     @overload
-    def __get__(self, model: Model, cls: type[Model]) -> ChildModel:
+    def __get__(self, model: Model, cls: type[Model]) -> ChildModelT:
         pass
 
     def __get__(self, model, cls):  # ty: ignore[invalid-method-override]

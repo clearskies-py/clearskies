@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Self
+from typing import TYPE_CHECKING, Any, Callable, Generic, Iterator, Self, TypeVar
 
 from clearskies import loggable
 from clearskies.di import InjectableProperties, inject
@@ -2086,7 +2086,10 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
             )
 
 
-class ModelClassReference:
+ModelReferenceTarget = TypeVar("ModelReferenceTarget", bound="Model")
+
+
+class ModelClassReference(Generic[ModelReferenceTarget]):
     @abstractmethod
-    def get_model_class(self) -> type[Model]:
+    def get_model_class(self) -> type[ModelReferenceTarget]:
         pass
