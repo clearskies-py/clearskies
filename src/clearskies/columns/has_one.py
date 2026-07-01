@@ -20,6 +20,9 @@ class HasOne(HasMany[ChildModel]):
 
     _descriptor_config_map = None
 
+    def __init__(self, child_model_class: type[ChildModel], *args: Any, **kwargs: Any) -> None:
+        super().__init__(child_model_class, *args, **kwargs)
+
     @overload
     def __get__(self, model: None, cls: type[Model]) -> Self:
         pass
