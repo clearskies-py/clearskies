@@ -1239,7 +1239,6 @@ class ApiBackend(Backend, InjectableProperties):
         method: str,
         json: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-        is_retry=False,
     ) -> RequestsResponse:
         """
         Execute the actual API request and returns the response object.
@@ -1254,17 +1253,13 @@ class ApiBackend(Backend, InjectableProperties):
         if headers is None:
             headers = {}
 
-        self.logger.debug(
-            f"Executing {method} request to {url} with headers {headers} and json {json} (retry={is_retry})"
-        )
+        self.logger.debug(f"Executing {method} request to {url} with headers {headers} and json {json}")
 
         if self.authentication:
             if not self._auth_injected:
                 self._auth_injected = True
                 if isinstance(self.authentication, InjectableProperties):
                     self.authentication.injectable_properties(self.di)
-            if is_retry:
-                self.authentication.clear_credential_cache()
         # the requests library seems to build a slightly different request if you specify the json parameter,
         # even if it is null, and this causes trouble for some picky servers
         if not json:
@@ -1284,13 +1279,9 @@ class ApiBackend(Backend, InjectableProperties):
             )
 
         if not response.ok:
-            if not is_retry and response.status_code == 401:
-                return self.execute_request(url, method, json=json, headers=headers, is_retry=True)
-            if not response.ok:
-                raise ValueError(
-                    f"Failed request.  Status code: {response.status_code}, message: "
-                    + response.content.decode("utf-8")
-                )
+            raise ValueError(
+                f"Failed request.  Status code: {response.status_code}, message: " + response.content.decode("utf-8")
+            )
 
         return response
 

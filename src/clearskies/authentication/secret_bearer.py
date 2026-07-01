@@ -457,6 +457,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     _secret: str | None = None
     _alternate_secret: str | None = None
+    _force_secret_refresh: bool = False
 
     @decorators.parameters_to_properties
     def __init__(
@@ -475,22 +476,26 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
     @property
     def secret(self):
-        if not self._secret:
-            self._secret = (
-                self.secrets.get(self.secret_key) if self.secret_key else self.environment.get(self.environment_key)
-            )
+        if self._secret is None:
+            if self.secret_key:
+                try:
+                    self._secret = self.secrets.get(self.secret_key, refresh=self._force_secret_refresh)
+                finally:
+                    self._force_secret_refresh = False
+            else:
+                self._secret = self.environment.get(self.environment_key)
         return self._secret
 
     def clear_credential_cache(self):
-        if self.secret_key:
-            self._secret = None
+        self._secret = None
+        self._alternate_secret = None
 
     @property
     def alternate_secret(self):
         if not self.alternate_secret_key and not self.alternate_environment_key:
             return ""
 
-        if not self._alternate_secret:
+        if self._alternate_secret is None:
             self._alternate_secret = (
                 self.secrets.get(self.alternate_secret_key)
                 if self.alternate_secret_key
@@ -498,10 +503,12 @@ class SecretBearer(Authentication, di.InjectableProperties):
             )
         return self._alternate_secret
 
-    def headers(self, retry_auth=False):
-        self._configured_guard()
+    def headers(self, retry_auth: bool = False):
         if retry_auth:
+            self._force_secret_refresh = True
             self.clear_credential_cache()
+
+        self._configured_guard()
         return {"Authorization": f"{self.header_prefix}{self.secret}"}
 
     def authenticate(self, input_output):

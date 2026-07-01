@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 import clearskies
+from clearskies.di.di import Di
 
 
 class SecretBearerTest(unittest.TestCase):
@@ -28,7 +29,7 @@ class SecretBearerTest(unittest.TestCase):
         assert status_code == 401
 
     def test_secret_key(self):
-        def fetch_secret(path):
+        def fetch_secret(path, refresh=False):
             if path == "/path/to/my/secret":
                 return "SUPERSECRET"
             raise KeyError(f"Attempt to fetch non-existent secret: {path}")
@@ -51,7 +52,7 @@ class SecretBearerTest(unittest.TestCase):
         assert status_code == 401
 
     def test_alternate_secret_key(self):
-        def fetch_secret(path):
+        def fetch_secret(path, refresh=False):
             if path == "/path/to/my/secret":
                 return "SUPERSECRET"
             if path == "/path/to/alternate/secret":
@@ -139,3 +140,26 @@ class SecretBearerTest(unittest.TestCase):
 
         status_code, response_data, response_headers = context(request_headers={"Authorization": "SUPERSECRET"})
         assert status_code == 401
+
+    def test_retry_auth_forces_secret_refresh_when_using_secret_manager(self):
+        calls = []
+
+        def fetch_secret(path, refresh=False):
+            calls.append((path, refresh))
+            if path == "/path/to/my/secret":
+                return "NEWSECRET" if refresh else "OLDSECRET"
+            raise KeyError(f"Attempt to fetch non-existent secret: {path}")
+
+        bearer = clearskies.authentication.SecretBearer(secret_key="/path/to/my/secret")
+        di = Di(bindings={"secrets": SimpleNamespace(get=fetch_secret)})
+        bearer.injectable_properties(di)
+
+        self.assertEqual({"Authorization": "OLDSECRET"}, bearer.headers())
+        self.assertEqual({"Authorization": "NEWSECRET"}, bearer.headers(retry_auth=True))
+        self.assertEqual(
+            [
+                ("/path/to/my/secret", False),
+                ("/path/to/my/secret", True),
+            ],
+            calls,
+        )
