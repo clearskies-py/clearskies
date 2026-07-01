@@ -57,9 +57,6 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
         handler = getattr(self, f"handle_{response.status_code}", self.handle_default)
         return handler(response, *args, **kwargs)
 
-    def reauth(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
-        return self.handle_auth_response(response, *args, **kwargs)
-
     def _retry_auth(self, response: requests.models.Response, **kwargs: Any) -> requests.models.Response:
         request = response.request
         if not request:

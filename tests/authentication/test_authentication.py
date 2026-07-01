@@ -116,12 +116,3 @@ class AuthenticationTest(unittest.TestCase):
         same_response = auth.handle_auth_response(response)
 
         self.assertIs(same_response, response)
-
-    def test_reauth_alias_calls_handle_auth_response(self):
-        auth = TrackingAuthentication()
-        response = requests.Response()
-        response.status_code = 418
-
-        same_response = auth.reauth(response)
-
-        self.assertIs(same_response, response)
