@@ -62,11 +62,6 @@ class Jwks(Authentication, di.InjectableProperties):
     requests = di.inject.Requests()
 
     """
-    The JoseJwt library
-    """
-    jose_jwt = di.inject.ByName("jose_jwt")
-
-    """
     The current time
     """
     now = di.inject.Now()
