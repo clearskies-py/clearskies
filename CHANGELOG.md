@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.62] - 2026-07-01
+
+### Changed
+- Dispatch auth response handling by status by @tnijboer in [#91](https://github.com/clearskies-py/clearskies/pull/91)
+
+### Removed
+- Remove unused jose-jwt in [#90](https://github.com/clearskies-py/clearskies/pull/90)
+
 ## [2.0.61] - 2026-06-29
 
 ### Added
@@ -20,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add OneOf support for OAI3 request bodies
 
 ### Changed
+- Bump version to v2.0.61 by @github-actions[bot]
 - Document List column as OpenAPI array
 - Install all deps
 - Expand OpenAPI schema keyword coverage
@@ -1352,6 +1361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.62]: https://github.com/clearskies-py/clearskies/compare/v2.0.61..v2.0.62
 [2.0.61]: https://github.com/clearskies-py/clearskies/compare/v2.0.60..v2.0.61
 [2.0.60]: https://github.com/clearskies-py/clearskies/compare/v2.0.59..v2.0.60
 [2.0.59]: https://github.com/clearskies-py/clearskies/compare/v2.0.58..v2.0.59
