@@ -9,6 +9,7 @@ from clearskies.column import Column
 
 if TYPE_CHECKING:
     from clearskies import Column, Model, typing
+    from clearskies.model import ModelClassReference
     from clearskies.schema import Schema
 
 RelatedModel = TypeVar("RelatedModel", bound="Model")
@@ -178,8 +179,8 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class: type[RelatedModel],
-        pivot_model_class: type[PivotModel],
+        related_model_class: type[RelatedModel] | type[ModelClassReference[RelatedModel]],
+        pivot_model_class: type[PivotModel] | type[ModelClassReference[PivotModel]],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_column_names: list[str] = [],

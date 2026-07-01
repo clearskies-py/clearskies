@@ -9,6 +9,7 @@ from clearskies.columns.many_to_many_ids import ManyToManyIds, PivotModel, Relat
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
+    from clearskies.model import ModelClassReference
 
 
 class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
@@ -154,8 +155,8 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        related_model_class: type[RelatedModel],
-        pivot_model_class: type[PivotModel],
+        related_model_class: type[RelatedModel] | type[ModelClassReference[RelatedModel]],
+        pivot_model_class: type[PivotModel] | type[ModelClassReference[PivotModel]],
         own_column_name_in_pivot: str = "",
         related_column_name_in_pivot: str = "",
         readable_related_columns: list[str] = [],

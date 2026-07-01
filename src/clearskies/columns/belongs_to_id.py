@@ -12,6 +12,7 @@ from clearskies.functional import validations
 
 if TYPE_CHECKING:
     from clearskies import Model, typing
+    from clearskies.model import ModelClassReference
 
 ParentModel = TypeVar("ParentModel", bound="Model")
 
@@ -301,7 +302,7 @@ class BelongsToId(String, Generic[ParentModel]):
     @decorators.parameters_to_properties
     def __init__(
         self,
-        parent_model_class: type[ParentModel],
+        parent_model_class: type[ParentModel] | type[ModelClassReference[ParentModel]],
         readable_parent_columns: list[str] = [],
         join_type: str | None = None,
         where: typing.condition | list[typing.condition] = [],
