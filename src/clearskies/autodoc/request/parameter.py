@@ -15,6 +15,8 @@ class Parameter:
         example=None,
         examples=None,
         content=None,
+        documentation_example=None,
+        documentation_examples=None,
     ):
         self.definition = definition
         self.description = description
@@ -27,3 +29,5 @@ class Parameter:
         self.example = example
         self.examples = examples
         self.content = content
+        self.documentation_example = documentation_example
+        self.documentation_examples = documentation_examples
