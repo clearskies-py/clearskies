@@ -255,6 +255,15 @@ class DiTest(unittest.TestCase):
         assert hasattr(path_module, "join")
         assert hasattr(path_module, "exists")
 
+    def test_build_standard_lib_imports_dotted_module_name(self):
+        """Test that build_standard_lib imports dotted module names before attribute traversal."""
+        di = Di()
+
+        # Importable as a submodule, but not as an attribute on json
+        result = di.build_standard_lib("json.tool")
+        assert result is not None
+        assert result.__name__ == "json.tool"
+
     def test_build_standard_lib_caches_result(self):
         """Test that build_standard_lib caches the result when cache=True."""
         di = Di()
@@ -280,6 +289,13 @@ class DiTest(unittest.TestCase):
 
         with self.assertRaises(MissingDependency):
             di.build_standard_lib("os.nonexistent_attribute_xyz")
+
+    def test_build_standard_lib_missing_dotted_name_raises(self):
+        """Test that dotted names that are neither modules nor attributes raise MissingDependency."""
+        di = Di()
+
+        with self.assertRaises(MissingDependency):
+            di.build_standard_lib("json.definitely_not_real")
 
     def test_build_standard_lib_deep_dotted_path(self):
         """Test that build_standard_lib can handle deeper dotted paths."""

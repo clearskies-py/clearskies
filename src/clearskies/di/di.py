@@ -856,15 +856,26 @@ class Di:
             pass
         try:
             # Handle dotted names like "os.environ" by importing the base module
-            # and then getting the attribute
+            # and then getting the attribute. First, try importing the full dotted
+            # path as a module (e.g. "json.tool", "jwcrypto.jws").
             if "." in name:
+                try:
+                    library = importlib.import_module(name)
+                    self.add_binding(name, library)
+                    return library
+                except ImportError:
+                    # Not an importable submodule; continue with attribute traversal.
+                    pass
+
                 parts = name.split(".")
                 module_name = parts[0]
                 library = importlib.import_module(module_name)
+
                 # Navigate through the attribute chain
                 result: Any = library
                 for attr in parts[1:]:
                     result = getattr(result, attr)
+
                 self.add_binding(name, result)
                 return result
             else:
