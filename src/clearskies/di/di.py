@@ -21,6 +21,7 @@ import clearskies.input_outputs.input_output
 from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
 from clearskies.di.additional_mygrations_auto_import import AdditionalMygrationsAutoImport
+from clearskies.di.injectable import Injectable
 from clearskies.environment import Environment
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
@@ -413,6 +414,19 @@ class Di:
                         # built-ins will end up here
                         continue
                     if class_root[:root_len] != root:
+                        continue
+                    if issubclass(item, Injectable):
+                        # Injectable subclasses (e.g. clearskies.di.inject.*) are DI-wiring
+                        # descriptors: they only do anything useful via the descriptor protocol
+                        # (__get__), when used as a class attribute (`foo = SomeInjectable()`) on
+                        # an InjectableProperties class. They are not domain/application classes
+                        # meant to be built standalone and resolved by name. Auto-registering them
+                        # here would let a bare `build_class()` call construct a useless, un-wired
+                        # instance (never invoking __get__) under a name derived from the class's
+                        # own name - silently shadowing any `provide_<name>` (AdditionalConfig)
+                        # method or explicit binding that was meant to provide that name, and
+                        # forcing every Injectable subclass's name to avoid colliding with any
+                        # such name across the entire scanned module tree.
                         continue
                     if issubclass(item, AdditionalConfigAutoImport):
                         init_args = inspect.getfullargspec(item)
