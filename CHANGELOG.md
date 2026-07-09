@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.67] - 2026-07-09
+
+### Fixed
+- Exclude Injectable subclasses from add_modules() auto-registration in [#93](https://github.com/clearskies-py/clearskies/pull/93)
+
 ## [2.0.66] - 2026-07-02
 
 ### Added
 - Support dotted submodule imports in standard lib builder
+
+### Changed
+- Bump version to v2.0.66 by @github-actions[bot]
 
 ## [2.0.65] - 2026-07-01
 
@@ -1391,6 +1399,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.67]: https://github.com/clearskies-py/clearskies/compare/v2.0.66..v2.0.67
 [2.0.66]: https://github.com/clearskies-py/clearskies/compare/v2.0.65..v2.0.66
 [2.0.65]: https://github.com/clearskies-py/clearskies/compare/v2.0.64..v2.0.65
 [2.0.64]: https://github.com/clearskies-py/clearskies/compare/v2.0.63..v2.0.64
