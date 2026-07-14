@@ -45,9 +45,6 @@ class Authentication(clearskies.configurable.Configurable, requests.auth.AuthBas
     def handle_401(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
         return self._retry_auth(response, **kwargs)
 
-    def handle_403(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
-        return self._retry_auth(response, **kwargs)
-
     def handle_default(self, response: requests.models.Response, *args: Any, **kwargs: Any) -> requests.models.Response:
         return response
 

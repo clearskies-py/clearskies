@@ -65,7 +65,7 @@ class AuthenticationTest(unittest.TestCase):
         self.assertEqual(1, getattr(connection.sent_request, "_clearskies_auth_retry_count", 0))
         self.assertEqual({"timeout": 2}, connection.sent_kwargs)
 
-    def test_handle_auth_response_retries_403_with_refreshed_headers(self):
+    def test_handle_auth_response_does_not_retry_403(self):
         auth = TrackingAuthentication()
         request = requests.Request("GET", "https://example.com").prepare()
         request = auth(request)
@@ -77,10 +77,11 @@ class AuthenticationTest(unittest.TestCase):
         connection = FakeConnection()
         setattr(response, "connection", cast(Any, connection))
 
-        retry_response = auth.handle_auth_response(response)
+        same_response = auth.handle_auth_response(response)
 
-        self.assertEqual(200, retry_response.status_code)
-        self.assertEqual([False, True], auth.header_calls)
+        self.assertIs(same_response, response)
+        self.assertEqual([False], auth.header_calls)
+        self.assertIsNone(connection.sent_request)
 
     def test_handle_auth_response_returns_original_response_when_connection_missing(self):
         auth = TrackingAuthentication()
