@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.68] - 2026-07-14
+
+### Fixed
+- Only handle 401, 403 are valid creds but forbidden
+
 ## [2.0.67] - 2026-07-09
+
+### Changed
+- Bump version to v2.0.67 by @github-actions[bot]
 
 ### Fixed
 - Exclude Injectable subclasses from add_modules() auto-registration in [#93](https://github.com/clearskies-py/clearskies/pull/93)
@@ -1399,6 +1407,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.0.68]: https://github.com/clearskies-py/clearskies/compare/v2.0.67..v2.0.68
 [2.0.67]: https://github.com/clearskies-py/clearskies/compare/v2.0.66..v2.0.67
 [2.0.66]: https://github.com/clearskies-py/clearskies/compare/v2.0.65..v2.0.66
 [2.0.65]: https://github.com/clearskies-py/clearskies/compare/v2.0.64..v2.0.65
