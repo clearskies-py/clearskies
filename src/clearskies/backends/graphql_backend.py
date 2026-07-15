@@ -425,7 +425,7 @@ class GraphqlBackend(Backend, InjectableProperties):
             self._client = self.graphql_client
         else:
             self.logger.warning("No GraphQL client provided, creating default client.")
-            self._client = inject.ByName(self.graphql_client_name)
+            self._client = self.di.build(self.graphql_client_name)
         self._client.injectable_properties(self.di)
         return self._client
 
