@@ -111,8 +111,19 @@ class InjectableProperties:
             attribute = getattr(cls, attribute_name)
 
             if di.has_class_override(attribute.__class__):
+                if not hasattr(cls, "__overridden__"):
+                    cls.__overridden__ = {}
+                cls.__overridden__[attribute_name] = attribute
                 setattr(cls, attribute_name, di.get_override_by_class(attribute))
                 continue
+
+            # This exists to cover a common edge case in testing.  If we override an attribute with a new class (common when
+            # we override a backend with the memory backend) then the next time we run a test the backend will already be
+            # overridden by the memory backend so, unless you have overridden the memory backend, you won't trigger the above
+            # condition and you'lljust leave the old memory backend in place.  Therefore, when we override an attribute, we
+            # also keep track of what the attribute *used* to be so that we can override it every time.
+            if hasattr(cls, "__overridden__") and attribute_name in cls.__overridden__:
+                setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name]))
 
             if issubclass(attribute.__class__, Injectable):
                 attribute.set_di(di)
