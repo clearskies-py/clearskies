@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-07-17
+
+### Changed
+- Make has many writeable by @cmancone in [#97](https://github.com/clearskies-py/clearskies/pull/97)
+
 ## [2.1.1] - 2026-07-16
+
+### Changed
+- Bump version to v2.1.1 by @github-actions[bot]
 
 ### Fixed
 - Cover edgecase for overrides during tests by @cmancone in [#96](https://github.com/clearskies-py/clearskies/pull/96)
@@ -1429,6 +1437,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.2]: https://github.com/clearskies-py/clearskies/compare/v2.1.1..v2.1.2
 [2.1.1]: https://github.com/clearskies-py/clearskies/compare/v2.1.0..v2.1.1
 [2.1.0]: https://github.com/clearskies-py/clearskies/compare/v2.0.68..v2.1.0
 [2.0.68]: https://github.com/clearskies-py/clearskies/compare/v2.0.67..v2.0.68
