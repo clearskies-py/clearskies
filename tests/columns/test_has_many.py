@@ -1,3 +1,5 @@
+import pytest
+
 import clearskies
 from tests.test_base import TestBase
 
@@ -126,3 +128,66 @@ class HasManyTest(TestBase):
         )
         status_code, response_data, response_headers = context()
         assert [125] == [order["total"] for order in response_data["data"]]
+
+    def test_write(self):
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.String()
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            products = clearskies.columns.HasMany(Product)
+
+        di = clearskies.di.Di(classes=[Product, Category])
+        categories = di.build(Category)
+        products = di.build(Product)
+
+        category = categories.create(
+            {
+                "name": "test",
+                "products": [
+                    {"name": "car"},
+                    {"name": "truck"},
+                ],
+            }
+        )
+
+        car = products.find("name=car")
+        assert [product.name for product in products.where(f"category_id={category.id}").sort_by("name", "asc")] == [
+            "car",
+            "truck",
+        ]
+
+        category.save(
+            {
+                "products": [
+                    {"id": car.id, "name": "cool car"},
+                    {"name": "suv"},
+                ]
+            }
+        )
+
+        assert [product.name for product in products.where(f"category_id={category.id}").sort_by("name", "asc")] == [
+            "cool car",
+            "suv",
+        ]
+        assert [product.name for product in category.products.sort_by("name", "asc")] == ["cool car", "suv"]
+
+        with pytest.raises(ValueError, match="not allowed because allow_child_reassignment=False"):
+            category.create(
+                {
+                    "name": "Toys",
+                    "products": [
+                        {"name": "Ball"},
+                        {"name": "doll", "id": car.id},
+                    ],
+                }
+            )
