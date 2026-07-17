@@ -34,6 +34,8 @@ class HasMany(Column, Generic[ChildModel]):
 
     See the BelongsToId class for additional background and directions on avoiding circular dependency trees.
 
+    ## Example: Reading Children
+
     ```python
     import clearskies
 
@@ -100,12 +102,107 @@ class HasMany(Column, Generic[ChildModel]):
         "input_errors": {},
     }
     ```
+
+    ## Writing Children
+
+    The HasMany class allows you to set children directly as a list of dictionaries containing the
+    child data.  All children included in that list will be attached to the parent.  Any children that
+    are already attached to the parent but are not included in the list will be deleted.  To update a
+    record that is already attached to the parent, include it's id in the child data.  If no id is
+    included, a new child record will be created.  Here's an example:
+
+    ```python
+    import clearskies
+
+    class Product(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+        category_id = clearskies.columns.String()
+
+    class Category(clearskies.Model):
+        id_column_name = "id"
+        backend = clearskies.backends.MemoryBackend()
+
+        id = clearskies.columns.Uuid()
+        name = clearskies.columns.String()
+        products = clearskies.columns.HasMany(Product)
+
+    def has_many_writeable(products: Product, categories: Category):
+        category = categories.create({
+            "name": "test",
+            "products": [
+                {"name": "car"},
+                {"name": "truck"},
+            ]
+        })
+
+        result = {
+            "after_first_save": [
+                {"id": product.id, "name": product.name} for product in category.products
+            ]
+        }
+
+        car = products.find("name=car")
+        category.save({
+            "products": [
+                {"id": car.id, "name": "cool car"},
+                {"name": "suv"},
+            ]
+        })
+
+        result["after_second_save"] = [
+            {"id": product.id, "name": product.name} for product in category.products
+        ]
+
+        return result
+
+
+    cli = clearskies.contexts.Cli(
+        clearskies.endpoints.Callable(
+            has_many_writeable,
+        ),
+        classes=[Product, Category]
+    )
+    cli()
+    ```
+
+    Which, if you execute it, will return:
+
+    ```json
+    {
+        "status": "success",
+        "error": "",
+        "data": {
+            "after_first_save": [
+                {
+                    "id": "0fc960b0-2c20-4153-a427-640bd2075895",
+                    "name": "car"
+                },
+                {
+                    "id": "a3f30225-6f66-42b0-b448-75f7495a36f6",
+                    "name": "truck"
+                }
+            ],
+            "after_second_save": [
+                {
+                    "id": "0fc960b0-2c20-4153-a427-640bd2075895",
+                    "name": "cool car"
+                },
+                {
+                    "id": "f2fc1efa-0339-4edb-8c6a-7c36d68c3eb0",
+                    "name": "suv"
+                }
+            ]
+        },
+        "pagination": {},
+        "input_errors": {}
+    }
+    ```
     """
 
-    """
-    HasMany columns are not currently writeable.
-    """
-    is_writeable = configs.Boolean(default=False)
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 
@@ -295,6 +392,22 @@ class HasMany(Column, Generic[ChildModel]):
     readable_child_column_names = configs.ReadableModelColumns("child_model_class")
 
     """
+    The list of columns in the child class that can be included when saving child models through the parent
+    """
+    writeable_child_column_names = configs.WriteableModelColumns("child_model_class")
+
+    """
+    Whether or not to allow children records to be reassigned during a bulk save.
+
+    This is False by default for protection against bugs.  When this is False, and you include already-existent
+    child models while updating a parent, then clearskies will validate that those child models already belong
+    to the parent in question.  If one doesn't, then an error will be raised.  This helps protect against bugs
+    that would change the parent of child records.  To change the parent of a child model, either set this to
+    True or modify the child directly.
+    """
+    allow_child_reassignment = configs.Boolean(default=False)
+
+    """
     Additional conditions to add to searches on the child table.
 
     There are two ways to specify conditions for `where`.  You can provide a static search condition
@@ -413,8 +526,11 @@ class HasMany(Column, Generic[ChildModel]):
         child_model_class: type[ChildModel] | type[ModelClassReference[ChildModel]],
         foreign_column_name: str | None = None,
         readable_child_column_names: list[str] = [],
+        writeable_child_column_names: list[str] = [],
         where: typing.condition | list[typing.condition] = [],
         is_readable: bool = True,
+        allow_child_reassignment: bool = False,
+        is_writeable: bool = True,
         on_change_pre_save: typing.action | list[typing.action] = [],
         on_change_post_save: typing.action | list[typing.action] = [],
         on_change_save_finished: typing.action | list[typing.action] = [],
@@ -515,10 +631,106 @@ class HasMany(Column, Generic[ChildModel]):
         instance._transformed_data[self.name] = children
         return children
 
-    def __set__(self, model: Model, value: Model) -> None:  # ty: ignore[invalid-method-override]
-        raise ValueError(
-            f"Attempt to set a value to {model.__class__.__name__}.{self.name}: this is not allowed because it is a HasMany column, which is not writeable."
-        )
+    def __set__(self, instance, value: list[dict[str, Any]]) -> None:
+        # this makes sure we're initialized
+        if not self._config or "name" not in self._config:
+            instance.get_columns()
+
+        instance._next_data[self.name] = value
+
+    def input_error_for_value(self, value: list[dict[str, Any]], operator=None):  # ty: ignore[invalid-method-override]
+        if not isinstance(value, list):
+            return f"must be a list of dictionaries, but a '{value.__class__.__name__}' was found instead of a list"
+
+        child_columns = self.child_columns
+        child_model = self.child_model
+        for index, item in enumerate(value):
+            if not isinstance(item, dict):
+                return f"must be a list of dictionaries, but item #{index + 1} was a '{item.__class__.__name__}' instead of a dictionary"
+            for column_name in self.writeable_child_column_names:
+                input_errors = child_columns[column_name].input_errors(child_model, item)
+                if input_errors:
+                    error = ". ".join([f"input {key}: {value}" for (key, value) in input_errors.items()])
+                    return f"error for child item #{index + 1}. {error}."
+
+        return ""
+
+    def to_backend(self, data):
+        # we can't persist our child data to the database directly, so remove anything here
+        # and take care of things in post_save
+        if self.name in data:
+            del data[self.name]
+        return data
+
+    def post_save(self, data: dict[str, Any], model: Model, id: int | str) -> None:
+        # if our incoming data is not in the data array or is None, then nothing has been set and we do not want
+        # to make any changes
+        if self.name not in data or data[self.name] is None:
+            return
+
+        # figure out what ids need to be created or deleted from the pivot table.
+        if not model:
+            old_ids = set()
+        else:
+            old_ids = set(
+                [
+                    getattr(child, self.child_model_class.id_column_name)
+                    for child in self.__get__(model, model.__class__)
+                ]
+            )
+        new_ids = set()
+
+        # before we do updates, double check our data and thrown an exception if something is off
+        loaded_children = {}
+        for index, entry in enumerate(data[self.name]):
+            # we're mostly concerned about updates, in which case the child id is in the data
+            child_id = entry.get(self.child_model_class.id_column_name, None)
+            if not child_id:
+                continue
+
+            # we shouldn't find child ids if our current model doesn't exist yet, because we can't have children yet
+            if not model and not self.allow_child_reassignment:
+                raise ValueError(
+                    f"Save error for {self.model_class.__name__}.{self.name}: child models were passed in that already exist, but I'm creating a new model so I shouldn't be passed in child models.  Doing so would change their owner and this is not allowed because allow_child_reassignment=False."
+                )
+
+            # verify that the entry exists and that it belongs to us
+            child = self.child_model.find(f"{self.child_model_class.id_column_name}={child_id}")
+            if not child:
+                raise ValueError(
+                    f"Save error for {self.model_class.__name__}.{self.name}: HasMany was passed in '{self.child_model_class.__name__}' with {self.child_model_class.id_column_name}={child_id}, but this entry does not exist.  That's very confusing.  I don't know what to do!"
+                )
+            loaded_children[child_id] = child
+
+            if model:
+                parent_id = getattr(model, model.id_column_name)
+                child_parent_id = getattr(child, self.foreign_column_name)
+                if not self.allow_child_reassignment and model and child_parent_id != parent_id:
+                    raise ValueError(
+                        f"Save error for {self.model_class.__name__}.{self.name}: I'm attempting to update record '{parent_id}' to add child '{child_id}'.  However, this child is owned by record '{child_parent_id}'.  Doing so would change their owner and this is not allowed because allow_child_reassignment=False."
+                    )
+
+        for entry in data[self.name]:
+            # we need to figure out if this is a new record or an old one.
+            # the way we tell the difference is by looking for our child columns id in the dict
+            child_id = entry.get(self.child_model_class.id_column_name, None)
+
+            # inserting a new record is easiest, so let's do that first.
+            final_child_data = {self.foreign_column_name: id, **entry}
+            if not child_id:
+                new_child = self.child_model.create(final_child_data)
+                new_ids.add(getattr(new_child, self.child_model_class.id_column_name))
+            else:
+                loaded_children[child_id].save(final_child_data)
+                new_ids.add(child_id)
+
+        # finally, delete any that have been removed
+        for deleted_child_id in old_ids - new_ids:
+            old_child = self.child_model.find(f"{self.child_model_class.id_column_name}={deleted_child_id}")
+            if not old_child:
+                continue
+
+            old_child.delete()
 
     def to_json(self, model: Model) -> dict[str, Any]:
         children = []

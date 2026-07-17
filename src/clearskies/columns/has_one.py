@@ -47,7 +47,7 @@ class HasOne(HasMany[ChildModelT], Generic[ChildModelT]):
 
         return super().__get__(model, cls).first()
 
-    def __set__(self, model: Model, value: Model) -> None:
+    def __set__(self, model: Model, value: Model) -> None:  # ty: ignore[invalid-method-override]
         raise ValueError(
             f"Attempt to set a value to {model.__class__.__name__}.{self.name}: this is not allowed because it is a HasOne column, which is not writeable."
         )
