@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 from clearskies.di.injectable import Injectable
+from clearskies.functional import validations
 
 
 class ByClass(Injectable):
@@ -19,6 +21,11 @@ class ByClass(Injectable):
             return self
 
         self.initiated_guard(instance)
-        if self.cls in self._di._class_overrides_by_class:
-            return self._di.build_class(self._di._class_overrides_by_class[self.cls], cache=self.cache)
-        return self._di.build_class(self.cls, cache=self.cache)
+        if validations.is_model_class_reference(self.cls):
+            class_reference = self.cls() if inspect.isclass(self.cls) else self.cls
+            cls = class_reference.get_model_class()
+        else:
+            cls = self.cls
+        if cls in self._di._class_overrides_by_class:
+            return self._di.build_class(self._di._class_overrides_by_class[cls], cache=self.cache)
+        return self._di.build_class(cls, cache=self.cache)
