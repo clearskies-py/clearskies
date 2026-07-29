@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-07-29
+
+### Fixed
+- Auto enable/disable strict mapping for better response detection by @cmancone in [#99](https://github.com/clearskies-py/clearskies/pull/99)
+
 ## [2.1.3] - 2026-07-20
 
 ### Changed
+- Bump version to v2.1.3 by @github-actions[bot]
 - Inject by class accepts a model reference. by @cmancone in [#98](https://github.com/clearskies-py/clearskies/pull/98)
 
 ## [2.1.2] - 2026-07-17
@@ -1443,6 +1449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.4]: https://github.com/clearskies-py/clearskies/compare/v2.1.3..v2.1.4
 [2.1.3]: https://github.com/clearskies-py/clearskies/compare/v2.1.2..v2.1.3
 [2.1.2]: https://github.com/clearskies-py/clearskies/compare/v2.1.1..v2.1.2
 [2.1.1]: https://github.com/clearskies-py/clearskies/compare/v2.1.0..v2.1.1
