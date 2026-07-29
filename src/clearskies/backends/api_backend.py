@@ -1006,7 +1006,7 @@ class ApiBackend(Backend, InjectableProperties):
             if not response_data:
                 return []
             try:
-                response = self.map_to_model(response_data[0], columns)
+                response = self.map_to_model(response_data[0], columns, strict=True)
             except NotModelData:
                 raise ValueError(
                     "The response from a records request returned a list, but the records in the list didn't look anything like the model class.  Please check your model class and mapping settings in the API Backend.  If those are correct, then you'll have to override the map_records_response method, because the API you are interacting with is returning data in an unexpected way that I can't automatically figure out."
@@ -1019,7 +1019,7 @@ class ApiBackend(Backend, InjectableProperties):
             )
 
         # a records request may only return a single record, so before we fail, let's check for that
-        record = self.check_dict_and_map_to_model(response_data, columns, query_data)
+        record = self.check_dict_and_map_to_model(response_data, columns, query_data, strict=True)
         if record is not None:
             return [record]
 
@@ -1065,13 +1065,23 @@ class ApiBackend(Backend, InjectableProperties):
         response_data: dict[str, Any],
         columns: dict[str, Column],
         query_data: dict[str, Any] = {},
+        strict: bool = False,
     ) -> dict[str, Any]:
         """
         Map a response dictionary to a model record.
 
-        The caller **must** have already verified that the data looks like a model record
-        (e.g. via ``is_model_data``).  Unlike ``check_dict_and_map_to_model`` this method
-        always returns a ``dict`` and never ``None``.
+        If strict is False (the default) then any extra keys in the dictionary will automatically
+        be added to the response.  This is convenient when processing the actual data, because it's
+        fairly common (in practice) to have an API return data that doesn't have corresponding columns.
+        However, there are times when we want this behavior off.  In particular, when we're trying to
+        decide if some part of a response actually corresponds to model data.  In this case, including
+        all extra columns in the response is detrimental because the logic of the automated mapping process
+        figures out when it has found the data because data gets returned: if we just include anything,
+        we'll think that we've found a match with the first dictionary we find.
+
+        Therefore, we want to be strict when we're looking for the data, and we want to be lax when
+        we're transforming the data afterwards (which is exactly how this flag is used - see the
+        `map_records_response` method.
         """
         response_to_model_map = self.build_response_to_model_map(columns)
         response_keys = set(response_data.keys())
@@ -1095,8 +1105,9 @@ class ApiBackend(Backend, InjectableProperties):
             else:
                 mapped[column_name] = value
 
-        for key in response_keys.difference(map_keys):
-            mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
+        if not strict:
+            for key in response_keys.difference(map_keys):
+                mapped[string.swap_casing(key, self.api_casing, self.model_casing)] = response_data[key]
 
         # if we didn't map anything at the top level, recurse into child dictionaries
         if not mapped:
@@ -1117,16 +1128,15 @@ class ApiBackend(Backend, InjectableProperties):
         response_data: dict[str, Any],
         columns: dict[str, Column],
         query_data: dict[str, Any] = {},
+        strict: bool = False,
     ) -> dict[str, Any] | None:
         """
         Check a dictionary in the response to decide if it contains the data for a record.
 
         If not, it will search the keys for something that looks like a record.
-
-        This is a convenience wrapper around ``is_model_data`` and ``map_to_model``.
         """
         try:
-            return self.map_to_model(response_data, columns, query_data)
+            return self.map_to_model(response_data, columns, query_data, strict=strict)
         except NotModelData:
             return None
 
