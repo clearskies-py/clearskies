@@ -56,5 +56,9 @@ class Parameter:
             output["example"] = self.parameter.example
         if self.parameter.examples is not None:
             output["examples"] = self.parameter.examples
+        if self.parameter.documentation_example is not None:
+            output["example"] = self.parameter.documentation_example
+        if self.parameter.documentation_examples is not None:
+            output["examples"] = self.parameter.documentation_examples
 
         return output
