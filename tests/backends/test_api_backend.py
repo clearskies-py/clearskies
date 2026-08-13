@@ -2,10 +2,118 @@ import unittest
 from unittest.mock import MagicMock
 
 import clearskies
+from clearskies.backends.adapters import ResponseAdapter
 from clearskies.contexts import Context
 
 
 class ApiBackendTest(unittest.TestCase):
+    def test_response_adapter_from_binding(self):
+        class HalAdapter(ResponseAdapter):
+            def extract_records(self, response_data):
+                return response_data.get("_embedded", {}).get("items")
+
+            def extract_record(self, response_data):
+                return response_data.get("_embedded", {}).get("item")
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.ApiBackend(base_url="https://api.example.com")
+
+            id = clearskies.columns.Integer()
+            login = clearskies.columns.String()
+
+        requests = MagicMock()
+        response = MagicMock()
+        response.ok = True
+        response.headers = {}
+        response.json = MagicMock(
+            return_value={
+                "_embedded": {
+                    "items": [
+                        {"id": "1", "login": "alice"},
+                    ]
+                }
+            }
+        )
+        requests.request = MagicMock(return_value=response)
+
+        context = Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "login"],
+                sortable_column_names=["id"],
+                default_sort_column_name=None,
+                default_limit=10,
+            ),
+            classes=[User],
+            bindings={"requests": requests, "response_adapter": HalAdapter()},
+        )
+
+        status_code, payload, _ = context()
+        assert status_code == 200
+        assert payload["data"] == [{"id": 1, "login": "alice"}]
+
+    def test_explicit_response_adapter_beats_binding(self):
+        class ExplicitAdapter(ResponseAdapter):
+            def extract_records(self, response_data):
+                return response_data.get("explicit", {}).get("items")
+
+            def extract_record(self, response_data):
+                return response_data.get("explicit", {}).get("item")
+
+        class BoundAdapter(ResponseAdapter):
+            def extract_records(self, response_data):
+                return response_data.get("bound", {}).get("items")
+
+            def extract_record(self, response_data):
+                return response_data.get("bound", {}).get("item")
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.ApiBackend(
+                base_url="https://api.example.com",
+                response_adapter=ExplicitAdapter(),
+            )
+
+            id = clearskies.columns.Integer()
+            login = clearskies.columns.String()
+
+        requests = MagicMock()
+        response = MagicMock()
+        response.ok = True
+        response.headers = {}
+        response.json = MagicMock(
+            return_value={
+                "explicit": {
+                    "items": [
+                        {"id": "2", "login": "bob"},
+                    ]
+                },
+                "bound": {
+                    "items": [
+                        {"id": "3", "login": "charlie"},
+                    ]
+                },
+            }
+        )
+        requests.request = MagicMock(return_value=response)
+
+        context = Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "login"],
+                sortable_column_names=["id"],
+                default_sort_column_name=None,
+                default_limit=10,
+            ),
+            classes=[User],
+            bindings={"requests": requests, "response_adapter": BoundAdapter()},
+        )
+
+        status_code, payload, _ = context()
+        assert status_code == 200
+        assert payload["data"] == [{"id": 2, "login": "bob"}]
+
     def test_overview(self):
         class GithubPublicBackend(clearskies.backends.ApiBackend):
             def __init__(

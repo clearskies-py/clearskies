@@ -10,10 +10,10 @@ from clearskies import columns, configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
-from clearskies.backends.adapters import DefaultResponseAdapter
-from clearskies.backends.adapters import ResponseAdapter as ResponseAdapterABC
+from clearskies.backends.adapters import ResponseAdapter
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
+from clearskies.exceptions import MissingDependency
 from clearskies.functional import json as json_functional
 from clearskies.functional import routing, string
 from clearskies.query.result import (
@@ -617,10 +617,17 @@ class ApiBackend(Backend, InjectableProperties):
     Return ``None`` from either the adapter method or the callable to fall through to the
     built-in ``ApiBackend`` extraction logic.
 
-    Defaults to :class:`~clearskies.backends.DefaultResponseAdapter`, which mirrors the
-    heuristics previously embedded in ``map_records_response``.
+    If not provided, clearskies checks DI for a dependency named
+    ``response_adapter`` and uses it when available. If no DI dependency exists,
+    a plain :class:`~clearskies.backends.ResponseAdapter` is used.
     """
-    response_adapter = configs.ResponseAdapter(default=DefaultResponseAdapter())
+    response_adapter = configs.ResponseAdapter(default=None)
+
+    """
+    Dependency name used to lazily resolve a response adapter from DI when
+    ``response_adapter`` is not explicitly configured.
+    """
+    response_adapter_dependency_name = configs.String(default="response_adapter")
 
     """
     The name of the pagination parameter
@@ -651,6 +658,7 @@ class ApiBackend(Backend, InjectableProperties):
 
     _auth_injected = False
     _response_to_model_map: dict[str, str] | None = None
+    _resolved_response_adapter: ResponseAdapter | Callable | None = None
 
     @decorators.parameters_to_properties
     def __init__(
@@ -673,7 +681,8 @@ class ApiBackend(Backend, InjectableProperties):
         can_update: bool | None = True,
         can_delete: bool | None = True,
         can_query: bool | None = True,
-        response_adapter: ResponseAdapterABC | None = None,
+        response_adapter: ResponseAdapter | Callable | None = None,
+        response_adapter_dependency_name: str = "response_adapter",
     ):
         self.finalize_and_validate_configuration()
 
@@ -1036,11 +1045,11 @@ class ApiBackend(Backend, InjectableProperties):
 
         # Allow the response_adapter to pre-process the raw response data before the standard mapping
         # logic runs.  A non-None return value replaces response_data; None means "pass through".
-        adapter = self.response_adapter
+        adapter = self.get_response_adapter()
         if adapter is not None:
             extracted = (
                 adapter(response_data)
-                if callable(adapter) and not isinstance(adapter, ResponseAdapterABC)
+                if callable(adapter) and not isinstance(adapter, ResponseAdapter)
                 else adapter.extract_records(response_data)
             )
             if extracted is not None:
@@ -1079,7 +1088,10 @@ class ApiBackend(Backend, InjectableProperties):
         )
 
     def map_record_response(
-        self, response_data: dict[str, Any], columns: dict[str, Column], operation: str
+        self,
+        response_data: dict[str, Any],
+        columns: dict[str, Column],
+        operation: str,
     ) -> dict[str, Any]:
         """
         Take the response from an API endpoint that returns a single record (typically update and create requests) and return the data for a new model.
@@ -1094,11 +1106,11 @@ class ApiBackend(Backend, InjectableProperties):
         """
         # Allow the response_adapter to pre-process the raw response data before the standard mapping
         # logic runs.  A non-None return value replaces response_data; None means "pass through".
-        adapter = self.response_adapter
+        adapter = self.get_response_adapter()
         if adapter is not None:
             extracted = (
                 adapter(response_data)
-                if callable(adapter) and not isinstance(adapter, ResponseAdapterABC)
+                if callable(adapter) and not isinstance(adapter, ResponseAdapter)
                 else adapter.extract_record(response_data)
             )
             if extracted is not None:
@@ -1117,6 +1129,21 @@ class ApiBackend(Backend, InjectableProperties):
             )
 
         return response
+
+    def get_response_adapter(self) -> ResponseAdapter | Callable | None:
+        """Return the active response adapter."""
+        if self.response_adapter is not None:
+            return self.response_adapter
+
+        if self._resolved_response_adapter is not None:
+            return self._resolved_response_adapter
+
+        try:
+            self._resolved_response_adapter = self.di.build(self.response_adapter_dependency_name)
+        except MissingDependency:
+            self._resolved_response_adapter = ResponseAdapter()
+
+        return self._resolved_response_adapter
 
     def map_to_model(
         self,
