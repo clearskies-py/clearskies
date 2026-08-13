@@ -8,6 +8,7 @@ import clearskies.configs
 import clearskies.decorators
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
 from clearskies.exceptions import MissingDependency
+from tests.di.module_scoped_shared import GlobalReplacementDependency, SharedDependency, SharedDependencySubclass
 
 
 class SomeClass:
@@ -134,6 +135,103 @@ class DiTest(unittest.TestCase):
 
         di = Di(classes=[TypeHintedClass], class_overrides={TypeHintedClass: ReplacementClass})
         assert di.call_function(my_function) == 10
+
+    def test_module_scoped_class_override_applies_to_own_module(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        assert isinstance(module_a_class.shared_dependency, SharedDependencySubclass)
+        assert module_a_class.module_value == "module-a"
+        assert isinstance(module_b_class.shared_dependency, SharedDependency)
+        assert not isinstance(module_b_class.shared_dependency, SharedDependencySubclass)
+        assert module_b_class.module_value == "module-b-default"
+
+    def test_module_scoped_class_override_does_not_leak_to_other_modules(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_b_class = di.build_class(ModuleBClass)
+        assert isinstance(module_b_class.shared_dependency, SharedDependency)
+        assert module_b_class.shared_dependency.source == "shared"
+
+    def test_global_class_override_beats_module_scoped_class_override(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={SharedDependency: GlobalReplacementDependency},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.shared_dependency, GlobalReplacementDependency)
+
+    def test_module_scoped_class_override_does_not_apply_to_subclasses(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class Consumer:
+            def __init__(self, shared_dependency_subclass: SharedDependencySubclass):
+                self.shared_dependency_subclass = shared_dependency_subclass
+
+        di = Di(classes=[SharedDependencySubclass, Consumer], modules=[module_scoped_a])
+
+        consumer = di.build_class(Consumer)
+        assert isinstance(consumer.shared_dependency_subclass, SharedDependencySubclass)
+
+    def test_module_scoped_class_override_ignores_empty_context(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        value = di.build_class_from_type_hint("shared_dependency", SharedDependency, context="")
+        assert isinstance(value, SharedDependency)
+
+    def test_module_scoped_binding_applies_to_own_module(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        assert module_a_class.module_value == "module-a"
+        assert module_b_class.module_value == "module-b-default"
+
+    def test_global_binding_beats_module_scoped_binding(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a], bindings={"module_value": "global"})
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.module_value == "global"
+
+    def test_module_scoped_binding_ignores_empty_context(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        with self.assertRaises(MissingDependency):
+            di.build_from_name("module_value", context="")
 
     def test_now(self):
         di = Di()

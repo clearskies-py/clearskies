@@ -27,6 +27,10 @@ def __getattr__(name: str):
         from clearskies.di.additional_mygrations_auto_import import AdditionalMygrationsAutoImport
 
         return AdditionalMygrationsAutoImport
+    if name == "ModuleOverrides":
+        from clearskies.di.module_overrides import ModuleOverrides
+
+        return ModuleOverrides
     if name == "Di":
         from clearskies.di.di import Di
 
@@ -38,6 +42,7 @@ __all__ = [
     "AdditionalConfig",
     "AdditionalConfigAutoImport",
     "AdditionalMygrationsAutoImport",
+    "ModuleOverrides",
     "Di",
     "Injectable",
     "InjectableProperties",

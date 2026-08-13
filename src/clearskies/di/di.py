@@ -22,6 +22,7 @@ from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
 from clearskies.di.additional_mygrations_auto_import import AdditionalMygrationsAutoImport
 from clearskies.di.injectable import Injectable
+from clearskies.di.module_overrides import ModuleOverrides
 from clearskies.environment import Environment
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
@@ -237,6 +238,8 @@ class Di:
     _prepared: dict[str | type, Any]
     _class_overrides_by_name: dict[str, type]
     _class_overrides_by_class: dict[type, Any]
+    _module_class_overrides: list[tuple[str, dict[type, Any]]]
+    _module_bindings: list[tuple[str, dict[str, Any]]]
     _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
@@ -278,6 +281,8 @@ class Di:
         self._classes = {}
         self._class_overrides_by_name = {}
         self._class_overrides_by_class = {}
+        self._module_class_overrides = []
+        self._module_bindings = []
         self._prepared = {}
         self._serial = next(Di._serial_counter)
         if classes is not None:
@@ -427,6 +432,21 @@ class Di:
                         # method or explicit binding that was meant to provide that name, and
                         # forcing every Injectable subclass's name to avoid colliding with any
                         # such name across the entire scanned module tree.
+                        continue
+                    if issubclass(item, ModuleOverrides) and item is not ModuleOverrides:
+                        init_args = inspect.getfullargspec(item)
+                        nargs = len(init_args.args) if init_args.args else 0
+                        nkwargs = len(init_args.defaults) if init_args.defaults else 0
+                        if nargs - 1 - nkwargs > 0:
+                            raise ValueError(
+                                "Error auto-importing module overrides "
+                                + item.__name__
+                                + ": auto imported module overrides can only have keyword arguments."
+                            )
+                        module_overrides = item()
+                        self._module_class_overrides.append((root or "", module_overrides.get_class_overrides()))
+                        self._module_bindings.append((root or "", module_overrides.get_bindings()))
+                        self.add_additional_configs([module_overrides])
                         continue
                     if issubclass(item, AdditionalConfigAutoImport):
                         init_args = inspect.getfullargspec(item)
@@ -653,6 +673,31 @@ class Di:
                 self._prepared[name] = built_value
             return built_value
 
+        # module-scoped bindings apply only for classes originating from that module root
+        if context:
+            context_class_entry = self._classes.get(context)
+            if not context_class_entry:
+                context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
+            context_class = context_class_entry["class"] if context_class_entry else None
+            if inspect.isclass(context_class):
+                try:
+                    context_class_root = os.path.dirname(inspect.getfile(context_class))
+                except TypeError:
+                    context_class_root = ""
+                for module_root, bindings in self._module_bindings:
+                    if context_class_root[: len(module_root)] != module_root:
+                        continue
+                    if name not in bindings:
+                        continue
+                    binding_value = bindings[name]
+                    if inspect.isclass(binding_value):
+                        built_value = self.build_class(binding_value, context=context)
+                    else:
+                        built_value = binding_value
+                    if cache:
+                        self._prepared[name] = built_value
+                    return built_value
+
         if name in self._class_overrides_by_name or name in self._classes:
             if name in self._class_overrides_by_name:
                 class_to_build = self._class_overrides_by_name[name]
@@ -817,6 +862,27 @@ class Di:
             if not inspect.isclass(replacement):
                 return replacement
             return self.build_class(replacement, context=context, cache=cache)
+
+        # check module-scoped class overrides
+        if context:
+            context_class_entry = self._classes.get(context)
+            if not context_class_entry:
+                context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
+            context_class = context_class_entry["class"] if context_class_entry else None
+            if inspect.isclass(context_class):
+                try:
+                    context_class_root = os.path.dirname(inspect.getfile(context_class))
+                except TypeError:
+                    context_class_root = ""
+                for module_root, class_overrides in self._module_class_overrides:
+                    if context_class_root[: len(module_root)] != module_root:
+                        continue
+                    if class_to_build not in class_overrides:
+                        continue
+                    replacement = class_overrides[class_to_build]
+                    if not inspect.isclass(replacement):
+                        return replacement
+                    return self.build_class(replacement, context=context, cache=cache)
 
         # generally we can't build abstract classes, so if the class is abstract then we should pass.
         # However, this is not the case if it has an override - then the developer has given us specific guidance
