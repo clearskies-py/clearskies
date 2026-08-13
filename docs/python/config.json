@@ -268,6 +268,7 @@
                 "bindings": "clearskies.di.Di.add_binding",
                 "additional_configs": "clearskies.di.Di.add_additional_configs",
                 "class_overrides": "clearskies.di.Di.add_class_override",
+                "config_overrides": "clearskies.di.Di.add_config_override",
                 "now": "clearskies.di.Di.set_now",
                 "utcnow": "clearskies.di.Di.set_utc_now"
             },
@@ -287,6 +288,7 @@
                 "bindings": "clearskies.di.Di.add_binding",
                 "additional_configs": "clearskies.di.Di.add_additional_configs",
                 "class_overrides": "clearskies.di.Di.add_class_override",
+                "config_overrides": "clearskies.di.Di.add_config_override",
                 "now": "clearskies.di.Di.set_now",
                 "utcnow": "clearskies.di.Di.set_utc_now"
             }
@@ -312,6 +314,12 @@
         {
             "title": "AdditionalMygrationsAutoImport",
             "source": "clearskies.di.AdditionalMygrationsAutoImport",
+            "builder": "clearskies_doc_builder.builders.SingleClass",
+            "parent": "Dependency Injection"
+        },
+        {
+            "title": "ModuleOverrides",
+            "source": "clearskies.di.ModuleOverrides",
             "builder": "clearskies_doc_builder.builders.SingleClass",
             "parent": "Dependency Injection"
         },
