@@ -21,17 +21,21 @@ class ModuleOverrides(AdditionalConfigAutoImport):
 
       Type-hinted class injection:
         1. Global class overrides (`Di.add_class_override` / `class_overrides=`)
-        2. Module class overrides (`ModuleOverrides.class_overrides`)
-        3. `AdditionalConfig.can_build_class()` providers
-        4. Built-in predefined classes
-        5. Normal class construction
+        2. Global config overrides (`Di.add_config_override` / `config_overrides=`)
+        3. Per-module context overrides (`Di.add_module_override` / `module_overrides=`)
+        4. Module class overrides (`ModuleOverrides.class_overrides`)
+        5. Module config overrides (`ModuleOverrides.config_overrides`)
+        6. `AdditionalConfig.can_build_class()` providers
+        7. Built-in predefined classes
+        8. Normal class construction
 
       Name-based injection:
         1. Global bindings (`Di.add_binding` / `bindings=`)
-        2. Module bindings (`ModuleOverrides.bindings`)
-        3. Classes and by-name class overrides
-        4. `AdditionalConfig.provide_*`
-        5. Built-ins
+        2. Per-module context bindings (`Di.add_module_override` / `module_overrides=`)
+        3. Module bindings (`ModuleOverrides.bindings`)
+        4. Classes and by-name class overrides
+        5. `AdditionalConfig.provide_*`
+        6. Built-ins
 
     The subclass must not require constructor arguments.
 

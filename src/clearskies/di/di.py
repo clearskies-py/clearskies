@@ -674,9 +674,10 @@ class Di:
 
         1. Global class overrides (``add_class_override``)
         2. Global config overrides (this method)
-        3. Module-scoped class overrides (``ModuleOverrides.class_overrides``)
-        4. Module-scoped config overrides (``ModuleOverrides.config_overrides``)
-        5. Instance as-is
+        3. Per-module context overrides (``add_module_override`` / ``module_overrides=``)
+        4. Module-scoped class overrides (``ModuleOverrides.class_overrides``)
+        5. Module-scoped config overrides (``ModuleOverrides.config_overrides``)
+        6. Instance as-is
 
         Example:
         ```python
@@ -743,6 +744,15 @@ class Di:
         if not hasattr(module, "__file__") or not module.__file__:
             raise ValueError(f"Cannot add module override for '{module}': module has no __file__ attribute.")
         root = os.path.dirname(module.__file__)
+
+        valid_keys = {"class_overrides", "config_overrides", "bindings"}
+        unknown_keys = set(overrides.keys()) - valid_keys
+        if unknown_keys:
+            raise ValueError(
+                f"Unknown key(s) in module_overrides for '{module.__name__}': "
+                + ", ".join(f"'{k}'" for k in sorted(unknown_keys))
+                + f". Allowed keys: {', '.join(sorted(valid_keys))}."
+            )
 
         # Prepend so these beat the module's own ModuleOverrides (which are appended during add_modules)
         if "class_overrides" in overrides:
