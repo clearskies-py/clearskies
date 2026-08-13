@@ -44,6 +44,7 @@ class MyModel(clearskies.model):
 
 # from .api_backend import ApiBackend
 # from .api_get_only_backend import ApiGetOnlyBackend
+from clearskies.backends import adapters
 from clearskies.backends.api_backend import ApiBackend
 from clearskies.backends.backend import Backend
 from clearskies.backends.cursor_backend import CursorBackend
@@ -57,6 +58,7 @@ from clearskies.backends.memory_backend import MemoryBackend
 
 
 __all__ = [
+    "adapters",
     "ApiBackend",
     # "ApiGetOnlyBackend",
     "Backend",
