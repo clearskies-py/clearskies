@@ -10,6 +10,8 @@ from clearskies import columns, configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
+from clearskies.backends.adapters import DefaultResponseAdapter
+from clearskies.backends.adapters import ResponseAdapter as ResponseAdapterABC
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
 from clearskies.functional import json as json_functional
@@ -590,6 +592,37 @@ class ApiBackend(Backend, InjectableProperties):
     api_to_model_map = configs.AnyDict(default={})
 
     """
+    A :class:`~clearskies.backends.ResponseAdapter` that handles extracting records and single
+    records from the raw API response **before** the model-mapping pipeline runs.
+
+    The adapter answers the structural question — *where is the data inside the envelope?* —
+    while ``api_to_model_map`` and ``map_to_model`` continue to answer the field-level question
+    (*what are the fields called?*) as before.
+
+    Provide a :class:`~clearskies.backends.ResponseAdapter` subclass for full control, or a
+    plain callable ``(response_data: Any) -> list | dict | None`` for simple unwrapping::
+
+        # Full adapter — different logic per operation:
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            response_adapter=MyHalJsonResponseAdapter(),
+        )
+
+        # Callable — same extractor for both list and single-record responses:
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            response_adapter=lambda data: data.get("items"),
+        )
+
+    Return ``None`` from either the adapter method or the callable to fall through to the
+    built-in ``ApiBackend`` extraction logic.
+
+    Defaults to :class:`~clearskies.backends.DefaultResponseAdapter`, which mirrors the
+    heuristics previously embedded in ``map_records_response``.
+    """
+    response_adapter = configs.ResponseAdapter(default=DefaultResponseAdapter())
+
+    """
     The name of the pagination parameter
     """
     pagination_parameter_name = configs.String(default="start")
@@ -640,6 +673,7 @@ class ApiBackend(Backend, InjectableProperties):
         can_update: bool | None = True,
         can_delete: bool | None = True,
         can_query: bool | None = True,
+        response_adapter: ResponseAdapterABC | None = None,
     ):
         self.finalize_and_validate_configuration()
 
@@ -1000,6 +1034,18 @@ class ApiBackend(Backend, InjectableProperties):
                     continue
                 query_data[condition.column_name] = condition.values[0]
 
+        # Allow the response_adapter to pre-process the raw response data before the standard mapping
+        # logic runs.  A non-None return value replaces response_data; None means "pass through".
+        adapter = self.response_adapter
+        if adapter is not None:
+            extracted = (
+                adapter(response_data)
+                if callable(adapter) and not isinstance(adapter, ResponseAdapterABC)
+                else adapter.extract_records(response_data)
+            )
+            if extracted is not None:
+                response_data = extracted
+
         # if our response is actually a list, then presumably the problem is solved.  If the response is a list
         # and the individual items aren't model results though... well, then I'm very confused
         if isinstance(response_data, list):
@@ -1046,6 +1092,18 @@ class ApiBackend(Backend, InjectableProperties):
         endoint.  If this happens, you have to make a new API backend, override the map_record_response method
         to manage the mapping yourself, and then attach this new backend to your models.
         """
+        # Allow the response_adapter to pre-process the raw response data before the standard mapping
+        # logic runs.  A non-None return value replaces response_data; None means "pass through".
+        adapter = self.response_adapter
+        if adapter is not None:
+            extracted = (
+                adapter(response_data)
+                if callable(adapter) and not isinstance(adapter, ResponseAdapterABC)
+                else adapter.extract_record(response_data)
+            )
+            if extracted is not None:
+                response_data = extracted
+
         an = "a" if operation == "create" else "an"
         if not isinstance(response_data, dict):
             raise ValueError(

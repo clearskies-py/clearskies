@@ -104,6 +104,7 @@ from .path import Path
 from .path_list import PathList
 from .readable_model_column import ReadableModelColumn
 from .readable_model_columns import ReadableModelColumns
+from .response_adapter import ResponseAdapter
 from .schema import Schema
 from .searchable_model_columns import SearchableModelColumns
 from .secret_cache import SecretCache
@@ -164,6 +165,7 @@ __all__ = [
     "PathList",
     "ReadableModelColumn",
     "ReadableModelColumns",
+    "ResponseAdapter",
     "Schema",
     "SearchableModelColumns",
     "SecretCache",
