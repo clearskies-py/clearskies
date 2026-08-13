@@ -102,6 +102,26 @@ class ModuleOverrides(AdditionalConfigAutoImport):
     class_overrides: dict[type, type | Any] = {}
 
     """
+    Config value patches scoped to the declaring module root.
+
+    Keys are ``Configurable`` classes whose config should be patched; values
+    are dicts of ``{config_property_name: value}`` to apply when an instance of
+    that class is resolved as an injectable property inside this module.
+
+    Global ``Di`` config overrides always beat module-scoped ones.
+
+    Example:
+
+    ```python
+    class MyModuleOverrides(ModuleOverrides):
+        config_overrides = {
+            ApiBackend: {"base_url": "https://api.example.com/v1"},
+        }
+    ```
+    """
+    config_overrides: dict[type, dict[str, Any]] = {}
+
+    """
     Name bindings scoped to the declaring module root.
 
     Keys are DI dependency names; values are the objects or classes to
@@ -112,6 +132,10 @@ class ModuleOverrides(AdditionalConfigAutoImport):
     def get_class_overrides(self) -> dict[type, type | Any]:
         """Return class overrides for this module scope."""
         return self.class_overrides
+
+    def get_config_overrides(self) -> dict[type, dict[str, Any]]:
+        """Return config overrides for this module scope."""
+        return self.config_overrides
 
     def get_bindings(self) -> dict[str, Any]:
         """Return name bindings for this module scope."""

@@ -1,9 +1,10 @@
 from clearskies.di.injectable_properties import InjectableProperties
-from tests.di.module_scoped_shared import DefaultBackend, SharedDependency
+from tests.di.module_scoped_shared import ConfigurableBackend, DefaultBackend, SharedDependency
 
 
 class ModuleAClass(InjectableProperties):
     backend = DefaultBackend()
+    configurable_backend = ConfigurableBackend()
 
     def __init__(self, shared_dependency: SharedDependency, module_value: str):
         self.shared_dependency = shared_dependency

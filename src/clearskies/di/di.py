@@ -238,8 +238,10 @@ class Di:
     _prepared: dict[str | type, Any]
     _class_overrides_by_name: dict[str, type]
     _class_overrides_by_class: dict[type, Any]
+    _config_overrides: dict[type, dict[str, Any]]
     _module_class_overrides: list[tuple[str, dict[type, Any]]]
     _module_bindings: list[tuple[str, dict[str, Any]]]
+    _module_config_overrides: list[tuple[str, dict[type, dict[str, Any]]]]
     _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
@@ -257,6 +259,7 @@ class Di:
         bindings: dict[str, Any] | None = None,
         additional_configs: AdditionalConfig | list[AdditionalConfig] | None = None,
         class_overrides: dict[type, Any] | None = None,
+        config_overrides: dict[type, dict[str, Any]] | None = None,
         overrides: dict[str, type] | None = None,
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
@@ -271,6 +274,7 @@ class Di:
         bindings -> di.add_binding()
         additional_configs -> di.add_additional_configs()
         class_overrides -> di.add_class_override()
+        config_overrides -> di.add_config_override()
         """
         self._added_modules = {}
         self._additional_configs = []
@@ -281,8 +285,10 @@ class Di:
         self._classes = {}
         self._class_overrides_by_name = {}
         self._class_overrides_by_class = {}
+        self._config_overrides = {}
         self._module_class_overrides = []
         self._module_bindings = []
+        self._module_config_overrides = []
         self._prepared = {}
         self._serial = next(Di._serial_counter)
         if classes is not None:
@@ -297,6 +303,9 @@ class Di:
         if class_overrides:
             for class_key, class_value in class_overrides.items():
                 self.add_class_override(class_key, class_value)
+        if config_overrides:
+            for class_key, config_values in config_overrides.items():
+                self.add_config_override(class_key, config_values)
         if overrides:
             for key, value in overrides.items():
                 self.add_override(key, value)
@@ -446,6 +455,7 @@ class Di:
                         module_overrides = item()
                         self._module_class_overrides.append((root or "", module_overrides.get_class_overrides()))
                         self._module_bindings.append((root or "", module_overrides.get_bindings()))
+                        self._module_config_overrides.append((root or "", module_overrides.get_config_overrides()))
                         self.add_additional_configs([module_overrides])
                         continue
                     if issubclass(item, AdditionalConfigAutoImport):
@@ -646,6 +656,91 @@ class Di:
             return self.build_class(override, context=build_context)
         self.inject_properties(override.__class__)
         return override
+
+    def add_config_override(self, class_to_override: type, config_values: dict[str, Any]) -> None:
+        """
+        Override specific config values on instances of a class when used as an injectable property.
+
+        This is useful when a module ships a pre-configured backend (or any ``Configurable`` class)
+        and you need to patch one or two config values (e.g. ``base_url``) for a specific environment
+        without replacing the entire class.
+
+        Resolution priority (highest first):
+
+        1. Global class overrides (``add_class_override``)
+        2. Global config overrides (this method)
+        3. Module-scoped class overrides (``ModuleOverrides.class_overrides``)
+        4. Module-scoped config overrides (``ModuleOverrides.config_overrides``)
+        5. Instance as-is
+
+        Example:
+        ```python
+        di = Di(
+            modules=[my_module],
+            config_overrides={ApiBackend: {"base_url": "https://test.example.com/v1"}},
+        )
+        ```
+
+        Or:
+
+        ```python
+        di = Di(modules=[my_module])
+        di.add_config_override(ApiBackend, {"base_url": "https://test.example.com/v1"})
+        ```
+        """
+        if not inspect.isclass(class_to_override):
+            raise ValueError(
+                "Invalid value passed to add_config_override for 'class_to_override' parameter: it was not a class."
+            )
+        self._config_overrides[class_to_override] = config_values
+
+    def get_config_override(self, class_to_check: type, context: str | type | None = None) -> dict[str, Any] | None:
+        """
+        Return any config overrides registered for the given class, considering scope.
+
+        Global config overrides take precedence over module-scoped ones.
+        """
+        if class_to_check in self._config_overrides:
+            return self._config_overrides[class_to_check]
+
+        context_class = self._context_to_class(context)
+        if not inspect.isclass(context_class):
+            return None
+
+        try:
+            context_class_root = os.path.dirname(inspect.getfile(context_class))
+        except TypeError:
+            return None
+
+        for module_root, config_overrides in self._module_config_overrides:
+            if context_class_root[: len(module_root)] != module_root:
+                continue
+            if class_to_check not in config_overrides:
+                continue
+            return config_overrides[class_to_check]
+
+        return None
+
+    def apply_config_overrides(self, instance: Any, config_values: dict[str, Any]) -> Any:
+        """
+        Return a copy of the instance with the given config values patched.
+
+        Only applies to ``Configurable`` instances.  Non-configurable objects are
+        returned unchanged.
+        """
+        import copy
+
+        from clearskies.configurable import Configurable
+
+        if not isinstance(instance, Configurable):
+            return instance
+
+        patched = copy.copy(instance)
+        patched._config = {**(instance._config or {})}
+        for name, value in config_values.items():
+            patched._config[name] = value
+        patched.finalize_and_validate_configuration()
+        return patched
 
     def add_override(self, name: str, replacement_class: type) -> None:
         """Override a specific injection name by specifying a class that should be injected in its place."""
