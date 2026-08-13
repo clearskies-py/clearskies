@@ -8,7 +8,13 @@ import clearskies.configs
 import clearskies.decorators
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
 from clearskies.exceptions import MissingDependency
-from tests.di.module_scoped_shared import GlobalReplacementDependency, SharedDependency, SharedDependencySubclass
+from tests.di.module_scoped_shared import (
+    DefaultBackend,
+    GlobalReplacementDependency,
+    ModuleScopedBackend,
+    SharedDependency,
+    SharedDependencySubclass,
+)
 
 
 class SomeClass:
@@ -150,9 +156,11 @@ class DiTest(unittest.TestCase):
 
         assert isinstance(module_a_class.shared_dependency, SharedDependencySubclass)
         assert module_a_class.module_value == "module-a"
+        assert isinstance(module_a_class.backend, ModuleScopedBackend)
         assert isinstance(module_b_class.shared_dependency, SharedDependency)
         assert not isinstance(module_b_class.shared_dependency, SharedDependencySubclass)
         assert module_b_class.module_value == "module-b-default"
+        assert isinstance(module_b_class.backend, DefaultBackend)
 
     def test_module_scoped_class_override_does_not_leak_to_other_modules(self):
         import tests.di.module_scoped_a as module_scoped_a
@@ -232,6 +240,23 @@ class DiTest(unittest.TestCase):
 
         with self.assertRaises(MissingDependency):
             di.build_from_name("module_value", context="")
+
+    def test_global_class_override_beats_module_scoped_override_for_injectable_properties(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class GlobalBackend(DefaultBackend):
+            source = "global-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={DefaultBackend: GlobalBackend},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, GlobalBackend)
 
     def test_now(self):
         di = Di()
