@@ -260,6 +260,7 @@ class Di:
         additional_configs: AdditionalConfig | list[AdditionalConfig] | None = None,
         class_overrides: dict[type, Any] | None = None,
         config_overrides: dict[type, dict[str, Any]] | None = None,
+        module_overrides: dict[ModuleType, dict[str, Any]] | None = None,
         overrides: dict[str, type] | None = None,
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
@@ -275,6 +276,7 @@ class Di:
         additional_configs -> di.add_additional_configs()
         class_overrides -> di.add_class_override()
         config_overrides -> di.add_config_override()
+        module_overrides -> di.add_module_override()
         """
         self._added_modules = {}
         self._additional_configs = []
@@ -306,6 +308,9 @@ class Di:
         if config_overrides:
             for class_key, config_values in config_overrides.items():
                 self.add_config_override(class_key, config_values)
+        if module_overrides:
+            for module, overrides_dict in module_overrides.items():
+                self.add_module_override(module, overrides_dict)
         if overrides:
             for key, value in overrides.items():
                 self.add_override(key, value)
@@ -693,6 +698,59 @@ class Di:
                 "Invalid value passed to add_config_override for 'class_to_override' parameter: it was not a class."
             )
         self._config_overrides[class_to_override] = config_values
+
+    def add_module_override(self, module: ModuleType, overrides: dict[str, Any]) -> None:
+        """
+        Override specific class, config, or binding values for a single module from outside.
+
+        This is the key extensibility point for including third-party or shared modules in a project
+        and adjusting their dependency graph without modifying the module itself.  Overrides registered
+        here take precedence over the module's own ``ModuleOverrides`` declarations but are still
+        subordinate to global ``class_overrides``, ``config_overrides``, and ``bindings``.
+
+        Resolution priority (highest first):
+
+        1. Global class overrides (``add_class_override``)
+        2. Global config overrides (``add_config_override``)
+        3. Global bindings (``add_binding``)
+        4. Per-module overrides from context (this method)
+        5. Module's own ``ModuleOverrides`` declarations
+        6. Instance as-is
+
+        ``overrides`` is a dict with any combination of these keys:
+
+        - ``class_overrides`` — replaces injectable class attributes scoped to this module
+        - ``config_overrides`` — patches config values on ``Configurable`` instances scoped to this module
+        - ``bindings`` — provides named DI dependencies scoped to this module
+
+        Example:
+        ```python
+        import my_module
+        from clearskies.di import Di
+
+        di = Di(
+            modules=[my_module],
+            module_overrides={
+                my_module: {
+                    "class_overrides": {ApiBackend: MemoryBackend()},
+                    "config_overrides": {ApiBackend: {"base_url": "https://test.example.com"}},
+                    "bindings": {"api_key": "test-key"},
+                }
+            },
+        )
+        ```
+        """
+        if not hasattr(module, "__file__") or not module.__file__:
+            raise ValueError(f"Cannot add module override for '{module}': module has no __file__ attribute.")
+        root = os.path.dirname(module.__file__)
+
+        # Prepend so these beat the module's own ModuleOverrides (which are appended during add_modules)
+        if "class_overrides" in overrides:
+            self._module_class_overrides.insert(0, (root, overrides["class_overrides"]))
+        if "config_overrides" in overrides:
+            self._module_config_overrides.insert(0, (root, overrides["config_overrides"]))
+        if "bindings" in overrides:
+            self._module_bindings.insert(0, (root, overrides["bindings"]))
 
     def get_config_override(self, class_to_check: type, context: str | type | None = None) -> dict[str, Any] | None:
         """

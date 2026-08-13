@@ -269,6 +269,7 @@
                 "additional_configs": "clearskies.di.Di.add_additional_configs",
                 "class_overrides": "clearskies.di.Di.add_class_override",
                 "config_overrides": "clearskies.di.Di.add_config_override",
+                "module_overrides": "clearskies.di.Di.add_module_override",
                 "now": "clearskies.di.Di.set_now",
                 "utcnow": "clearskies.di.Di.set_utc_now"
             },
@@ -289,6 +290,7 @@
                 "additional_configs": "clearskies.di.Di.add_additional_configs",
                 "class_overrides": "clearskies.di.Di.add_class_override",
                 "config_overrides": "clearskies.di.Di.add_config_override",
+                "module_overrides": "clearskies.di.Di.add_module_override",
                 "now": "clearskies.di.Di.set_now",
                 "utcnow": "clearskies.di.Di.set_utc_now"
             }

@@ -321,6 +321,96 @@ class DiTest(unittest.TestCase):
         module_a_class = di.build_class(ModuleAClass)
         assert isinstance(module_a_class.backend, GlobalBackend)
 
+    def test_module_overrides_class_overrides_beats_module_own_overrides(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        class ExternalBackend(DefaultBackend):
+            source = "external-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a, module_scoped_b],
+            module_overrides={
+                module_scoped_a: {
+                    "class_overrides": {DefaultBackend: ExternalBackend},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        # module_a's context override beats its own ModuleOverrides
+        assert isinstance(module_a_class.backend, ExternalBackend)
+        # module_b is unaffected
+        assert isinstance(module_b_class.backend, DefaultBackend)
+
+    def test_module_overrides_config_overrides_beats_module_own_overrides(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            module_overrides={
+                module_scoped_a: {
+                    "config_overrides": {ConfigurableBackend: {"base_url": "https://external.example.com"}},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        # context-level module override beats the module's own config_override
+        assert module_a_class.configurable_backend.base_url == "https://external.example.com"
+
+    def test_module_overrides_bindings_beats_module_own_bindings(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            module_overrides={
+                module_scoped_a: {
+                    "bindings": {"module_value": "external-override"},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.module_value == "external-override"
+
+    def test_global_override_still_beats_module_overrides_param(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class ExternalBackend(DefaultBackend):
+            source = "external-backend"
+
+        class GlobalBackend(DefaultBackend):
+            source = "global-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={DefaultBackend: GlobalBackend},
+            module_overrides={
+                module_scoped_a: {
+                    "class_overrides": {DefaultBackend: ExternalBackend},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, GlobalBackend)
+
     def test_now(self):
         di = Di()
         now = datetime.datetime.now()
