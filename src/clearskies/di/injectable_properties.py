@@ -141,14 +141,20 @@ class InjectableProperties:
                 continue
 
             if hasattr(cls, "__config_overridden__") and attribute_name in cls.__config_overridden__:
-                config_patches = di.get_config_override(
-                    cls.__config_overridden__[attribute_name].__class__, context=cls
-                )
+                original = cls.__config_overridden__[attribute_name]
+                config_patches = di.get_config_override(original.__class__, context=cls)
                 if config_patches:
-                    patched = di.apply_config_overrides(cls.__config_overridden__[attribute_name], config_patches)
+                    patched = di.apply_config_overrides(original, config_patches)
                     setattr(cls, attribute_name, patched)
                     if hasattr(patched, "injectable_properties"):
                         patched.injectable_properties(di)
+                else:
+                    # No config patches in this DI context — restore the original.
+                    # This mirrors the __overridden__ pattern: always re-evaluate from the
+                    # stored original so switching DI instances never leaves stale patches.
+                    setattr(cls, attribute_name, original)
+                    if hasattr(original, "injectable_properties"):
+                        original.injectable_properties(di)
 
             if issubclass(attribute.__class__, Injectable):
                 attribute.set_di(di)

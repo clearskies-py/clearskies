@@ -351,10 +351,11 @@ class DiTest(unittest.TestCase):
 
     def test_module_overrides_config_overrides_beats_module_own_overrides(self):
         import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
 
         di = Di(
             classes=[SharedDependency],
-            modules=[module_scoped_a],
+            modules=[module_scoped_a, module_scoped_b],
             module_overrides={
                 module_scoped_a: {
                     "config_overrides": {ConfigurableBackend: {"base_url": "https://external.example.com"}},
@@ -363,17 +364,22 @@ class DiTest(unittest.TestCase):
         )
 
         from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
 
         module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
         # context-level module override beats the module's own config_override
         assert module_a_class.configurable_backend.base_url == "https://external.example.com"
+        # module B is unaffected — gets its own default
+        assert module_b_class.configurable_backend.base_url == "https://default.example.com"
 
     def test_module_overrides_bindings_beats_module_own_bindings(self):
         import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
 
         di = Di(
             classes=[SharedDependency],
-            modules=[module_scoped_a],
+            modules=[module_scoped_a, module_scoped_b],
             module_overrides={
                 module_scoped_a: {
                     "bindings": {"module_value": "external-override"},
@@ -382,9 +388,31 @@ class DiTest(unittest.TestCase):
         )
 
         from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
 
         module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
         assert module_a_class.module_value == "external-override"
+        # module B is unaffected — gets its own default
+        assert module_b_class.module_value == "module-b-default"
+
+    def test_config_override_restored_when_new_di_has_no_patch(self):
+        import tests.di.module_scoped_b as module_scoped_b
+        from tests.di.module_scoped_b import ModuleBClass
+
+        # DI A: global config override patches ModuleBClass.configurable_backend
+        di_a = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_b],
+            config_overrides={ConfigurableBackend: {"base_url": "https://patched.example.com"}},
+        )
+        instance_a = di_a.build_class(ModuleBClass)
+        assert instance_a.configurable_backend.base_url == "https://patched.example.com"
+
+        # DI B: no config override — class attribute must be restored to original
+        di_b = Di(classes=[SharedDependency], modules=[module_scoped_b])
+        instance_b = di_b.build_class(ModuleBClass)
+        assert instance_b.configurable_backend.base_url == "https://default.example.com"
 
     def test_global_override_still_beats_module_overrides_param(self):
         import tests.di.module_scoped_a as module_scoped_a
