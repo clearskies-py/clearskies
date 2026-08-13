@@ -126,6 +126,30 @@ class InjectableProperties:
             if hasattr(cls, "__overridden__") and attribute_name in cls.__overridden__:
                 setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name], context=cls))
 
+            # Check for config overrides — patches specific config values on existing Configurable instances.
+            # We store the original so re-runs apply to the unpatched original, not the already-patched copy.
+            config_patches = di.get_config_override(attribute.__class__, context=cls)
+            if config_patches:
+                if not hasattr(cls, "__config_overridden__"):
+                    cls.__config_overridden__ = {}
+                if attribute_name not in cls.__config_overridden__:
+                    cls.__config_overridden__[attribute_name] = attribute
+                patched = di.apply_config_overrides(cls.__config_overridden__[attribute_name], config_patches)
+                setattr(cls, attribute_name, patched)
+                if hasattr(patched, "injectable_properties"):
+                    patched.injectable_properties(di)
+                continue
+
+            if hasattr(cls, "__config_overridden__") and attribute_name in cls.__config_overridden__:
+                config_patches = di.get_config_override(
+                    cls.__config_overridden__[attribute_name].__class__, context=cls
+                )
+                if config_patches:
+                    patched = di.apply_config_overrides(cls.__config_overridden__[attribute_name], config_patches)
+                    setattr(cls, attribute_name, patched)
+                    if hasattr(patched, "injectable_properties"):
+                        patched.injectable_properties(di)
+
             if issubclass(attribute.__class__, Injectable):
                 attribute.set_di(di)
                 continue

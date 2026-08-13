@@ -9,6 +9,7 @@ import clearskies.decorators
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
 from clearskies.exceptions import MissingDependency
 from tests.di.module_scoped_shared import (
+    ConfigurableBackend,
     DefaultBackend,
     GlobalReplacementDependency,
     ModuleScopedBackend,
@@ -240,6 +241,68 @@ class DiTest(unittest.TestCase):
 
         with self.assertRaises(MissingDependency):
             di.build_from_name("module_value", context="")
+
+    def test_global_config_override_patches_configurable_instance(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={ConfigurableBackend: {"base_url": "https://global-override.example.com"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.configurable_backend.base_url == "https://global-override.example.com"
+
+    def test_module_scoped_config_override_patches_configurable_instance(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        # module A has config override — patched
+        assert module_a_class.configurable_backend.base_url == "https://module-a.example.com"
+        assert module_a_class.configurable_backend.api_version == "v2"
+        # module B has no config override — default values
+        assert module_b_class.configurable_backend.base_url == "https://default.example.com"
+        assert module_b_class.configurable_backend.api_version == "v1"
+
+    def test_global_config_override_beats_module_scoped_config_override(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={ConfigurableBackend: {"base_url": "https://global.example.com"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.configurable_backend.base_url == "https://global.example.com"
+
+    def test_config_override_does_not_affect_non_configurable_attributes(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={DefaultBackend: {"source": "patched"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        # DefaultBackend is not Configurable — should be left as-is (or replaced by module class override)
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, ModuleScopedBackend)
 
     def test_global_class_override_beats_module_scoped_override_for_injectable_properties(self):
         import tests.di.module_scoped_a as module_scoped_a
