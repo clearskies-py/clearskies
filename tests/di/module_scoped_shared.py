@@ -1,4 +1,5 @@
 import clearskies
+import clearskies.decorators
 
 
 class SharedDependency:
@@ -27,5 +28,6 @@ class ConfigurableBackend(clearskies.Configurable):
     base_url = clearskies.configs.String(default="https://default.example.com")
     api_version = clearskies.configs.String(default="v1")
 
+    @clearskies.decorators.parameters_to_properties
     def __init__(self, base_url: str = "https://default.example.com", api_version: str = "v1"):
         self.finalize_and_validate_configuration()

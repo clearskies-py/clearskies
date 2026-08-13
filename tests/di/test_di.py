@@ -411,6 +411,17 @@ class DiTest(unittest.TestCase):
         module_a_class = di.build_class(ModuleAClass)
         assert isinstance(module_a_class.backend, GlobalBackend)
 
+    def test_add_module_override_raises_on_unknown_keys(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        with self.assertRaises(ValueError) as ctx:
+            di.add_module_override(module_scoped_a, {"typo_key": {}, "bindings": {}})
+
+        assert "typo_key" in str(ctx.exception)
+        assert "Allowed keys" in str(ctx.exception)
+
     def test_now(self):
         di = Di()
         now = datetime.datetime.now()
