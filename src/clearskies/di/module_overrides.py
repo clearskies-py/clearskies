@@ -93,10 +93,20 @@ class ModuleOverrides(AdditionalConfigAutoImport):
     name will receive `"v2"` / `True`. Other modules are unaffected.
     """
 
-    """Class replacements scoped to the declaring module root."""
+    """
+    Class replacements scoped to the declaring module root.
+
+    Keys are the classes to replace; values are the replacement classes or
+    objects to use when resolving those types inside this module.
+    """
     class_overrides: dict[type, type | Any] = {}
 
-    """Name bindings scoped to the declaring module root."""
+    """
+    Name bindings scoped to the declaring module root.
+
+    Keys are DI dependency names; values are the objects or classes to
+    provide when those names are requested inside this module.
+    """
     bindings: dict[str, Any] = {}
 
     def get_class_overrides(self) -> dict[type, type | Any]:

@@ -601,13 +601,49 @@ class Di:
     def has_class_override(self, class_to_check: type) -> bool:
         return class_to_check in self._class_overrides_by_class
 
-    def get_override_by_class(self, object_to_override: Any) -> Any:
-        if object_to_override.__class__ not in self._class_overrides_by_class:
+    def _context_to_class(self, context: str | type | None = None) -> type | None:
+        if context is None:
+            return None
+        if inspect.isclass(context):
+            return context
+
+        context_class_entry = self._classes.get(context)
+        if not context_class_entry:
+            context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
+        context_class = context_class_entry["class"] if context_class_entry else None
+        return context_class if inspect.isclass(context_class) else None
+
+    def get_class_override(self, class_to_check: type, context: str | type | None = None) -> Any | None:
+        if class_to_check in self._class_overrides_by_class:
+            return self._class_overrides_by_class[class_to_check]
+
+        context_class = self._context_to_class(context)
+        if not inspect.isclass(context_class):
+            return None
+
+        try:
+            context_class_root = os.path.dirname(inspect.getfile(context_class))
+        except TypeError:
+            return None
+
+        for module_root, class_overrides in self._module_class_overrides:
+            if context_class_root[: len(module_root)] != module_root:
+                continue
+            if class_to_check not in class_overrides:
+                continue
+            return class_overrides[class_to_check]
+
+        return None
+
+    def get_override_by_class(self, object_to_override: Any, context: str | type | None = None) -> Any:
+        class_to_check = object_to_override if inspect.isclass(object_to_override) else object_to_override.__class__
+        override = self.get_class_override(class_to_check, context=context)
+        if override is None:
             return object_to_override
 
-        override = self._class_overrides_by_class[object_to_override.__class__]
         if inspect.isclass(override):
-            return self.build_class(override)
+            build_context = context.__name__ if inspect.isclass(context) else context
+            return self.build_class(override, context=build_context)
         self.inject_properties(override.__class__)
         return override
 
@@ -675,10 +711,7 @@ class Di:
 
         # module-scoped bindings apply only for classes originating from that module root
         if context:
-            context_class_entry = self._classes.get(context)
-            if not context_class_entry:
-                context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
-            context_class = context_class_entry["class"] if context_class_entry else None
+            context_class = self._context_to_class(context)
             if inspect.isclass(context_class):
                 try:
                     context_class_root = os.path.dirname(inspect.getfile(context_class))
@@ -857,32 +890,11 @@ class Di:
             return None
 
         # check our class overrides
-        if class_to_build in self._class_overrides_by_class:
-            replacement = self._class_overrides_by_class[class_to_build]
+        replacement = self.get_class_override(class_to_build, context=context)
+        if replacement is not None:
             if not inspect.isclass(replacement):
                 return replacement
             return self.build_class(replacement, context=context, cache=cache)
-
-        # check module-scoped class overrides
-        if context:
-            context_class_entry = self._classes.get(context)
-            if not context_class_entry:
-                context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
-            context_class = context_class_entry["class"] if context_class_entry else None
-            if inspect.isclass(context_class):
-                try:
-                    context_class_root = os.path.dirname(inspect.getfile(context_class))
-                except TypeError:
-                    context_class_root = ""
-                for module_root, class_overrides in self._module_class_overrides:
-                    if context_class_root[: len(module_root)] != module_root:
-                        continue
-                    if class_to_build not in class_overrides:
-                        continue
-                    replacement = class_overrides[class_to_build]
-                    if not inspect.isclass(replacement):
-                        return replacement
-                    return self.build_class(replacement, context=context, cache=cache)
 
         # generally we can't build abstract classes, so if the class is abstract then we should pass.
         # However, this is not the case if it has an override - then the developer has given us specific guidance

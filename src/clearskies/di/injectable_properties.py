@@ -110,11 +110,12 @@ class InjectableProperties:
             # of what our dependencies are and which ones are cached, so we only have to list the objects attributes the first time.
             attribute = getattr(cls, attribute_name)
 
-            if di.has_class_override(attribute.__class__):
+            override = di.get_class_override(attribute.__class__, context=cls)
+            if override is not None:
                 if not hasattr(cls, "__overridden__"):
                     cls.__overridden__ = {}
                 cls.__overridden__[attribute_name] = attribute
-                setattr(cls, attribute_name, di.get_override_by_class(attribute))
+                setattr(cls, attribute_name, di.get_override_by_class(attribute, context=cls))
                 continue
 
             # This exists to cover a common edge case in testing.  If we override an attribute with a new class (common when
@@ -123,7 +124,7 @@ class InjectableProperties:
             # condition and you'lljust leave the old memory backend in place.  Therefore, when we override an attribute, we
             # also keep track of what the attribute *used* to be so that we can override it every time.
             if hasattr(cls, "__overridden__") and attribute_name in cls.__overridden__:
-                setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name]))
+                setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name], context=cls))
 
             if issubclass(attribute.__class__, Injectable):
                 attribute.set_di(di)
