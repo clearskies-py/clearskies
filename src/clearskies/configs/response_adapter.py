@@ -15,8 +15,9 @@ class ResponseAdapter(config.Config):
     """
     Configuration descriptor that accepts a ``ResponseAdapter`` instance or a callable.
 
-    A ``ResponseAdapter`` subclass provides separate ``extract_records`` and
-    ``extract_record`` hooks for full control over response-envelope unwrapping.
+    A ``ResponseAdapter`` instance (or subclass instance) provides separate
+    ``extract_records`` and ``extract_record`` hooks for response-envelope
+    unwrapping.
 
     A plain callable ``(response_data: Any) -> list | dict | None`` may be
     supplied for simple cases where the same extraction logic covers both list
