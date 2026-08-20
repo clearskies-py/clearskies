@@ -32,8 +32,9 @@ class Configurable:
 
     @classmethod
     def get_descriptor_config_map(cls) -> dict[int, str]:
-        if cls._descriptor_config_map:
-            return cls._descriptor_config_map
+        own_map = cls.__dict__.get("_descriptor_config_map")
+        if own_map:
+            return own_map
 
         descriptor_config_map: dict[int, str] = {}
         for attribute_name in dir(cls):
