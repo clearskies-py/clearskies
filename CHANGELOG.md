@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] - 2026-08-20
+
+### Added
+- Add JWKS claims validation and fix descriptor map inheritance in [#102](https://github.com/clearskies-py/clearskies/pull/102)
+- Support response_adapter config and DI binding fallback
+- Add pluggable ResponseAdapter extension point to ApiBackend
+
+### Fixed
+- Enforce configured adapter extraction in [#100](https://github.com/clearskies-py/clearskies/pull/100)
+
 ## [2.1.4] - 2026-07-29
+
+### Changed
+- Bump version to v2.1.4 by @github-actions[bot]
 
 ### Fixed
 - Auto enable/disable strict mapping for better response detection by @cmancone in [#99](https://github.com/clearskies-py/clearskies/pull/99)
@@ -1449,6 +1462,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.5]: https://github.com/clearskies-py/clearskies/compare/v2.1.4..v2.1.5
 [2.1.4]: https://github.com/clearskies-py/clearskies/compare/v2.1.3..v2.1.4
 [2.1.3]: https://github.com/clearskies-py/clearskies/compare/v2.1.2..v2.1.3
 [2.1.2]: https://github.com/clearskies-py/clearskies/compare/v2.1.1..v2.1.2
