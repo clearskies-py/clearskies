@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from clearskies.secrets import Secrets
 
 
-class Oauth(Jwks, di.InjectableProperties):
+class Oauth(Jwks):
     """
     Perform authentication for incoming and outgoing requests in an Oauth context.
 

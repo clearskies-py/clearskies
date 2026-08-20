@@ -253,6 +253,7 @@
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.authentication.Authorization",
+                "clearskies.authentication.Jwks",
                 "clearskies.authentication.Oauth",
                 "clearskies.authentication.Public",
                 "clearskies.authentication.SecretBearer"
