@@ -114,6 +114,80 @@ class ApiBackendTest(unittest.TestCase):
         assert status_code == 200
         assert payload["data"] == [{"id": 2, "login": "bob"}]
 
+    def test_response_adapter_must_extract_records_when_configured(self):
+        class EmptyAdapter(ResponseAdapter):
+            def extract_records(self, response_data):
+                return None
+
+            def extract_record(self, response_data):
+                return None
+
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.ApiBackend(
+                base_url="https://api.example.com",
+                response_adapter=EmptyAdapter(),
+            )
+
+            id = clearskies.columns.Integer()
+            login = clearskies.columns.String()
+
+        requests = MagicMock()
+        response = MagicMock()
+        response.ok = True
+        response.headers = {}
+        response.json = MagicMock(
+            return_value={
+                "wrapped": {
+                    "items": [
+                        {"id": "1", "login": "alice"},
+                    ]
+                }
+            }
+        )
+        requests.request = MagicMock(return_value=response)
+
+        context = Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "login"],
+                sortable_column_names=["id"],
+                default_sort_column_name=None,
+                default_limit=10,
+            ),
+            classes=[User],
+            bindings={"requests": requests},
+        )
+
+        with self.assertRaises(ValueError) as error:
+            context()
+        assert "response adapter was configured" in str(error.exception)
+
+    def test_response_adapter_must_extract_record_when_configured(self):
+        class EmptyAdapter(ResponseAdapter):
+            def extract_records(self, response_data):
+                return None
+
+            def extract_record(self, response_data):
+                return None
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            response_adapter=EmptyAdapter(),
+        )
+        columns: dict[str, clearskies.Column] = {
+            "id": clearskies.columns.Integer(),
+            "login": clearskies.columns.String(),
+        }
+
+        with self.assertRaises(ValueError) as error:
+            backend.map_record_response(
+                response_data={"wrapped": {"item": {"id": "1", "login": "alice"}}},
+                columns=columns,
+                operation="create",
+            )
+        assert "response adapter was configured" in str(error.exception)
+
     def test_overview(self):
         class GithubPublicBackend(clearskies.backends.ApiBackend):
             def __init__(

@@ -618,8 +618,7 @@ class ApiBackend(Backend, InjectableProperties):
     built-in ``ApiBackend`` extraction logic.
 
     If not provided, clearskies checks DI for a dependency named
-    ``response_adapter`` and uses it when available. If no DI dependency exists,
-    a plain :class:`~clearskies.backends.ResponseAdapter` is used.
+    ``response_adapter`` and uses it when available.
     """
     response_adapter = configs.ResponseAdapter(default=None)
 
@@ -1052,8 +1051,11 @@ class ApiBackend(Backend, InjectableProperties):
                 if callable(adapter) and not isinstance(adapter, ResponseAdapter)
                 else adapter.extract_records(response_data)
             )
-            if extracted is not None:
-                response_data = extracted
+            if extracted is None:
+                raise ValueError(
+                    "A response adapter was configured, but it did not extract records from the API response.  Please update your adapter to return the records list for this response shape."
+                )
+            response_data = extracted
 
         # if our response is actually a list, then presumably the problem is solved.  If the response is a list
         # and the individual items aren't model results though... well, then I'm very confused
@@ -1113,8 +1115,11 @@ class ApiBackend(Backend, InjectableProperties):
                 if callable(adapter) and not isinstance(adapter, ResponseAdapter)
                 else adapter.extract_record(response_data)
             )
-            if extracted is not None:
-                response_data = extracted
+            if extracted is None:
+                raise ValueError(
+                    f"A response adapter was configured, but it did not extract a record from the API response for {operation}.  Please update your adapter to return the record dictionary for this response shape."
+                )
+            response_data = extracted
 
         an = "a" if operation == "create" else "an"
         if not isinstance(response_data, dict):
@@ -1141,7 +1146,7 @@ class ApiBackend(Backend, InjectableProperties):
         try:
             self._resolved_response_adapter = self.di.build(self.response_adapter_dependency_name)
         except MissingDependency:
-            self._resolved_response_adapter = ResponseAdapter()
+            self._resolved_response_adapter = None
 
         return self._resolved_response_adapter
 
