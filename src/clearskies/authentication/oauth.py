@@ -235,7 +235,7 @@ class Oauth(Jwks):
 
     @property
     def jwt(self) -> str:
-        if hasattr(self, "_jwt") and self.expiration - self.now > self.jwt_refresh_ttl_sec:
+        if hasattr(self, "_jwt") and self.expiration - self.now > datetime.timedelta(seconds=self.jwt_refresh_ttl_sec):
             return self._jwt
 
         if self.client_credentials_in_secret_manager:
