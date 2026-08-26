@@ -42,6 +42,39 @@ class TestOauth(unittest.TestCase):
 
         secrets.get.assert_called_with("/path/to/client/credentials", silent_if_not_found=True)
 
+    def test_jwt_cache(self):
+        oauth = clearskies.authentication.Oauth(
+            authentication_url="https://auth.example.com",
+            secret_manager_secret_name="/path/to/client/credentials",
+        )
+
+        secrets = MagicMock()
+        secrets.get = MagicMock(return_value={"client_id": "asdf", "client_secret": "qwerty"})
+
+        response = MagicMock()
+        response.status_code = 200
+        response.json = MagicMock(return_value={"access_token": "ey=", "expires_in": 3600})
+        requests = MagicMock()
+        requests.post = MagicMock(return_value=response)
+
+        di = clearskies.di.Di(
+            bindings={
+                "secrets": secrets,
+                "requests": requests,
+            }
+        )
+        di.inject_properties(oauth.__class__)
+
+        headers = oauth.headers()
+        assert headers == {"Authorization": "Bearer ey="}
+        secrets.get.assert_called_once()
+        requests.post.assert_called_once()
+
+        headers = oauth.headers()
+        assert headers == {"Authorization": "Bearer ey="}
+        secrets.get.assert_called_once()
+        requests.post.assert_called_once()
+
     def test_secrets_return_json(self):
         oauth = clearskies.authentication.Oauth(
             authentication_url="https://auth.example.com",
