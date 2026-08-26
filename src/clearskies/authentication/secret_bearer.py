@@ -455,6 +455,41 @@ class SecretBearer(Authentication, di.InjectableProperties):
     """
     documentation_security_name = configs.String(default="ApiKey")
 
+    """Force secret refresh when retrieving.
+
+    When set to True, forces the secret to be re-fetched from the secret manager on access.
+    This is useful for dynamic secrets with timeouts or when you need to ensure you have
+    the latest version of a static secret.
+
+    Example with Akeyless dynamic secret:
+    ```python
+    authentication = clearskies.authentication.SecretBearer(
+        environment_key="/path/to/dynamic_secret",
+        refresh=True  # Forces refresh on every access
+    )
+    ```
+
+    For runtime refresh control in endpoint handlers, use auth.headers(retry_auth=True)
+    """
+    refresh = configs.Boolean(default=False)
+
+    """Extract specific attribute from JSON secret.
+
+    When set, treats the secret value as JSON and returns the specified attribute.
+    Supports nested paths like 'credentials.api_key' using dot notation.
+
+    Example with Akeyless dynamic secret (returns only api_key from JSON):
+    ```python
+    authentication = clearskies.authentication.SecretBearer(
+        environment_key="/path/to/dynamic_secret",
+        json_attribute="credentials.api_key"
+    )
+    ```
+
+    The secret will be returned as a string containing the extracted value.
+    """
+    json_attribute = configs.String(default=None)
+
     _secret: str | None = None
     _alternate_secret: str | None = None
     _force_secret_refresh: bool = False
@@ -468,6 +503,8 @@ class SecretBearer(Authentication, di.InjectableProperties):
         alternate_environment_key: str = "",
         header_prefix: str = "",
         documentation_security_name: str = "",
+        refresh: bool = False,
+        json_attribute: str | None = None,
     ):
         if not secret_key and not environment_key:
             raise ValueError("Must set either 'secret_key' or 'environment_key' when configuring the SecretBearer")
@@ -479,7 +516,11 @@ class SecretBearer(Authentication, di.InjectableProperties):
         if self._secret is None:
             if self.secret_key:
                 try:
-                    self._secret = self.secrets.get(self.secret_key, refresh=self._force_secret_refresh)
+                    self._secret = self.secrets.get(
+                        self.secret_key,
+                        refresh=self.refresh or self._force_secret_refresh,
+                        json_attribute=self.json_attribute,
+                    )
                 finally:
                     self._force_secret_refresh = False
             else:
@@ -497,7 +538,11 @@ class SecretBearer(Authentication, di.InjectableProperties):
 
         if self._alternate_secret is None:
             self._alternate_secret = (
-                self.secrets.get(self.alternate_secret_key)
+                self.secrets.get(
+                    self.alternate_secret_key,
+                    refresh=self.refresh or self._force_secret_refresh,
+                    json_attribute=self.json_attribute,
+                )
                 if self.alternate_secret_key
                 else self.environment.get(self.alternate_environment_key)
             )
