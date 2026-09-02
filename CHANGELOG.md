@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.8] - 2026-09-02
+
+### Added
+- Support dynamic secrets and JSON attribute extraction in SecretBearer by @github-actions[bot] in [#105](https://github.com/clearskies-py/clearskies/pull/105)
+
+### Changed
+- Rename json_attribute to json_path in SecretBearer and Akeyless
+
 ## [2.1.7] - 2026-08-26
+
+### Changed
+- Bump version to v2.1.7 by @github-actions[bot]
 
 ### Fixed
 - Improper date math in oauth cache by @cmancone in [#104](https://github.com/clearskies-py/clearskies/pull/104)
@@ -169,6 +180,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Address review comments on List column
 - Add List column with optional element-type enforcement
 - Add missing docstrings
+- Add typing for relationships
 
 ### Changed
 - Bump version to v2.0.60 by @github-actions[bot]
@@ -179,13 +191,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update to latest dependencies
 - Allow class overrides for authentication and authorization by @cmancone in [#79](https://github.com/clearskies-py/clearskies/pull/79)
 - Merge branch 'main' into ty-check-fix by @tnijboer
+- Merge branch 'main' into ty-check-fix by @tnijboer
+- Split check_dict_and_map_to_model into is_model_data + map_to_model
+- Update workflow to include ty
 
 ### Fixed
 - Gql reorg by @cmancone
+- Exceptions to avoid duplicate methods by @cmancone in [#81](https://github.com/clearskies-py/clearskies/pull/81)
 
 ### Removed
 - Remove value_type enforcement from from_backend
 - Remove type: ignore suppressions and improve type safety by @cmancone in [#76](https://github.com/clearskies-py/clearskies/pull/76)
+- Remove type: ignore suppressions and improve type safety across codebase
 
 ## [2.0.59] - 2026-04-01
 
@@ -200,12 +217,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump version to v2.0.59 by @github-actions[bot]
-- Merge branch 'main' into ty-check-fix by @tnijboer
 - Dynamic Migration Path Discovery via `AdditionalMygrationsAutoImport` by @cmancone in [#77](https://github.com/clearskies-py/clearskies/pull/77)
 - Rename cursor_class to cursor, drop @parameters_to_properties
 
 ### Fixed
-- Exceptions to avoid duplicate methods by @cmancone in [#81](https://github.com/clearskies-py/clearskies/pull/81)
 - Prevent false injectable_properties cache hits from id() reuse on Python 3.13 in [#78](https://github.com/clearskies-py/clearskies/pull/78)
 - Return None from from_backend() when value is None for Column, String, Boolean, Float
 
@@ -243,19 +258,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.54] - 2026-03-16
 
-### Added
-- Add typing for relationships
-
 ### Changed
 - Bump version to v2.0.54 by @github-actions[bot]
-- Split check_dict_and_map_to_model into is_model_data + map_to_model
-- Update workflow to include ty
 
 ### Fixed
 - Akeyless expiry on the object
-
-### Removed
-- Remove type: ignore suppressions and improve type safety across codebase
 
 ## [2.0.53] - 2026-03-13
 
@@ -803,6 +810,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge pull request #6 from clearskies-py/moar-docs by @cmancone in [#6](https://github.com/clearskies-py/clearskies/pull/6)
 - Tooling by @cmancone
 - Merge branch 'main' into moar-docs by @cmancone
+- ENDLESS TESTSgit add .git add . by @cmancone
+- NEVER ENDING DOCSgit add .! by @cmancone
 
 ### Fixed
 - Rename parameters_to_properties.py to decorators.py
@@ -812,8 +821,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Merge pull request #7 from clearskies-py/hotfix by @cmancone in [#7](https://github.com/clearskies-py/clearskies/pull/7)
 - Merge pull request #5 from clearskies-py/moar-docs by @cmancone in [#5](https://github.com/clearskies-py/clearskies/pull/5)
-- ENDLESS TESTSgit add .git add . by @cmancone
-- NEVER ENDING DOCSgit add .! by @cmancone
 - MOAR docs by @cmancone
 - MOAR documentation by @cmancone
 - MOAR docs by @cmancone
@@ -831,6 +838,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wheee! by @cmancone
 - Moving along by @cmancone
 - Merge branch 'main' into docs by @cmancone
+- MOAR docs by @cmancone
+- Good progress on autodocs by @cmancone
 
 ### Fixed
 - Wrong key, missing types by @cmancone
@@ -873,8 +882,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge pull request #1 from tnijboer/feat/secrets-backend by @cmancone in [#1](https://github.com/clearskies-py/clearskies/pull/1)
 - Move secrets backend to v2
 - Mypy cleanup by @cmancone
-- MOAR docs by @cmancone
-- Good progress on autodocs by @cmancone
 - Tweaks while documenting by @cmancone
 - Lock update by @cmancone
 - Minor fixes by @cmancone
@@ -1474,10 +1481,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove auto dependency loading by @cmancone
 
 ## New Contributors
-* @cmancone made their first contribution in [#3](https://github.com/clearskies-py/clearskies/pull/3)
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.8]: https://github.com/clearskies-py/clearskies/compare/v2.1.7..v2.1.8
 [2.1.7]: https://github.com/clearskies-py/clearskies/compare/v2.1.6..v2.1.7
 [2.1.6]: https://github.com/clearskies-py/clearskies/compare/v2.1.5..v2.1.6
 [2.1.5]: https://github.com/clearskies-py/clearskies/compare/v2.1.4..v2.1.5
