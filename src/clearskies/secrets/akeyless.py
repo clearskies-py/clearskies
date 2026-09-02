@@ -244,7 +244,7 @@ class Akeyless(secrets.Secrets):
         path: str,
         silent_if_not_found: bool = False,
         refresh: bool = False,
-        json_attribute: str | None = None,
+        json_path: str | None = None,
         args: dict[str, Any] | None = None,
     ) -> str:
         """
@@ -256,7 +256,7 @@ class Akeyless(secrets.Secrets):
 
         When auto_guess_type is enabled, this method automatically determines if the secret is static,
         dynamic, or rotated and calls the appropriate method to retrieve it. If silent_if_not_found is
-        True, returns an empty string when the secret is not found. If json_attribute is provided,
+        True, returns an empty string when the secret is not found. If json_path is provided,
         treats the secret as JSON and returns the specified attribute.
         """
         # Check cache first if not forcing refresh
@@ -268,7 +268,7 @@ class Akeyless(secrets.Secrets):
         # Fetch from Akeyless - sub-methods handle caching, so we don't need to cache here
         if not self.auto_guess_type:
             return self.get_static_secret(
-                path, silent_if_not_found=silent_if_not_found, json_attribute=json_attribute, refresh=True
+                path, silent_if_not_found=silent_if_not_found, json_path=json_path, refresh=True
             )
         else:
             try:
@@ -289,16 +289,16 @@ class Akeyless(secrets.Secrets):
                     return str(
                         self.get_dynamic_secret(
                             path,
-                            json_attribute=json_attribute,
+                            json_path=json_path,
                             args=args,
                             refresh=True,
                         )
                     )
                 case "rotated_secret":
-                    return str(self.get_rotated_secret(path, json_attribute=json_attribute, args=args, refresh=True))
+                    return str(self.get_rotated_secret(path, json_path=json_path, args=args, refresh=True))
                 case "static_secret":
                     return self.get_static_secret(
-                        path, json_attribute=json_attribute, silent_if_not_found=silent_if_not_found, refresh=True
+                        path, json_path=json_path, silent_if_not_found=silent_if_not_found, refresh=True
                     )
                 case _:
                     raise ValueError(f"Unsupported secret type for auto-detection: '{secret.item_type}'")
@@ -308,7 +308,7 @@ class Akeyless(secrets.Secrets):
         path: str,
         silent_if_not_found: bool = False,
         refresh: bool = False,
-        json_attribute: str | None = None,
+        json_path: str | None = None,
     ) -> str:
         """
         Get a static secret from the given path.
@@ -319,7 +319,7 @@ class Akeyless(secrets.Secrets):
 
         Checks permissions before retrieving the secret and raises PermissionsError if the user doesn't
         have read permission. If silent_if_not_found is True, returns an empty string when the secret
-        is not found. If json_attribute is provided, treats the secret as JSON and returns the specified attribute.
+        is not found. If json_path is provided, treats the secret as JSON and returns the specified attribute.
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
@@ -332,9 +332,7 @@ class Akeyless(secrets.Secrets):
 
         try:
             res: dict[str, object] = self.api.get_secret_value(
-                self.akeyless.GetSecretValue(
-                    names=[path], token=self._get_token(), json=True if json_attribute else False
-                )
+                self.akeyless.GetSecretValue(names=[path], token=self._get_token(), json=True if json_path else False)
             )
         except Exception as e:
             if getattr(e, "status", None) == 404:
@@ -343,8 +341,8 @@ class Akeyless(secrets.Secrets):
                 raise KeyError(f"Secret '{path}' not found")
             raise e
 
-        if json_attribute:
-            value = get_nested_attribute(res[path], json_attribute)  # ty: ignore[invalid-argument-type]
+        if json_path:
+            value = get_nested_attribute(res[path], json_path)  # ty: ignore[invalid-argument-type]
         else:
             value = str(res[path])
 
@@ -357,7 +355,7 @@ class Akeyless(secrets.Secrets):
     def get_dynamic_secret(
         self,
         path: str,
-        json_attribute: str | None = None,
+        json_path: str | None = None,
         args: dict[str, Any] | None = None,
         refresh: bool = False,
     ) -> Any:
@@ -370,8 +368,7 @@ class Akeyless(secrets.Secrets):
 
         Dynamic secrets are generated on-demand, such as database credentials. Checks permissions
         before retrieving the secret and raises PermissionsError if the user doesn't have read
-        permission. If json_attribute is provided, treats the result as JSON and returns the
-        specified attribute.
+        permission. If json_path is provided, treats the result as JSON and returns the specified attribute.
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
@@ -390,8 +387,8 @@ class Akeyless(secrets.Secrets):
             kwargs["args"] = args
         res: dict[str, Any] = self.api.get_dynamic_secret_value(self.akeyless.GetDynamicSecretValue(**kwargs))
 
-        if json_attribute:
-            value = get_nested_attribute(res, json_attribute)
+        if json_path:
+            value = get_nested_attribute(res, json_path)
         else:
             value = res
 
@@ -405,7 +402,7 @@ class Akeyless(secrets.Secrets):
     def get_rotated_secret(
         self,
         path: str,
-        json_attribute: str | None = None,
+        json_path: str | None = None,
         args: dict[str, Any] | None = None,
         refresh: bool = False,
     ) -> Any:
@@ -418,7 +415,7 @@ class Akeyless(secrets.Secrets):
 
         Rotated secrets are automatically replaced on a schedule. Checks permissions before
         retrieving the secret and raises PermissionsError if the user doesn't have read
-        permission. If json_attribute is provided, treats the result as JSON and returns the
+        permission. If json_path is provided, treats the result as JSON and returns the
         specified attribute.
         """
         # Check cache first if not forcing refresh
@@ -433,15 +430,15 @@ class Akeyless(secrets.Secrets):
         kwargs: dict[str, Any] = {
             "names": path,
             "token": self._get_token(),
-            "json": True if json_attribute else False,
+            "json": True if json_path else False,
         }
         if args:
             kwargs["args"] = args
 
         res: dict[str, str] = self._api.get_rotated_secret_value(self.akeyless.GetRotatedSecretValue(**kwargs))["value"]
 
-        if json_attribute:
-            value = get_nested_attribute(res, json_attribute)
+        if json_path:
+            value = get_nested_attribute(res, json_path)
         else:
             value = res
 

@@ -185,27 +185,27 @@ class SecretBearerTest(unittest.TestCase):
         # Verify it calls with refresh=True
         self.assertEqual([("/path/to/secret", True)], calls)
 
-    def test_json_attribute_extracts_string_value(self):
+    def test_json_path_extracts_string_value(self):
         calls = []
 
-        def fetch_secret(path, refresh=False, json_attribute=None, **kwargs):
-            calls.append((path, refresh, json_attribute))
+        def fetch_secret(path, refresh=False, json_path=None, **kwargs):
+            calls.append((path, refresh, json_path))
             mock_creds = {"db_password": "my_strong_password", "db_host": "localhost", "api_key": "sk_live_12345"}
 
-            if json_attribute == "db_password":
+            if json_path == "db_password":
                 return "my_strong_password"
-            elif json_attribute and json_attribute.startswith("credentials."):
+            elif json_path and json_path.startswith("credentials."):
                 # Handle nested paths like "credentials.api_key"
-                parts = json_attribute.split(".")
+                parts = json_path.split(".")
                 if len(parts) == 2 and parts[0] == "credentials":
                     attr_name = parts[1]
                     if attr_name in mock_creds["credentials"]:
                         return mock_creds["credentials"][attr_name]
-            elif json_attribute:
-                return mock_creds.get(json_attribute, "default")
+            elif json_path:
+                return mock_creds.get(json_path, "default")
             return json.dumps(mock_creds)
 
-        bearer = clearskies.authentication.SecretBearer(secret_key="/path/to/creds", json_attribute="db_password")
+        bearer = clearskies.authentication.SecretBearer(secret_key="/path/to/creds", json_path="db_password")
 
         di = Di(bindings={"secrets": SimpleNamespace(get=fetch_secret)})
         bearer.injectable_properties(di)
@@ -214,26 +214,26 @@ class SecretBearerTest(unittest.TestCase):
         # Should return just the extracted password, not JSON
         self.assertIn("my_strong_password", headers["Authorization"])
 
-        # Verify it was called with json_attribute parameter
+        # Verify it was called with json_path parameter
         self.assertEqual(1, len(calls))
         self.assertEqual("/path/to/creds", calls[0][0])
         self.assertEqual(False, calls[0][1])
         self.assertEqual("db_password", calls[0][2])
 
-    def test_json_attribute_with_nested_path(self):
+    def test_json_path_with_nested_path(self):
         calls = []
 
-        def fetch_secret(path, refresh=False, json_attribute=None, **kwargs):
-            calls.append((path, refresh, json_attribute))
+        def fetch_secret(path, refresh=False, json_path=None, **kwargs):
+            calls.append((path, refresh, json_path))
             mock_creds = {"credentials": {"api_key": "sk_live_12345", "secret_token": "super_secret_67890"}}
 
-            if json_attribute == "credentials.api_key":
+            if json_path == "credentials.api_key":
                 return "sk_live_12345"
-            elif json_attribute == "credentials.secret_token":
+            elif json_path == "credentials.secret_token":
                 return "super_secret_67890"
-            elif json_attribute and "." in json_attribute:
+            elif json_path and "." in json_path:
                 # Handle nested paths like "credentials.api_key"
-                parts = json_attribute.split(".")
+                parts = json_path.split(".")
                 if len(parts) == 2:
                     parent, child = parts
                     if parent == "credentials" and child in mock_creds.get(parent, {}):
@@ -241,7 +241,7 @@ class SecretBearerTest(unittest.TestCase):
             return json.dumps(mock_creds)
 
         bearer = clearskies.authentication.SecretBearer(
-            secret_key="/path/to/nested/creds", json_attribute="credentials.api_key"
+            secret_key="/path/to/nested/creds", json_path="credentials.api_key"
         )
 
         di = Di(bindings={"secrets": SimpleNamespace(get=fetch_secret)})

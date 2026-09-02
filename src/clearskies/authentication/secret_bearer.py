@@ -482,13 +482,13 @@ class SecretBearer(Authentication, di.InjectableProperties):
     ```python
     authentication = clearskies.authentication.SecretBearer(
         environment_key="/path/to/dynamic_secret",
-        json_attribute="credentials.api_key"
+        json_path="credentials.api_key"
     )
     ```
 
     The secret will be returned as a string containing the extracted value.
     """
-    json_attribute = configs.String(default=None)
+    json_path = configs.String(default=None)
 
     _secret: str | None = None
     _alternate_secret: str | None = None
@@ -504,7 +504,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
         header_prefix: str = "",
         documentation_security_name: str = "",
         refresh: bool = False,
-        json_attribute: str | None = None,
+        json_path: str | None = None,
     ):
         if not secret_key and not environment_key:
             raise ValueError("Must set either 'secret_key' or 'environment_key' when configuring the SecretBearer")
@@ -519,7 +519,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
                     self._secret = self.secrets.get(
                         self.secret_key,
                         refresh=self.refresh or self._force_secret_refresh,
-                        json_attribute=self.json_attribute,
+                        json_path=self.json_path,
                     )
                 finally:
                     self._force_secret_refresh = False
@@ -541,7 +541,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
                 self.secrets.get(
                     self.alternate_secret_key,
                     refresh=self.refresh or self._force_secret_refresh,
-                    json_attribute=self.json_attribute,
+                    json_path=self.json_path,
                 )
                 if self.alternate_secret_key
                 else self.environment.get(self.alternate_environment_key)
