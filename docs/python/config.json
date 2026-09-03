@@ -56,11 +56,30 @@
             ]
         },
         {
+            "title": "Backend Adapters",
+            "source": "clearskies.backends.adapters.Adapter",
+            "builder": "clearskies_doc_builder.builders.Module",
+            "parent": "Backends",
+            "classes": [
+                "clearskies.backends.adapters.ResponseAdapter",
+                "clearskies.backends.adapters.HalJsonResponseAdapter",
+                "clearskies.backends.adapters.JsonApiResponseAdapter",
+                "clearskies.backends.adapters.UrlAdapter",
+                "clearskies.backends.adapters.CountAdapter",
+                "clearskies.backends.adapters.HeaderCountAdapter",
+                "clearskies.backends.adapters.BodyCountAdapter",
+                "clearskies.backends.adapters.PaginationAdapter",
+                "clearskies.backends.adapters.LinkHeaderPaginationAdapter",
+                "clearskies.backends.adapters.ParameterPaginationAdapter"
+            ]
+        },
+        {
             "title": "Configs",
             "source": "clearskies.configs.Config",
             "builder": "clearskies_doc_builder.builders.Module",
             "classes": [
                 "clearskies.configs.Actions",
+                "clearskies.configs.AdapterOrCallable",
                 "clearskies.configs.Any",
                 "clearskies.configs.AnyDict",
                 "clearskies.configs.AnyDictOrCallable",
