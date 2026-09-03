@@ -1750,7 +1750,8 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
             if self._last_query_result is not None and self._last_query_result.can_count:
                 self._count = self._last_query_result.get_count()
             else:
-                # Fall back to explicit count query
+                # Fall back to explicit count query.  The backend decides whether it supports
+                # counting - see Backend.can_count and each backend's count() implementation.
                 count_result: CountQueryResult = self.backend.count(self.get_final_query())
                 self._count = count_result.count
         return self._count

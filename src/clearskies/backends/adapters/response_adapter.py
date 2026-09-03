@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from clearskies.backends.adapters.adapter import Adapter
 
-class ResponseAdapter:
+
+class ResponseAdapter(Adapter["ResponseAdapter"]):
     """
     Pluggable response-extraction strategy for ``ApiBackend``.
 
