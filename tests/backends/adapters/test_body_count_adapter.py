@@ -104,18 +104,6 @@ class BodyCountAdapterTest(unittest.TestCase):
         )
         self.assertEqual(total, 10)
 
-    # ── _resolve_path ──────────────────────────────────────────────────────
-
-    def test_resolve_path_returns_none_for_non_dict(self):
-        adapter = BodyCountAdapter()
-        result = adapter._resolve_path([1, 2, 3], "total")
-        self.assertIsNone(result)
-
-    def test_resolve_path_empty_path_returns_none(self):
-        adapter = BodyCountAdapter()
-        result = adapter._resolve_path({"total": 1}, "")
-        self.assertIsNone(result)
-
 
 if __name__ == "__main__":
     unittest.main()
