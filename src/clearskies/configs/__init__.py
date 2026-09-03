@@ -66,6 +66,7 @@ class MyConfigurableClass(configs.Configurable):
 from __future__ import annotations
 
 from .actions import Actions
+from .adapter_or_callable import AdapterOrCallable
 from .any import Any
 from .any_dict import AnyDict
 from .any_dict_or_callable import AnyDictOrCallable
@@ -127,6 +128,7 @@ from .writeable_model_columns import WriteableModelColumns
 
 __all__ = [
     "Actions",
+    "AdapterOrCallable",
     "Any",
     "AnyDict",
     "AnyDictOrCallable",

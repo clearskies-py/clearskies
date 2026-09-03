@@ -10,12 +10,19 @@ from clearskies import columns, configs, decorators
 from clearskies.autodoc.schema import Integer as AutoDocInteger
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
-from clearskies.backends.adapters import ResponseAdapter
+from clearskies.backends.adapters import (
+    CountAdapter,
+    HeaderCountAdapter,
+    LinkHeaderPaginationAdapter,
+    PaginationAdapter,
+    ResponseAdapter,
+    UrlAdapter,
+)
 from clearskies.backends.backend import Backend
 from clearskies.di import InjectableProperties, inject
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import json as json_functional
-from clearskies.functional import routing, string
+from clearskies.functional import string
 from clearskies.query.result import (
     CountQueryResult,
     RecordQueryResult,
@@ -317,7 +324,29 @@ class ApiBackend(Backend, InjectableProperties):
 
     """
 
-    can_count = False
+    """
+    Whether this backend supports count operations via ``len(model)`` and ``bool(model)``.
+
+    When ``can_count`` is ``True``, calling ``len()`` or ``bool()`` on a model will issue a lightweight
+    ``HEAD`` request to the records URL and extract the count from response headers (e.g.
+    ``X-Total-Count``) via the ``count_adapter``.  A ``HEAD`` request returns only headers — no
+    response body — so this is much cheaper than fetching all records.
+
+    Additionally, count information is always extracted from response headers when fetching records
+    via ``records()``, so after iterating over a model the count is cached and available without
+    an additional request.
+
+    When ``can_count`` is ``False`` (the default), ``len()`` and ``bool()`` on models will raise
+    ``NotImplementedError``, and endpoints won't include ``number_results`` in the pagination response.
+
+    ```python
+    backend = clearskies.backends.ApiBackend(
+        base_url="https://api.example.com",
+        can_count=True,
+    )
+    ```
+    """
+    can_count = configs.Boolean(default=False)
 
     """
     The Base URL for the requests - will be prepended to the destination_name() from the model.
@@ -629,6 +658,196 @@ class ApiBackend(Backend, InjectableProperties):
     response_adapter_dependency_name = configs.String(default="response_adapter")
 
     """
+    Pluggable URL routing adapter for controlling how URLs are generated for API requests.
+
+    By default, the backend generates standard REST-style URLs using the model's destination name
+    (e.g. ``/users``, ``/users/123``), combined with the ``base_url`` and ``url_suffix`` settings.
+    You can override this behavior by providing a :class:`~clearskies.backends.adapters.UrlAdapter`
+    subclass for full control, or a plain callable for simple cases.
+
+    When providing a callable, it will be called with different arguments depending on the operation
+    (see the individual URL methods for details).  The callable can return either:
+
+    1. A plain URL string — in this case, no routing parameters are reported as consumed, so all
+       data keys remain in the request body.
+    2. A tuple of ``(url, used_routing_parameters)`` — the second element is a list of parameter
+       names that were absorbed into the URL.  These parameters will be removed from the request
+       body before sending to the API, preventing them from being sent in both the URL path and
+       the request body.
+
+    This matters because clearskies uses the ``used_routing_parameters`` list to strip routing data
+    out of the request body.  For example, if your URL template is ``/tenants/{tenant_id}/users``
+    and the save data contains ``{"tenant_id": "abc", "name": "Jane"}``, the routing parameter
+    ``tenant_id`` will be filled into the URL and then removed from the request body so only
+    ``{"name": "Jane"}`` is sent.
+
+    Provide a :class:`~clearskies.backends.adapters.UrlAdapter` subclass for full control, or a
+    plain callable for simple URL generation::
+
+        # Full adapter — override individual URL methods:
+        class VersionedUrlAdapter(clearskies.backends.adapters.UrlAdapter):
+            def records_url(self, query):
+                return (f"/api/v2/{query.model_class.destination_name()}", [])
+
+            def create_url(self, data, model):
+                return (f"/api/v2/{model.destination_name()}", [])
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            url_adapter=VersionedUrlAdapter(),
+        )
+
+        # Callable — return just a URL string (simple case, no routing params consumed):
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            url_adapter=lambda data, model: f"/api/v2/{model.destination_name()}",
+        )
+
+        # Callable — return a tuple to report consumed routing parameters:
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            url_adapter=lambda data, model: (
+                f"/api/v2/tenants/{data['tenant_id']}/users",
+                ["tenant_id"],
+            ),
+        )
+    """
+    url_adapter = configs.AdapterOrCallable[UrlAdapter](adapter_type="UrlAdapter", default=None)
+
+    """
+    Dependency name used to lazily resolve a URL adapter from DI when
+    ``url_adapter`` is not explicitly configured.
+    """
+    url_adapter_dependency_name = configs.String(default="url_adapter")
+
+    """
+    Pluggable pagination adapter for controlling how next-page data is extracted from API responses.
+
+    Responsible for answering one question: **how do I fetch the next page of records?**  For total
+    count extraction, see ``count_adapter``.
+
+    clearskies ships with two built-in implementations:
+
+    - :class:`~clearskies.backends.adapters.LinkHeaderPaginationAdapter` — parses RFC 5988 ``Link``
+      headers with ``rel="next"`` (the **default**)
+    - :class:`~clearskies.backends.adapters.ParameterPaginationAdapter` — reads the next page value
+      from a response header (e.g. ``X-Next-Page``) or response body field (e.g. ``next_page``)
+
+    You can also provide a custom :class:`~clearskies.backends.adapters.PaginationAdapter` subclass
+    or a plain callable.
+
+    Use the default Link header adapter (this is what happens when no ``pagination_adapter`` is set)::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            pagination_adapter=clearskies.backends.adapters.LinkHeaderPaginationAdapter(
+                pagination_parameter_name="page",
+            ),
+        )
+
+    Use the parameter adapter to read next-page from a response header::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            pagination_adapter=clearskies.backends.adapters.ParameterPaginationAdapter(
+                pagination_parameter_name="page",
+                next_page_header="X-Next-Page",
+            ),
+        )
+
+    Or from the response body::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            pagination_adapter=clearskies.backends.adapters.ParameterPaginationAdapter(
+                pagination_parameter_name="page",
+                next_page_body_key="next_page",
+            ),
+        )
+
+    Write a custom adapter for cursor-based pagination::
+
+        class CursorPaginationAdapter(clearskies.backends.adapters.PaginationAdapter):
+            def extract_next_page_data(self, response, query):
+                data = response.json()
+                if cursor := data.get("meta", {}).get("next_cursor"):
+                    return {"cursor": cursor}
+                return {}
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            pagination_adapter=CursorPaginationAdapter(),
+        )
+
+    Or use a callable for simple cases::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            pagination_adapter=lambda response, query: (
+                {"page": response.json()["next_page"]}
+                if response.json().get("next_page")
+                else {}
+            ),
+        )
+    """
+    pagination_adapter = configs.AdapterOrCallable[PaginationAdapter](adapter_type="PaginationAdapter", default=None)
+
+    """
+    Dependency name used to lazily resolve a pagination adapter from DI when
+    ``pagination_adapter`` is not explicitly configured.
+    """
+    pagination_adapter_dependency_name = configs.String(default="pagination_adapter")
+
+    """
+    Pluggable count extraction adapter for controlling how total record counts are extracted from API responses.
+
+    clearskies ships with two built-in implementations:
+
+    - :class:`~clearskies.backends.adapters.HeaderCountAdapter` — reads ``X-Total-Count``,
+      ``X-Total``, and ``X-Total-Pages`` response headers (the **default**)
+    - :class:`~clearskies.backends.adapters.BodyCountAdapter` — navigates a dot-notation path
+      in the response body (e.g. ``"meta.pagination.total"``)
+
+    You can also provide a custom :class:`~clearskies.backends.adapters.CountAdapter` subclass
+    or a plain callable.
+
+    Use the default header adapter (this is what happens when no ``count_adapter`` is set)::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            count_adapter=clearskies.backends.adapters.HeaderCountAdapter(),
+        )
+
+    Use the body adapter for APIs that return counts in the response body::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            count_adapter=clearskies.backends.adapters.BodyCountAdapter(
+                count_path="meta.pagination.total",
+                pages_path="meta.pagination.pages",
+            ),
+        )
+
+    Or use a callable that receives ``(response_headers, response_data)`` and returns
+    ``(total_count, total_pages)``::
+
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            count_adapter=lambda headers, data: (
+                int(headers["X-My-Total"]) if headers and "X-My-Total" in headers else None,
+                None,
+            ),
+        )
+    """
+    count_adapter = configs.AdapterOrCallable[CountAdapter](adapter_type="CountAdapter", default=None)
+
+    """
+    Dependency name used to lazily resolve a count adapter from DI when
+    ``count_adapter`` is not explicitly configured.
+    """
+    count_adapter_dependency_name = configs.String(default="count_adapter")
+
+    """
     The name of the pagination parameter
     """
     pagination_parameter_name = configs.String(default="start")
@@ -680,13 +899,116 @@ class ApiBackend(Backend, InjectableProperties):
         can_update: bool | None = True,
         can_delete: bool | None = True,
         can_query: bool | None = True,
+        can_count: bool | None = False,
         response_adapter: ResponseAdapter | Callable | None = None,
         response_adapter_dependency_name: str = "response_adapter",
+        url_adapter: UrlAdapter | Callable | None = None,
+        url_adapter_dependency_name: str = "url_adapter",
+        pagination_adapter: PaginationAdapter | Callable | None = None,
+        pagination_adapter_dependency_name: str = "pagination_adapter",
+        count_adapter: CountAdapter | Callable | None = None,
+        count_adapter_dependency_name: str = "count_adapter",
+        url_suffix: str = "",
     ):
         self.finalize_and_validate_configuration()
 
-    def finalize_url(self, url: str, available_routing_data: dict[str, str], operation: str) -> tuple[str, list[str]]:
+    @property
+    def url_adapter_instance(self) -> UrlAdapter | Callable[..., Any]:
         """
+        Lazy-resolve UrlAdapter from config param, DI, or default.
+
+        Resolution order:
+        1. Direct param (self.url_adapter)
+        2. DI binding (via url_adapter_dependency_name)
+        3. Default UrlAdapter (with base_url, url_suffix)
+
+        Note: Checks on every access for consistency with get_response_adapter pattern.
+        If url_adapter config is mutated after first use, the new value will be used.
+        """
+        # Always check direct param first (it may have changed)
+        if self.url_adapter is not None:
+            return self.url_adapter
+
+        # Check cache
+        if hasattr(self, "_url_adapter_instance_cached"):
+            return self._url_adapter_instance_cached
+
+        # Resolve from DI or create default
+        try:
+            self._url_adapter_instance_cached: UrlAdapter = self.di.build(self.url_adapter_dependency_name)
+        except MissingDependency:
+            self._url_adapter_instance_cached = UrlAdapter(
+                base_url=self.base_url,
+                url_suffix=self.url_suffix,
+            )
+        return self._url_adapter_instance_cached
+
+    @property
+    def pagination_adapter_instance(self) -> PaginationAdapter | Callable[..., Any]:
+        """
+        Lazy-resolve PaginationAdapter from config param, DI, or default.
+
+        Resolution order:
+        1. Direct param (self.pagination_adapter)
+        2. DI binding (via pagination_adapter_dependency_name)
+        3. Default PaginationAdapter (with pagination_parameter_name)
+
+        Note: Checks on every access for consistency with get_response_adapter pattern.
+        If pagination_adapter config is mutated after first use, the new value will be used.
+        """
+        # Always check direct param first (it may have changed)
+        if self.pagination_adapter is not None:
+            return self.pagination_adapter
+
+        # Check cache
+        if hasattr(self, "_pagination_adapter_instance_cached"):
+            return self._pagination_adapter_instance_cached
+
+        # Resolve from DI or create default
+        try:
+            self._pagination_adapter_instance_cached: PaginationAdapter = self.di.build(
+                self.pagination_adapter_dependency_name
+            )
+        except MissingDependency:
+            self._pagination_adapter_instance_cached = LinkHeaderPaginationAdapter(
+                pagination_parameter_name=self.pagination_parameter_name,
+            )
+        return self._pagination_adapter_instance_cached
+
+    @property
+    def count_adapter_instance(self) -> CountAdapter | Callable[..., Any]:
+        """
+        Lazy-resolve CountAdapter from config param, DI, or default.
+
+        Resolution order:
+        1. Direct param (self.count_adapter)
+        2. DI binding (via count_adapter_dependency_name)
+        3. Default CountAdapter
+
+        Note: Checks on every access for consistency with get_response_adapter pattern.
+        If count_adapter config is mutated after first use, the new value will be used.
+        """
+        # Always check direct param first (it may have changed)
+        if self.count_adapter is not None:
+            return self.count_adapter
+
+        # Check cache
+        if hasattr(self, "_count_adapter_instance_cached"):
+            return self._count_adapter_instance_cached
+
+        # Resolve from DI or create default
+        try:
+            self._count_adapter_instance_cached: CountAdapter = self.di.build(self.count_adapter_dependency_name)
+        except MissingDependency:
+            self._count_adapter_instance_cached = HeaderCountAdapter()
+        return self._count_adapter_instance_cached
+
+    def finalize_url(
+        self, url: str, available_routing_data: dict[str, str | int], operation: str
+    ) -> tuple[str, list[str]]:
+        """
+        Delegate to URL adapter for finalization.
+
         Given a URL, this will append the base URL, fill in any routing data, and also return any used routing parameters.
 
         For example, consider a base URL of `/my/api/{record_id}/:other_id` and then this is called as so:
@@ -706,40 +1028,22 @@ class ApiBackend(Backend, InjectableProperties):
         The latter is returned so you can understand what parameters were absorbed into the URL.  Often, when some piece of data
         becomes a routing parameter, it needs to be ignored in the rest of the request.  `used_routing_parameters` helps with that.
         """
-        base_url = self.base_url.strip("/") + "/" if self.base_url.strip("/") else ""
-        url_suffix = "/" + self.url_suffix.strip("/") if self.url_suffix.strip("/") else ""
-        url = base_url + url + url_suffix
-        routing_parameters = routing.extract_url_parameter_name_map(url)
-        if not routing_parameters:
-            return (url, [])
-
-        parts = url.split("/")
-        used_routing_parameters = []
-        for parameter_name, index in routing_parameters.items():
-            if parameter_name not in available_routing_data:
-                a = "an" if operation == "update" else "a"
-                raise ValueError(
-                    f"""Failed to generate URL while building {a} {operation} request!  Url {url} hsa a routing parameter named
-                    {parameter_name} that I couldn't fill in from the request details.  When fetching records, this should be
-                    provided by adding an equals condition to the model, e.g. `model.where("{parameter_name}=some_value")`.
-                    When creating/updating a record, this should be provided in the save data, e.g.:
-                    `model.save({{"{parameter_name}": "some_value"}})`
-                    """
-                )
-            if available_routing_data[parameter_name].__class__ not in [str, int]:
-                parameter_type = available_routing_data[parameter_name].__class__.__name__
-                raise ValueError(
-                    f"I was filling in a routing parameter named {parameter_name} but the value I was given has a type of {parameter_type}.  Routing parameters can only be strings or integers."
-                )
-            parts[index] = available_routing_data[parameter_name]
-            used_routing_parameters.append(parameter_name)
-        return ("/".join(parts), used_routing_parameters)
+        url_adapter = self.url_adapter_instance
+        if isinstance(url_adapter, UrlAdapter):
+            return url_adapter.finalize_url(url, available_routing_data, operation)
+        # Callable url_adapters don't participate in finalize_url — they replace
+        # the higher-level methods (create_url, records_url, etc.) instead.
+        # Fall back to a default UrlAdapter for the core URL-template logic.
+        return UrlAdapter(
+            base_url=self.base_url,
+            url_suffix=self.url_suffix,
+        ).finalize_url(url, available_routing_data, operation)
 
     def finalize_url_from_data(self, url: str, data: dict[str, Any], operation: str) -> tuple[str, list[str]]:
         """
         Create the final URL using a data dictionary to fill in any URL parameters.
 
-        See finalize_url for more details about the return value
+        See finalize_url for more details about the return value.
         """
         return self.finalize_url(url, data, operation)
 
@@ -747,9 +1051,9 @@ class ApiBackend(Backend, InjectableProperties):
         """
         Create the URL using a query to fill in any URL parameters.
 
-        See finalize_url for more details about the return value
+        See finalize_url for more details about the return value.
         """
-        available_routing_data = {}
+        available_routing_data: dict[str, str | int] = {}
         for condition in query.conditions:
             if condition.operator != "=":
                 continue
@@ -758,11 +1062,35 @@ class ApiBackend(Backend, InjectableProperties):
 
     def create_url(self, data: dict[str, Any], model: Model) -> tuple[str, list[str]]:
         """
-        Calculate the URL to use for a create requst.  Also, return the list of ay data parameters used to construct the URL.
+        Calculate the URL to use for a create request.  Also, return the list of any data parameters used to construct the URL.
 
         See finalize_url for more details on the return value.
+
+        When a callable is provided as the ``url_adapter``, it receives ``(data, model)`` and can return either a plain
+        URL string or a tuple of ``(url, used_routing_parameters)``.  If it returns just a URL string, no routing
+        parameters are reported as consumed, so all data keys remain in the request body.  If it returns a tuple, the
+        second element lists the parameter names that were absorbed into the URL and should be removed from the request
+        body before sending the API request::
+
+            # Simple callable — just return a URL string:
+            url_adapter = lambda data, model: f"/api/v2/{model.destination_name()}"
+
+            # Callable with routing parameter reporting:
+            url_adapter = lambda data, model: (
+                f"/api/v2/tenants/{data['tenant_id']}/{model.destination_name()}",
+                ["tenant_id"],
+            )
         """
-        return self.finalize_url_from_data(model.destination_name(), data, "create")
+        url_adapter = self.url_adapter_instance
+        if callable(url_adapter) and not isinstance(url_adapter, UrlAdapter):
+            # A callable url_adapter receives (data, model) and can return either a plain URL string
+            # or a tuple of (url, used_routing_parameters).  When it returns just a string, we assume
+            # no routing parameters were consumed from the data, so nothing is stripped from the request body.
+            result = url_adapter(data, model)
+            if isinstance(result, tuple):
+                return result
+            return (result, [])
+        return url_adapter.create_url(data, model)
 
     def create_method(self, data: dict[str, Any], model: Model) -> str:
         """Return the request method to use with a create request."""
@@ -773,8 +1101,32 @@ class ApiBackend(Backend, InjectableProperties):
         Calculate the URL to use for a records request.  Also, return the list of any query parameters used to construct the URL.
 
         See finalize_url for more details on the return value.
+
+        When a callable is provided as the ``url_adapter``, it receives ``(query)`` and can return either a plain
+        URL string or a tuple of ``(url, used_routing_parameters)``.  If it returns just a URL string, no routing
+        parameters are reported as consumed, so all query conditions are translated into query parameters.  If it
+        returns a tuple, the second element lists the condition column names that were absorbed into the URL and
+        should be excluded from query parameters::
+
+            # Simple callable — just return a URL string:
+            url_adapter = lambda query: f"/api/v2/{query.model_class.destination_name()}"
+
+            # Callable with routing parameter reporting:
+            url_adapter = lambda query: (
+                f"/api/v2/tenants/{next(c.values[0] for c in query.conditions if c.column_name == 'tenant_id')}/{query.model_class.destination_name()}",
+                ["tenant_id"],
+            )
         """
-        return self.finalize_url_from_query(query, "records")
+        url_adapter = self.url_adapter_instance
+        if callable(url_adapter) and not isinstance(url_adapter, UrlAdapter):
+            # A callable url_adapter receives (query) and can return either a plain URL string or a tuple
+            # of (url, used_routing_parameters).  When it returns just a string, we assume no query conditions
+            # were consumed as routing parameters.
+            result = url_adapter(query)
+            if isinstance(result, tuple):
+                return result
+            return (result, [])
+        return url_adapter.records_url(query)
 
     def records_method(self, query: Query) -> str:
         """Return the request method to use when fetching records from the API."""
@@ -789,17 +1141,44 @@ class ApiBackend(Backend, InjectableProperties):
         return self.records_url(query)
 
     def count_method(self, query: Query) -> str:
-        """Return the request method to use when making a request for a record count."""
-        return self.records_method(query)
+        """
+        Return the request method to use when making a request for a record count.
+
+        Defaults to ``HEAD`` because it's lightweight — the server returns only headers (no body),
+        which is sufficient when count information comes from headers like ``X-Total-Count``.
+        Override this to return ``GET`` if your API doesn't support ``HEAD`` requests or if the
+        count comes from the response body.
+        """
+        return "HEAD"
 
     def delete_url(self, id: int | str, model: Model) -> tuple[str, list[str]]:
         """
         Calculate the URL to use for a delete request.  Also, return the list of any query parameters used to construct the URL.
 
         See finalize_url for more details on the return value.
+
+        When a callable is provided as the ``url_adapter``, it receives ``(model, id)`` and can return either a plain
+        URL string or a tuple of ``(url, used_routing_parameters)``::
+
+            # Simple callable — just return a URL string:
+            url_adapter = lambda model, id: f"/api/v2/{model.destination_name()}/{id}"
+
+            # Callable with routing parameter reporting:
+            url_adapter = lambda model, id: (
+                f"/api/v2/tenants/{model.tenant_id}/{model.destination_name()}/{id}",
+                ["tenant_id"],
+            )
         """
-        model_base_url = model.destination_name().strip("/") + "/" if model.destination_name() else ""
-        return self.finalize_url_from_data(f"{model_base_url}{id}", model.get_raw_data(), "delete")
+        url_adapter = self.url_adapter_instance
+        if callable(url_adapter) and not isinstance(url_adapter, UrlAdapter):
+            # A callable url_adapter receives (model, id) and can return either a plain URL string or a tuple
+            # of (url, used_routing_parameters).  When it returns just a string, we assume no routing parameters
+            # were consumed from the model data.
+            result = url_adapter(model, id)
+            if isinstance(result, tuple):
+                return result
+            return (result, [])
+        return url_adapter.delete_url(id, model)
 
     def delete_method(self, id: int | str, model: Model) -> str:
         """Return the request method to use when deleting records via the API."""
@@ -810,9 +1189,32 @@ class ApiBackend(Backend, InjectableProperties):
         Calculate the URL to use for an update request.  Also, return the list of any query parameters used to construct the URL.
 
         See finalize_url for more details on the return value.
+
+        When a callable is provided as the ``url_adapter``, it receives ``(model, id, data)`` and can return either
+        a plain URL string or a tuple of ``(url, used_routing_parameters)``.  If it returns just a URL string, no
+        routing parameters are reported as consumed, so all data keys remain in the request body.  If it returns a
+        tuple, the second element lists the parameter names that were absorbed into the URL and should be removed
+        from the request body before sending the API request::
+
+            # Simple callable — just return a URL string:
+            url_adapter = lambda model, id, data: f"/api/v2/{model.destination_name()}/{id}"
+
+            # Callable with routing parameter reporting:
+            url_adapter = lambda model, id, data: (
+                f"/api/v2/tenants/{data['tenant_id']}/{model.destination_name()}/{id}",
+                ["tenant_id"],
+            )
         """
-        model_base_url = model.destination_name().strip("/") + "/" if model.destination_name() else ""
-        return self.finalize_url_from_data(f"{model_base_url}{id}", {**model.get_raw_data(), **data}, "update")
+        url_adapter = self.url_adapter_instance
+        if callable(url_adapter) and not isinstance(url_adapter, UrlAdapter):
+            # A callable url_adapter receives (model, id, data) and can return either a plain URL string or a tuple
+            # of (url, used_routing_parameters).  When it returns just a string, we assume no routing parameters
+            # were consumed from the data, so nothing is stripped from the request body.
+            result = url_adapter(model, id, data)
+            if isinstance(result, tuple):
+                return result
+            return (result, [])
+        return url_adapter.update_url(id, data, model)
 
     def update_method(self, id: int | str, data: dict[str, Any], model: Model) -> str:
         """Return the request method to use for an update request."""
@@ -931,11 +1333,13 @@ class ApiBackend(Backend, InjectableProperties):
         self.check_query(query)
         (url, method, body, headers) = self.build_records_request(query)
         response = self.execute_request(url, method, json=body, headers=headers)
-        records = self.map_records_response(response.json(), query)
+        response_data = response.json()
+        records = self.map_records_response(response_data, query)
         response_next_page_data = self.get_next_page_data_from_response(query, response)
 
-        # Extract count info directly from response headers (not from next_page_data)
-        total_count, total_pages = self.extract_count_from_response(dict(response.headers), None)
+        # Extract count info via the count adapter.  Both the headers and the parsed body are
+        # provided so that either header-based or body-based count adapters can find the count.
+        total_count, total_pages = self.extract_count_from_response(dict(response.headers), response_data)
 
         return RecordsQueryResult(
             records=records,
@@ -1249,7 +1653,7 @@ class ApiBackend(Backend, InjectableProperties):
         response: RequestsResponse,
     ) -> dict[str, Any]:
         """
-        Extract pagination data from the API response needed to fetch the next page of records.
+        Extract pagination data from the API response via adapter.
 
         This method has a very important job, which is to inform clearskies about how to make another API call to fetch the next
         page of records.  It returns a dictionary with whatever pagination information is necessary.
@@ -1258,24 +1662,11 @@ class ApiBackend(Backend, InjectableProperties):
             A dictionary containing pagination data (e.g., cursor, page number, total counts).
             Returns an empty dict if there is no next page.
         """
-        next_page_data: dict[str, Any] = {}
-
-        # Different APIs generally have completely different ways of communicating pagination data, but one somewhat common
-        # approach is to use a link header, so let's support that in the base class.
-        if "link" not in response.headers:
-            return next_page_data
-        next_link = [rel for rel in response.headers["link"].split(",") if 'rel="next"' in rel]
-        if not next_link:
-            return next_page_data
-        parsed_next_link = urllib.parse.urlparse(next_link[0].split(";")[0].strip(" <>"))
-        query_parameters = urllib.parse.parse_qs(parsed_next_link.query)
-        if self.pagination_parameter_name not in query_parameters:
-            raise ValueError(
-                f"Configuration error with {self.__class__.__name__}!  I am configured to expect a pagination key of '{self.pagination_parameter_name}.  However, when I was parsing the next link from a response to get the next pagination details, I could not find the designated pagination key.  This likely means that backend.pagination_parameter_name is set to the wrong value.  The link in question was "
-                + parsed_next_link.geturl()
-            )
-        next_page_data[self.pagination_parameter_name] = query_parameters[self.pagination_parameter_name][0]
-        return next_page_data
+        pagination_adapter = self.pagination_adapter_instance
+        if callable(pagination_adapter) and not isinstance(pagination_adapter, PaginationAdapter):
+            next_page_data = pagination_adapter(response, query)
+            return next_page_data if isinstance(next_page_data, dict) else {}
+        return pagination_adapter.extract_next_page_data(response, query)
 
     def extract_count_from_response(
         self,
@@ -1283,13 +1674,17 @@ class ApiBackend(Backend, InjectableProperties):
         response_data: Any = None,
     ) -> tuple[int | None, int | None]:
         """
-        Extract count information from API response headers.
+        Extract count information from API response via the count adapter.
 
-        This implementation checks for common count headers used by REST APIs:
-        - X-Total-Count or X-Total for total record count
-        - X-Total-Pages for total pages
+        Delegates to the configured ``count_adapter`` to extract total record count and total page
+        count from the API response.  The default ``CountAdapter`` checks for common count headers
+        used by REST APIs:
 
-        Override this method in subclasses to handle API-specific count headers.
+        - ``X-Total-Count`` or ``X-Total`` for total record count
+        - ``X-Total-Pages`` for total pages
+
+        You can customize this by providing a ``count_adapter`` when configuring the backend, or by
+        overriding this method in a subclass:
 
         ```python
         def extract_count_from_response(
@@ -1307,31 +1702,60 @@ class ApiBackend(Backend, InjectableProperties):
             return (None, None)
         ```
         """
-        if not response_headers:
-            return (None, None)
-
-        # Normalize header keys to lowercase for case-insensitive lookup
-        headers_lower = {k.lower(): v for k, v in response_headers.items()}
-
-        total_count = None
-        total_pages = None
-
-        # Check for common total count headers
-        if "x-total-count" in headers_lower:
-            total_count = int(headers_lower["x-total-count"])
-        elif "x-total" in headers_lower:
-            total_count = int(headers_lower["x-total"])
-
-        # Check for total pages header
-        if "x-total-pages" in headers_lower:
-            total_pages = int(headers_lower["x-total-pages"])
-
-        return (total_count, total_pages)
+        count_adapter = self.count_adapter_instance
+        if callable(count_adapter) and not isinstance(count_adapter, CountAdapter):
+            result = count_adapter(response_headers, response_data)
+            return result if isinstance(result, tuple) and len(result) == 2 else (None, None)
+        return count_adapter.extract_count(response_data, response_headers)
 
     def count(self, query: Query) -> CountQueryResult:
-        raise NotImplementedError(
-            f"The {self.__class__.__name__} backend does not support count operations, so you can't use the `len` or `bool` function for any models using it."
+        """
+        Count the number of records matching the query.
+
+        When ``can_count`` is ``True``, this attempts a lightweight ``HEAD`` request to the records URL
+        and uses the ``count_adapter`` to extract the total count from the response headers (e.g.
+        ``X-Total-Count``).  A ``HEAD`` request returns only headers — no response body — so this is
+        much cheaper than fetching all records just to count them.
+
+        If the ``HEAD`` request doesn't return count headers, the count will be ``0``.  For APIs that
+        don't support ``HEAD`` requests or don't return count headers, you can override ``count_method``
+        to use ``GET`` instead, or override this method entirely.
+
+        When ``can_count`` is ``False`` (the default), this raises ``NotImplementedError``.
+
+        ```python
+        backend = clearskies.backends.ApiBackend(
+            base_url="https://api.example.com",
+            can_count=True,
         )
+        ```
+        """
+        if not self.can_count:
+            raise NotImplementedError(
+                f"The {self.__class__.__name__} backend does not support count operations.  "
+                f"Set can_count=True to enable count via HEAD request with response headers."
+            )
+
+        self.check_query(query)
+        url, used_routing_parameters = self.count_url(query)
+        method = self.count_method(query)
+        condition_route_id, condition_url_parameters, condition_body_parameters = self.conditions_to_request_parameters(
+            query, used_routing_parameters
+        )
+
+        if condition_route_id:
+            url = url.rstrip("/") + "/" + str(condition_route_id)
+
+        if condition_url_parameters:
+            url = url + "?" + urllib.parse.urlencode(condition_url_parameters)
+
+        response = self.execute_request(url, method, headers=self.get_count_headers())
+        total_count, total_pages = self.extract_count_from_response(
+            dict(response.headers),
+            response.json() if response.content else None,
+        )
+
+        return CountQueryResult(count=total_count or 0)
 
     def execute_request(
         self,
