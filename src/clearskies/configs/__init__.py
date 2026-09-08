@@ -109,6 +109,7 @@ from .response_adapter import ResponseAdapter
 from .schema import Schema
 from .searchable_model_columns import SearchableModelColumns
 from .secret_cache import SecretCache
+from .secret_kind import SecretKind
 from .secrets import Secrets
 from .security_headers import SecurityHeaders
 from .select import Select
@@ -171,6 +172,7 @@ __all__ = [
     "Schema",
     "SearchableModelColumns",
     "SecretCache",
+    "SecretKind",
     "Secrets",
     "SecurityHeaders",
     "Select",

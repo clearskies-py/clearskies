@@ -455,6 +455,23 @@ class SecretBearer(Authentication, di.InjectableProperties):
     """
     documentation_security_name = configs.String(default="ApiKey")
 
+    """
+    The kind of secret being retrieved (static_secret, dynamic_secret, or rotated_secret).
+
+    When set, explicitly specifies the secret type to avoid Akeyless auto-detection via describe_secret.
+    This skips the metadata API call and directly retrieves the secret using the specified method.
+    When not set (default), the secrets manager will use its default behavior (static_secret or auto_guess_type).
+
+    Example with Akeyless dynamic secret:
+    ```python
+    authentication = clearskies.authentication.SecretBearer(
+        secret_key="/path/to/dynamic_secret",
+        secret_kind="dynamic_secret",  # Skip auto-detect, fetch as dynamic
+    )
+    ```
+    """
+    secret_kind = configs.SecretKind(default=None)
+
     """Force secret refresh when retrieving.
 
     When set to True, forces the secret to be re-fetched from the secret manager on access.
@@ -505,6 +522,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
         documentation_security_name: str = "",
         refresh: bool = False,
         json_path: str | None = None,
+        secret_kind: str | None = None,
     ):
         if not secret_key and not environment_key:
             raise ValueError("Must set either 'secret_key' or 'environment_key' when configuring the SecretBearer")
@@ -520,6 +538,7 @@ class SecretBearer(Authentication, di.InjectableProperties):
                         self.secret_key,
                         refresh=self.refresh or self._force_secret_refresh,
                         json_path=self.json_path,
+                        kind=self.secret_kind,
                     )
                 finally:
                     self._force_secret_refresh = False

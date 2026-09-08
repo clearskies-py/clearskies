@@ -254,3 +254,63 @@ class SecretBearerTest(unittest.TestCase):
         self.assertEqual("/path/to/nested/creds", calls[0][0])
         self.assertEqual(False, calls[0][1])
         self.assertEqual("credentials.api_key", calls[0][2])
+
+    def test_secret_kind_parameter_passed_to_secrets_manager(self):
+        """Test that secret_kind is passed to secrets.get() method."""
+        calls = []
+
+        def fetch_secret(path, refresh=False, json_path=None, kind=None, **kwargs):
+            calls.append((path, refresh, json_path, kind))
+            if path == "/path/to/dynamic/secret":
+                return "DYNAMIC_SECRET_VALUE"
+            raise KeyError(f"Attempt to fetch non-existent secret: {path}")
+
+        fake_secret_manager = SimpleNamespace(get=fetch_secret)
+
+        bearer = clearskies.authentication.SecretBearer(
+            secret_key="/path/to/dynamic/secret",
+            secret_kind="dynamic_secret",
+        )
+
+        di = Di(bindings={"secrets": fake_secret_manager})
+        bearer.injectable_properties(di)
+
+        headers = bearer.headers()
+        self.assertIn("DYNAMIC_SECRET_VALUE", headers["Authorization"])
+
+        # Verify that kind was passed to secrets.get()
+        self.assertEqual(1, len(calls))
+        self.assertEqual("/path/to/dynamic/secret", calls[0][0])
+        self.assertEqual("dynamic_secret", calls[0][3])
+
+    def test_secret_kind_with_json_path_and_refresh(self):
+        """Test secret_kind combined with json_path and refresh parameters."""
+        calls = []
+
+        def fetch_secret(path, refresh=False, json_path=None, kind=None, **kwargs):
+            calls.append((path, refresh, json_path, kind))
+            if path == "/path/to/rotated/secret":
+                return json.dumps({"password": "rotated_pass_123"})
+            raise KeyError(f"Attempt to fetch non-existent secret: {path}")
+
+        fake_secret_manager = SimpleNamespace(get=fetch_secret)
+
+        bearer = clearskies.authentication.SecretBearer(
+            secret_key="/path/to/rotated/secret",
+            secret_kind="rotated_secret",
+            json_path="password",
+            refresh=True,
+        )
+
+        di = Di(bindings={"secrets": fake_secret_manager})
+        bearer.injectable_properties(di)
+
+        headers = bearer.headers()
+        self.assertIn("rotated_pass_123", headers["Authorization"])
+
+        # Verify all parameters were passed correctly
+        self.assertEqual(1, len(calls))
+        self.assertEqual("/path/to/rotated/secret", calls[0][0])
+        self.assertEqual(True, calls[0][1])  # refresh=True
+        self.assertEqual("password", calls[0][2])  # json_path
+        self.assertEqual("rotated_secret", calls[0][3])  # kind
