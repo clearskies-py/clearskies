@@ -245,6 +245,7 @@ class Akeyless(secrets.Secrets):
         silent_if_not_found: bool = False,
         refresh: bool = False,
         json_path: str | None = None,
+        kind: str | None = None,
         args: dict[str, Any] | None = None,
     ) -> str:
         """
@@ -254,10 +255,22 @@ class Akeyless(secrets.Secrets):
         for the secret. If found, it returns the cached value. If not found or refresh is True,
         it fetches from Akeyless and stores in the cache.
 
-        When auto_guess_type is enabled, this method automatically determines if the secret is static,
-        dynamic, or rotated and calls the appropriate method to retrieve it. If silent_if_not_found is
-        True, returns an empty string when the secret is not found. If json_path is provided,
-        treats the secret as JSON and returns the specified attribute.
+        The kind parameter allows you to explicitly specify the secret type (static_secret, dynamic_secret,
+        or rotated_secret). When provided, this skips the describe_secret() call and directly retrieves
+        the secret as that type. If kind is not provided and auto_guess_type is enabled, calls describe_secret
+        to determine the type. Otherwise defaults to static_secret.
+
+        If silent_if_not_found is True, returns an empty string when the secret is not found.
+        If json_path is provided, treats the secret as JSON and returns the specified attribute.
+
+        Example with explicit kind to avoid auto-detection:
+        ```python
+        secret_value = secrets.get(
+            "/path/to/dynamic_secret",
+            kind="dynamic_secret",  # Skip describe_secret call
+            json_path="credentials.password",
+        )
+        ```
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
@@ -265,43 +278,37 @@ class Akeyless(secrets.Secrets):
             if cached_value is not None:
                 return cached_value
 
-        # Fetch from Akeyless - sub-methods handle caching, so we don't need to cache here
-        if not self.auto_guess_type:
-            return self.get_static_secret(
-                path, silent_if_not_found=silent_if_not_found, json_path=json_path, refresh=True
-            )
-        else:
+        # Determine the secret kind: explicit param → auto-detect → default to static_secret
+        if not kind and self.auto_guess_type:
+            # Auto-detect via describe_secret
             try:
                 secret = self.describe_secret(path)
+                kind = secret.item_type.lower()  # Use full name: "dynamic_secret", etc.
             except Exception as e:
                 if getattr(e, "status", None) == 404:
                     if silent_if_not_found:
                         return ""
-                    raise e
-                else:
-                    raise ValueError(
-                        f"describe-secret call failed for path {path}: perhaps a permissions issue?  Akeless says {e}"
-                    )
+                    raise KeyError(f"Secret '{path}' not found")
+                raise ValueError(
+                    f"describe-secret call failed for path {path}: perhaps a permissions issue? Akeyless says {e}"
+                )
 
-            self.logger.debug(f"Auto-detected secret type '{secret.item_type}' for secret '{path}'")
-            match secret.item_type.lower():
-                case "dynamic_secret":
-                    return str(
-                        self.get_dynamic_secret(
-                            path,
-                            json_path=json_path,
-                            args=args,
-                            refresh=True,
-                        )
-                    )
-                case "rotated_secret":
-                    return str(self.get_rotated_secret(path, json_path=json_path, args=args, refresh=True))
-                case "static_secret":
-                    return self.get_static_secret(
-                        path, json_path=json_path, silent_if_not_found=silent_if_not_found, refresh=True
-                    )
-                case _:
-                    raise ValueError(f"Unsupported secret type for auto-detection: '{secret.item_type}'")
+        # Default to static_secret if still not determined
+        if not kind:
+            kind = "static_secret"
+
+        # Dispatch to the appropriate getter based on the determined kind
+        match kind.lower():
+            case "dynamic_secret":
+                return str(self.get_dynamic_secret(path, json_path=json_path, args=args, refresh=True))
+            case "rotated_secret":
+                return str(self.get_rotated_secret(path, json_path=json_path, args=args, refresh=True))
+            case "static_secret":
+                return self.get_static_secret(
+                    path, json_path=json_path, silent_if_not_found=silent_if_not_found, refresh=True
+                )
+            case _:
+                raise ValueError(f"Unsupported secret kind: '{kind}'")
 
     def get_static_secret(
         self,

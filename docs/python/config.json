@@ -121,6 +121,7 @@
                 "clearskies.configs.SecurityHeaders",
                 "clearskies.configs.Select",
                 "clearskies.configs.SelectList",
+                "clearskies.configs.SecretKind",
                 "clearskies.configs.String",
                 "clearskies.configs.StringDict",
                 "clearskies.configs.StringList",

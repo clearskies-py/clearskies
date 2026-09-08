@@ -93,7 +93,14 @@ class Secrets(ABC, clearskies.configurable.Configurable, InjectableProperties, l
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
         )
 
-    def get(self, path: str, silent_if_not_found: bool = False, refresh: bool = False) -> str:
+    def get(
+        self,
+        path: str,
+        silent_if_not_found: bool = False,
+        refresh: bool = False,
+        json_path: str | None = None,
+        kind: str | None = None,
+    ) -> str:
         raise NotImplementedError(
             "It looks like you tried to use the secret system in clearskies, but didn't specify a secret manager."
         )
