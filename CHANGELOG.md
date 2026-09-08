@@ -5,12 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.10] - 2026-09-08
+
+### Added
+- Add SecretKind config for explicit secret type specification in [#107](https://github.com/clearskies-py/clearskies/pull/107)
+
 ## [2.1.9] - 2026-09-03
 
 ### Added
 - Add backend adapters to the reference tree
 
 ### Changed
+- Bump version to v2.1.9 by @github-actions[bot]
 - Use functional.json.get_nested_attribute in BodyCountAdapter in [#106](https://github.com/clearskies-py/clearskies/pull/106)
 - Make URL, pagination, and counting pluggable
 
@@ -1494,6 +1500,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.10]: https://github.com/clearskies-py/clearskies/compare/v2.1.9..v2.1.10
 [2.1.9]: https://github.com/clearskies-py/clearskies/compare/v2.1.8..v2.1.9
 [2.1.8]: https://github.com/clearskies-py/clearskies/compare/v2.1.7..v2.1.8
 [2.1.7]: https://github.com/clearskies-py/clearskies/compare/v2.1.6..v2.1.7
