@@ -8,6 +8,14 @@ import clearskies.configs
 import clearskies.decorators
 from clearskies.di import AdditionalConfig, Di, InjectableProperties, inject
 from clearskies.exceptions import MissingDependency
+from tests.di.module_scoped_shared import (
+    ConfigurableBackend,
+    DefaultBackend,
+    GlobalReplacementDependency,
+    ModuleScopedBackend,
+    SharedDependency,
+    SharedDependencySubclass,
+)
 
 
 class SomeClass:
@@ -134,6 +142,313 @@ class DiTest(unittest.TestCase):
 
         di = Di(classes=[TypeHintedClass], class_overrides={TypeHintedClass: ReplacementClass})
         assert di.call_function(my_function) == 10
+
+    def test_module_scoped_class_override_applies_to_own_module(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        assert isinstance(module_a_class.shared_dependency, SharedDependencySubclass)
+        assert module_a_class.module_value == "module-a"
+        assert isinstance(module_a_class.backend, ModuleScopedBackend)
+        assert isinstance(module_b_class.shared_dependency, SharedDependency)
+        assert not isinstance(module_b_class.shared_dependency, SharedDependencySubclass)
+        assert module_b_class.module_value == "module-b-default"
+        assert isinstance(module_b_class.backend, DefaultBackend)
+
+    def test_module_scoped_class_override_does_not_leak_to_other_modules(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_b_class = di.build_class(ModuleBClass)
+        assert isinstance(module_b_class.shared_dependency, SharedDependency)
+        assert module_b_class.shared_dependency.source == "shared"
+
+    def test_global_class_override_beats_module_scoped_class_override(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={SharedDependency: GlobalReplacementDependency},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.shared_dependency, GlobalReplacementDependency)
+
+    def test_module_scoped_class_override_does_not_apply_to_subclasses(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class Consumer:
+            def __init__(self, shared_dependency_subclass: SharedDependencySubclass):
+                self.shared_dependency_subclass = shared_dependency_subclass
+
+        di = Di(classes=[SharedDependencySubclass, Consumer], modules=[module_scoped_a])
+
+        consumer = di.build_class(Consumer)
+        assert isinstance(consumer.shared_dependency_subclass, SharedDependencySubclass)
+
+    def test_module_scoped_class_override_ignores_empty_context(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        value = di.build_class_from_type_hint("shared_dependency", SharedDependency, context="")
+        assert isinstance(value, SharedDependency)
+
+    def test_module_scoped_binding_applies_to_own_module(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        assert module_a_class.module_value == "module-a"
+        assert module_b_class.module_value == "module-b-default"
+
+    def test_global_binding_beats_module_scoped_binding(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a], bindings={"module_value": "global"})
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.module_value == "global"
+
+    def test_module_scoped_binding_ignores_empty_context(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        with self.assertRaises(MissingDependency):
+            di.build_from_name("module_value", context="")
+
+    def test_global_config_override_patches_configurable_instance(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={ConfigurableBackend: {"base_url": "https://global-override.example.com"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.configurable_backend.base_url == "https://global-override.example.com"
+
+    def test_module_scoped_config_override_patches_configurable_instance(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a, module_scoped_b])
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        # module A has config override — patched
+        assert module_a_class.configurable_backend.base_url == "https://module-a.example.com"
+        assert module_a_class.configurable_backend.api_version == "v2"
+        # module B has no config override — default values
+        assert module_b_class.configurable_backend.base_url == "https://default.example.com"
+        assert module_b_class.configurable_backend.api_version == "v1"
+
+    def test_global_config_override_beats_module_scoped_config_override(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={ConfigurableBackend: {"base_url": "https://global.example.com"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert module_a_class.configurable_backend.base_url == "https://global.example.com"
+
+    def test_config_override_does_not_affect_non_configurable_attributes(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            config_overrides={DefaultBackend: {"source": "patched"}},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        # DefaultBackend is not Configurable — should be left as-is (or replaced by module class override)
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, ModuleScopedBackend)
+
+    def test_global_class_override_beats_module_scoped_override_for_injectable_properties(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class GlobalBackend(DefaultBackend):
+            source = "global-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={DefaultBackend: GlobalBackend},
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, GlobalBackend)
+
+    def test_module_overrides_class_overrides_beats_module_own_overrides(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        class ExternalBackend(DefaultBackend):
+            source = "external-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a, module_scoped_b],
+            module_overrides={
+                module_scoped_a: {
+                    "class_overrides": {DefaultBackend: ExternalBackend},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+
+        # module_a's context override beats its own ModuleOverrides
+        assert isinstance(module_a_class.backend, ExternalBackend)
+        # module_b is unaffected
+        assert isinstance(module_b_class.backend, DefaultBackend)
+
+    def test_module_overrides_config_overrides_beats_module_own_overrides(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a, module_scoped_b],
+            module_overrides={
+                module_scoped_a: {
+                    "config_overrides": {ConfigurableBackend: {"base_url": "https://external.example.com"}},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+        # context-level module override beats the module's own config_override
+        assert module_a_class.configurable_backend.base_url == "https://external.example.com"
+        # module B is unaffected — gets its own default
+        assert module_b_class.configurable_backend.base_url == "https://default.example.com"
+
+    def test_module_overrides_bindings_beats_module_own_bindings(self):
+        import tests.di.module_scoped_a as module_scoped_a
+        import tests.di.module_scoped_b as module_scoped_b
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a, module_scoped_b],
+            module_overrides={
+                module_scoped_a: {
+                    "bindings": {"module_value": "external-override"},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+        from tests.di.module_scoped_b import ModuleBClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        module_b_class = di.build_class(ModuleBClass)
+        assert module_a_class.module_value == "external-override"
+        # module B is unaffected — gets its own default
+        assert module_b_class.module_value == "module-b-default"
+
+    def test_config_override_restored_when_new_di_has_no_patch(self):
+        import tests.di.module_scoped_b as module_scoped_b
+        from tests.di.module_scoped_b import ModuleBClass
+
+        # DI A: global config override patches ModuleBClass.configurable_backend
+        di_a = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_b],
+            config_overrides={ConfigurableBackend: {"base_url": "https://patched.example.com"}},
+        )
+        instance_a = di_a.build_class(ModuleBClass)
+        assert instance_a.configurable_backend.base_url == "https://patched.example.com"
+
+        # DI B: no config override — class attribute must be restored to original
+        di_b = Di(classes=[SharedDependency], modules=[module_scoped_b])
+        instance_b = di_b.build_class(ModuleBClass)
+        assert instance_b.configurable_backend.base_url == "https://default.example.com"
+
+    def test_global_override_still_beats_module_overrides_param(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        class ExternalBackend(DefaultBackend):
+            source = "external-backend"
+
+        class GlobalBackend(DefaultBackend):
+            source = "global-backend"
+
+        di = Di(
+            classes=[SharedDependency],
+            modules=[module_scoped_a],
+            class_overrides={DefaultBackend: GlobalBackend},
+            module_overrides={
+                module_scoped_a: {
+                    "class_overrides": {DefaultBackend: ExternalBackend},
+                }
+            },
+        )
+
+        from tests.di.module_scoped_a import ModuleAClass
+
+        module_a_class = di.build_class(ModuleAClass)
+        assert isinstance(module_a_class.backend, GlobalBackend)
+
+    def test_add_module_override_raises_on_unknown_keys(self):
+        import tests.di.module_scoped_a as module_scoped_a
+
+        di = Di(classes=[SharedDependency], modules=[module_scoped_a])
+
+        with self.assertRaises(ValueError) as ctx:
+            di.add_module_override(module_scoped_a, {"typo_key": {}, "bindings": {}})
+
+        assert "typo_key" in str(ctx.exception)
+        assert "Allowed keys" in str(ctx.exception)
 
     def test_now(self):
         di = Di()

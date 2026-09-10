@@ -110,11 +110,12 @@ class InjectableProperties:
             # of what our dependencies are and which ones are cached, so we only have to list the objects attributes the first time.
             attribute = getattr(cls, attribute_name)
 
-            if di.has_class_override(attribute.__class__):
+            override = di.get_class_override(attribute.__class__, context=cls)
+            if override is not None:
                 if not hasattr(cls, "__overridden__"):
                     cls.__overridden__ = {}
                 cls.__overridden__[attribute_name] = attribute
-                setattr(cls, attribute_name, di.get_override_by_class(attribute))
+                setattr(cls, attribute_name, di.get_override_by_class(attribute, context=cls))
                 continue
 
             # This exists to cover a common edge case in testing.  If we override an attribute with a new class (common when
@@ -123,7 +124,37 @@ class InjectableProperties:
             # condition and you'lljust leave the old memory backend in place.  Therefore, when we override an attribute, we
             # also keep track of what the attribute *used* to be so that we can override it every time.
             if hasattr(cls, "__overridden__") and attribute_name in cls.__overridden__:
-                setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name]))
+                setattr(cls, attribute_name, di.get_override_by_class(cls.__overridden__[attribute_name], context=cls))
+
+            # Check for config overrides — patches specific config values on existing Configurable instances.
+            # We store the original so re-runs apply to the unpatched original, not the already-patched copy.
+            config_patches = di.get_config_override(attribute.__class__, context=cls)
+            if config_patches:
+                if not hasattr(cls, "__config_overridden__"):
+                    cls.__config_overridden__ = {}
+                if attribute_name not in cls.__config_overridden__:
+                    cls.__config_overridden__[attribute_name] = attribute
+                patched = di.apply_config_overrides(cls.__config_overridden__[attribute_name], config_patches)
+                setattr(cls, attribute_name, patched)
+                if hasattr(patched, "injectable_properties"):
+                    patched.injectable_properties(di)
+                continue
+
+            if hasattr(cls, "__config_overridden__") and attribute_name in cls.__config_overridden__:
+                original = cls.__config_overridden__[attribute_name]
+                config_patches = di.get_config_override(original.__class__, context=cls)
+                if config_patches:
+                    patched = di.apply_config_overrides(original, config_patches)
+                    setattr(cls, attribute_name, patched)
+                    if hasattr(patched, "injectable_properties"):
+                        patched.injectable_properties(di)
+                else:
+                    # No config patches in this DI context — restore the original.
+                    # This mirrors the __overridden__ pattern: always re-evaluate from the
+                    # stored original so switching DI instances never leaves stale patches.
+                    setattr(cls, attribute_name, original)
+                    if hasattr(original, "injectable_properties"):
+                        original.injectable_properties(di)
 
             if issubclass(attribute.__class__, Injectable):
                 attribute.set_di(di)

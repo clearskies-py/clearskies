@@ -22,6 +22,7 @@ from clearskies.di.additional_config import AdditionalConfig
 from clearskies.di.additional_config_auto_import import AdditionalConfigAutoImport
 from clearskies.di.additional_mygrations_auto_import import AdditionalMygrationsAutoImport
 from clearskies.di.injectable import Injectable
+from clearskies.di.module_overrides import ModuleOverrides
 from clearskies.environment import Environment
 from clearskies.exceptions import MissingDependency
 from clearskies.functional import string
@@ -237,6 +238,10 @@ class Di:
     _prepared: dict[str | type, Any]
     _class_overrides_by_name: dict[str, type]
     _class_overrides_by_class: dict[type, Any]
+    _config_overrides: dict[type, dict[str, Any]]
+    _module_class_overrides: list[tuple[str, dict[type, Any]]]
+    _module_bindings: list[tuple[str, dict[str, Any]]]
+    _module_config_overrides: list[tuple[str, dict[type, dict[str, Any]]]]
     _type_hint_disallow_list: list[type] = [int, float, str, dict, list, datetime.datetime]
     _now: datetime.datetime | None = None
     _utcnow: datetime.datetime | None = None
@@ -254,6 +259,8 @@ class Di:
         bindings: dict[str, Any] | None = None,
         additional_configs: AdditionalConfig | list[AdditionalConfig] | None = None,
         class_overrides: dict[type, Any] | None = None,
+        config_overrides: dict[type, dict[str, Any]] | None = None,
+        module_overrides: dict[ModuleType, dict[str, Any]] | None = None,
         overrides: dict[str, type] | None = None,
         now: datetime.datetime | None = None,
         utcnow: datetime.datetime | None = None,
@@ -268,6 +275,8 @@ class Di:
         bindings -> di.add_binding()
         additional_configs -> di.add_additional_configs()
         class_overrides -> di.add_class_override()
+        config_overrides -> di.add_config_override()
+        module_overrides -> di.add_module_override()
         """
         self._added_modules = {}
         self._additional_configs = []
@@ -278,6 +287,10 @@ class Di:
         self._classes = {}
         self._class_overrides_by_name = {}
         self._class_overrides_by_class = {}
+        self._config_overrides = {}
+        self._module_class_overrides = []
+        self._module_bindings = []
+        self._module_config_overrides = []
         self._prepared = {}
         self._serial = next(Di._serial_counter)
         if classes is not None:
@@ -292,6 +305,12 @@ class Di:
         if class_overrides:
             for class_key, class_value in class_overrides.items():
                 self.add_class_override(class_key, class_value)
+        if config_overrides:
+            for class_key, config_values in config_overrides.items():
+                self.add_config_override(class_key, config_values)
+        if module_overrides:
+            for module, overrides_dict in module_overrides.items():
+                self.add_module_override(module, overrides_dict)
         if overrides:
             for key, value in overrides.items():
                 self.add_override(key, value)
@@ -427,6 +446,22 @@ class Di:
                         # method or explicit binding that was meant to provide that name, and
                         # forcing every Injectable subclass's name to avoid colliding with any
                         # such name across the entire scanned module tree.
+                        continue
+                    if issubclass(item, ModuleOverrides) and item is not ModuleOverrides:
+                        init_args = inspect.getfullargspec(item)
+                        nargs = len(init_args.args) if init_args.args else 0
+                        nkwargs = len(init_args.defaults) if init_args.defaults else 0
+                        if nargs - 1 - nkwargs > 0:
+                            raise ValueError(
+                                "Error auto-importing module overrides "
+                                + item.__name__
+                                + ": auto imported module overrides can only have keyword arguments."
+                            )
+                        module_overrides = item()
+                        self._module_class_overrides.append((root or "", module_overrides.get_class_overrides()))
+                        self._module_bindings.append((root or "", module_overrides.get_bindings()))
+                        self._module_config_overrides.append((root or "", module_overrides.get_config_overrides()))
+                        self.add_additional_configs([module_overrides])
                         continue
                     if issubclass(item, AdditionalConfigAutoImport):
                         init_args = inspect.getfullargspec(item)
@@ -581,15 +616,199 @@ class Di:
     def has_class_override(self, class_to_check: type) -> bool:
         return class_to_check in self._class_overrides_by_class
 
-    def get_override_by_class(self, object_to_override: Any) -> Any:
-        if object_to_override.__class__ not in self._class_overrides_by_class:
+    def _context_to_class(self, context: str | type | None = None) -> type | None:
+        if context is None:
+            return None
+        if inspect.isclass(context):
+            return context
+
+        context_class_entry = self._classes.get(context)
+        if not context_class_entry:
+            context_class_entry = self._classes.get(string.camel_case_to_snake_case(context))
+        context_class = context_class_entry["class"] if context_class_entry else None
+        return context_class if inspect.isclass(context_class) else None
+
+    def get_class_override(self, class_to_check: type, context: str | type | None = None) -> Any | None:
+        if class_to_check in self._class_overrides_by_class:
+            return self._class_overrides_by_class[class_to_check]
+
+        context_class = self._context_to_class(context)
+        if not inspect.isclass(context_class):
+            return None
+
+        try:
+            context_class_root = os.path.dirname(inspect.getfile(context_class))
+        except TypeError:
+            return None
+
+        for module_root, class_overrides in self._module_class_overrides:
+            if context_class_root[: len(module_root)] != module_root:
+                continue
+            if class_to_check not in class_overrides:
+                continue
+            return class_overrides[class_to_check]
+
+        return None
+
+    def get_override_by_class(self, object_to_override: Any, context: str | type | None = None) -> Any:
+        class_to_check = object_to_override if inspect.isclass(object_to_override) else object_to_override.__class__
+        override = self.get_class_override(class_to_check, context=context)
+        if override is None:
             return object_to_override
 
-        override = self._class_overrides_by_class[object_to_override.__class__]
         if inspect.isclass(override):
-            return self.build_class(override)
+            build_context = context.__name__ if inspect.isclass(context) else context
+            return self.build_class(override, context=build_context)
         self.inject_properties(override.__class__)
         return override
+
+    def add_config_override(self, class_to_override: type, config_values: dict[str, Any]) -> None:
+        """
+        Override specific config values on instances of a class when used as an injectable property.
+
+        This is useful when a module ships a pre-configured backend (or any ``Configurable`` class)
+        and you need to patch one or two config values (e.g. ``base_url``) for a specific environment
+        without replacing the entire class.
+
+        Resolution priority (highest first):
+
+        1. Global class overrides (``add_class_override``)
+        2. Global config overrides (this method)
+        3. Per-module context overrides (``add_module_override`` / ``module_overrides=``)
+        4. Module-scoped class overrides (``ModuleOverrides.class_overrides``)
+        5. Module-scoped config overrides (``ModuleOverrides.config_overrides``)
+        6. Instance as-is
+
+        Example:
+        ```python
+        di = Di(
+            modules=[my_module],
+            config_overrides={ApiBackend: {"base_url": "https://test.example.com/v1"}},
+        )
+        ```
+
+        Or:
+
+        ```python
+        di = Di(modules=[my_module])
+        di.add_config_override(ApiBackend, {"base_url": "https://test.example.com/v1"})
+        ```
+        """
+        if not inspect.isclass(class_to_override):
+            raise ValueError(
+                "Invalid value passed to add_config_override for 'class_to_override' parameter: it was not a class."
+            )
+        self._config_overrides[class_to_override] = config_values
+
+    def add_module_override(self, module: ModuleType, overrides: dict[str, Any]) -> None:
+        """
+        Override specific class, config, or binding values for a single module from outside.
+
+        This is the key extensibility point for including third-party or shared modules in a project
+        and adjusting their dependency graph without modifying the module itself.  Overrides registered
+        here take precedence over the module's own ``ModuleOverrides`` declarations but are still
+        subordinate to global ``class_overrides``, ``config_overrides``, and ``bindings``.
+
+        Resolution priority (highest first):
+
+        1. Global class overrides (``add_class_override``)
+        2. Global config overrides (``add_config_override``)
+        3. Global bindings (``add_binding``)
+        4. Per-module overrides from context (this method)
+        5. Module's own ``ModuleOverrides`` declarations
+        6. Instance as-is
+
+        ``overrides`` is a dict with any combination of these keys:
+
+        - ``class_overrides`` — replaces injectable class attributes scoped to this module
+        - ``config_overrides`` — patches config values on ``Configurable`` instances scoped to this module
+        - ``bindings`` — provides named DI dependencies scoped to this module
+
+        Example:
+        ```python
+        import my_module
+        from clearskies.di import Di
+
+        di = Di(
+            modules=[my_module],
+            module_overrides={
+                my_module: {
+                    "class_overrides": {ApiBackend: MemoryBackend()},
+                    "config_overrides": {ApiBackend: {"base_url": "https://test.example.com"}},
+                    "bindings": {"api_key": "test-key"},
+                }
+            },
+        )
+        ```
+        """
+        if not hasattr(module, "__file__") or not module.__file__:
+            raise ValueError(f"Cannot add module override for '{module}': module has no __file__ attribute.")
+        root = os.path.dirname(module.__file__)
+
+        valid_keys = {"class_overrides", "config_overrides", "bindings"}
+        unknown_keys = set(overrides.keys()) - valid_keys
+        if unknown_keys:
+            raise ValueError(
+                f"Unknown key(s) in module_overrides for '{module.__name__}': "
+                + ", ".join(f"'{k}'" for k in sorted(unknown_keys))
+                + f". Allowed keys: {', '.join(sorted(valid_keys))}."
+            )
+
+        # Prepend so these beat the module's own ModuleOverrides (which are appended during add_modules)
+        if "class_overrides" in overrides:
+            self._module_class_overrides.insert(0, (root, overrides["class_overrides"]))
+        if "config_overrides" in overrides:
+            self._module_config_overrides.insert(0, (root, overrides["config_overrides"]))
+        if "bindings" in overrides:
+            self._module_bindings.insert(0, (root, overrides["bindings"]))
+
+    def get_config_override(self, class_to_check: type, context: str | type | None = None) -> dict[str, Any] | None:
+        """
+        Return any config overrides registered for the given class, considering scope.
+
+        Global config overrides take precedence over module-scoped ones.
+        """
+        if class_to_check in self._config_overrides:
+            return self._config_overrides[class_to_check]
+
+        context_class = self._context_to_class(context)
+        if not inspect.isclass(context_class):
+            return None
+
+        try:
+            context_class_root = os.path.dirname(inspect.getfile(context_class))
+        except TypeError:
+            return None
+
+        for module_root, config_overrides in self._module_config_overrides:
+            if context_class_root[: len(module_root)] != module_root:
+                continue
+            if class_to_check not in config_overrides:
+                continue
+            return config_overrides[class_to_check]
+
+        return None
+
+    def apply_config_overrides(self, instance: Any, config_values: dict[str, Any]) -> Any:
+        """
+        Return a copy of the instance with the given config values patched.
+
+        Only applies to ``Configurable`` instances.  Non-configurable objects are
+        returned unchanged.
+        """
+        import copy
+
+        from clearskies.configurable import Configurable
+
+        if not isinstance(instance, Configurable):
+            return instance
+
+        patched = copy.copy(instance)
+        patched._config = {**(instance._config or {})}
+        for name, value in config_values.items():
+            patched._config[name] = value
+        patched.finalize_and_validate_configuration()
+        return patched
 
     def add_override(self, name: str, replacement_class: type) -> None:
         """Override a specific injection name by specifying a class that should be injected in its place."""
@@ -652,6 +871,28 @@ class Di:
             if cache:
                 self._prepared[name] = built_value
             return built_value
+
+        # module-scoped bindings apply only for classes originating from that module root
+        if context:
+            context_class = self._context_to_class(context)
+            if inspect.isclass(context_class):
+                try:
+                    context_class_root = os.path.dirname(inspect.getfile(context_class))
+                except TypeError:
+                    context_class_root = ""
+                for module_root, bindings in self._module_bindings:
+                    if context_class_root[: len(module_root)] != module_root:
+                        continue
+                    if name not in bindings:
+                        continue
+                    binding_value = bindings[name]
+                    if inspect.isclass(binding_value):
+                        built_value = self.build_class(binding_value, context=context)
+                    else:
+                        built_value = binding_value
+                    if cache:
+                        self._prepared[name] = built_value
+                    return built_value
 
         if name in self._class_overrides_by_name or name in self._classes:
             if name in self._class_overrides_by_name:
@@ -812,8 +1053,8 @@ class Di:
             return None
 
         # check our class overrides
-        if class_to_build in self._class_overrides_by_class:
-            replacement = self._class_overrides_by_class[class_to_build]
+        replacement = self.get_class_override(class_to_build, context=context)
+        if replacement is not None:
             if not inspect.isclass(replacement):
                 return replacement
             return self.build_class(replacement, context=context, cache=cache)
