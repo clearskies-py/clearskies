@@ -136,6 +136,9 @@ class Integer(Column):
                 return value  # Let validation catch it
         return value
 
+    def condition_value_to_backend(self, value):
+        return self.force_value_from_input(value)
+
     def input_error_for_value(self, value, operator=None):
         try:
             int(value)
