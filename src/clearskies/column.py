@@ -722,15 +722,17 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
         """
         Normalise a condition value to the backend type for this column.
 
-        When conditions are built from raw strings (e.g. ``where("deleted=0")``), the
-        parsed values are always strings and are never run through ``to_backend``.  This
-        method lets each column type teach backends how to coerce those string values to
-        the correct Python type before comparison or serialisation.
+        When conditions are built from raw strings (e.g. `where("deleted=0")`), the
+        parsed values are always strings and are never run through `to_backend`.  This
+        method lets each column type coerce those string values to the correct Python
+        type before comparison or serialisation.
 
-        The default implementation is an identity — most column types compare fine as
-        strings.  Override in subclasses where type matters (e.g. Boolean).
+        Delegates to `force_value_from_input` by default, which already handles
+        type coercion for each column type (e.g. Boolean converts "0" to False,
+        Integer converts "25" to 25).  The base Column implementation of
+        `force_value_from_input` returns the value unchanged.
         """
-        return value
+        return self.force_value_from_input(value)
 
     @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:

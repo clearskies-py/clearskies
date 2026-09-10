@@ -97,12 +97,12 @@ class Query(loggable.Loggable):
     def _normalise_condition(self, condition: Condition) -> Condition:
         """Normalise condition values for primary-model columns.
 
-        When conditions are built from raw strings (e.g. ``where("deleted=0")``),
+        When conditions are built from raw strings (e.g. `where("deleted=0")`),
         the parsed values are always strings.  This lets each column coerce them to
-        the correct Python type (e.g. Boolean converts ``"0"`` → ``False``) before
+        the correct Python type (e.g. Boolean converts "0" to False) before
         any backend ever sees the value.
 
-        Join-table conditions (non-empty ``table_name`` that differs from ours) are
+        Join-table conditions (non-empty `table_name` that differs from ours) are
         skipped because the column lives on a different model.
         """
         table = condition.table_name
@@ -110,10 +110,10 @@ class Query(loggable.Loggable):
         if not is_our_table or not condition.values:
             return condition
         columns = self.model_class.get_columns()
-        col = columns.get(condition.column_name)
-        if col is None:
+        column = columns.get(condition.column_name)
+        if column is None:
             return condition
-        return condition.with_values([col.condition_value_to_backend(v) for v in condition.values])
+        return condition.with_values([column.condition_value_to_backend(v) for v in condition.values])
 
     def as_kwargs(self) -> dict[str, Any]:
         """Return the properties of this query as a dictionary so it can be used as kwargs when creating another one."""

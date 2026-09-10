@@ -75,9 +75,9 @@ def cheating_equals(column, values, null):
     """
     Equality check that handles type mismatches between stored values and condition values.
 
-    Boolean columns store Python bools via ``to_backend``, but condition values
-    may arrive as ``"0"``/``"1"`` strings (e.g. from join conditions that bypass
-    ``Query._normalise_condition``).  When the stored value is a bool we coerce
+    Boolean columns store Python bools via `to_backend`, but condition values
+    may arrive as "0"/"1" strings (e.g. from join conditions that bypass
+    `Query._normalise_condition`).  When the stored value is a bool we coerce
     the condition value to bool before comparing; otherwise we fall back to
     string comparison.
     """
@@ -88,7 +88,7 @@ def cheating_equals(column, values, null):
             v = values[0]
             if isinstance(v, bool):
                 return backend_value == v
-            compare_bool = not (v == "0" or v == 0 or v is False or v is None)
+            compare_bool = not (v == "0" or v == 0 or v is None or v in ["false", "False"])
             return backend_value == compare_bool
         return str(backend_value) == str(values[0])
 

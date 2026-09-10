@@ -131,9 +131,6 @@ class Float(Column):
                 return value  # Let validation catch it
         return value
 
-    def condition_value_to_backend(self, value):
-        return self.force_value_from_input(value)
-
     def equals(self, value: float) -> Condition:
         return super().equals(value)
 
