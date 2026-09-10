@@ -236,7 +236,7 @@ class ParsedCondition(Condition):
         self.column_name = column_name
         if operator.lower() not in self.operators:
             raise ValueError(f"Unknown operator '{operator}'")
-        self.operator = operator
+        self.operator = operator.upper()
         self.values = values
         self.table_name = table_name
         column_for_parsed = f"{self.table_name}.{self.column_name}" if self.table_name else self.column_name
