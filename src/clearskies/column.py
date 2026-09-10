@@ -718,6 +718,20 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
 
         return {**data, self.name: str(data[self.name])}
 
+    def condition_value_to_backend(self, value: Any) -> Any:
+        """
+        Normalise a condition value to the backend type for this column.
+
+        When conditions are built from raw strings (e.g. ``where("deleted=0")``), the
+        parsed values are always strings and are never run through ``to_backend``.  This
+        method lets each column type teach backends how to coerce those string values to
+        the correct Python type before comparison or serialisation.
+
+        The default implementation is an identity — most column types compare fine as
+        strings.  Override in subclasses where type matters (e.g. Boolean).
+        """
+        return value
+
     @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:
         pass

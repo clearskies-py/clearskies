@@ -105,6 +105,9 @@ class Boolean(Column):
             operator = "="
         return f"{column_prefix}{self.name}{operator}{condition_value}"
 
+    def condition_value_to_backend(self, value):
+        return self.force_value_from_input(value)
+
     def save_finished(self, model: Model) -> None:
         """Make any necessary changes needed after a save has completely finished."""
         super().save_finished(model)

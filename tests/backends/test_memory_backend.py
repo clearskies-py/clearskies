@@ -1,6 +1,7 @@
 import unittest
 
 import clearskies
+from clearskies import columns
 
 
 class MemoryBackendTest(unittest.TestCase):
@@ -81,3 +82,37 @@ class MemoryBackendTest(unittest.TestCase):
             },
             {"id": "e-f-g-h", "name": "Spot", "species": "Dog", "owner": {"id": "1-2-3-4", "name": "John Doe"}},
         ]
+
+    def test_boolean_filter_false(self):
+        """MemoryBackend must correctly filter by Boolean=False (deleted=0)."""
+
+        class Item(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String()
+            deleted = columns.Boolean()
+
+        def run(items):
+            items.create({"name": "active", "deleted": False})
+            items.create({"name": "gone", "deleted": True})
+
+            active = list(items.where("deleted=0"))
+            gone = list(items.where("deleted=1"))
+
+            return {
+                "active_count": len(active),
+                "active_name": active[0].name if active else "",
+                "gone_count": len(gone),
+                "gone_name": gone[0].name if gone else "",
+            }
+
+        context = clearskies.contexts.Context(run, classes=[Item])
+        status_code, response, _ = context()
+
+        assert status_code == 200
+        assert response["active_count"] == 1
+        assert response["active_name"] == "active"
+        assert response["gone_count"] == 1
+        assert response["gone_name"] == "gone"
