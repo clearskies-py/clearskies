@@ -73,21 +73,23 @@ def _sort(row_a: Any, row_b: Any, sorts: list[Sort], default_table_name: str) ->
 
 def cheating_equals(column, values, null):
     """
-    Cheating because this solves a very specific problem that likely is a generic issue.
+    Equality check that handles type mismatches between stored values and condition values.
 
-    The memory backend has some matching failures because boolean columns stay boolean in the
-    memory store, but the incoming search values are not converted to boolean and tend to be
-    str(1) or str(0).  The issue is that save data goes through the `to_backend` flow, but search
-    data doesn't.  This doesn't matter most of the time because, in practice, the backend itself
-    often does its own type conversion, but it causes problems for the memory backend.  I can't
-    decide if fixing this will cause more problems than it solves, so for now I'm just cheating
-    and putting in a hack for this specific use case :shame:.
+    Boolean columns store Python bools via `to_backend`, but condition values
+    may arrive as "0"/"1" strings (e.g. from join conditions that bypass
+    `Query._normalise_condition`).  When the stored value is a bool we coerce
+    the condition value to bool before comparing; otherwise we fall back to
+    string comparison.
     """
 
     def inner(row):
         backend_value = row[column] if column in row else null
         if isinstance(backend_value, bool):
-            return backend_value == bool(values[0])
+            v = values[0]
+            if isinstance(v, bool):
+                return backend_value == v
+            compare_bool = not (v == "0" or v == 0 or v is None or v in ["false", "False"])
+            return backend_value == compare_bool
         return str(backend_value) == str(values[0])
 
     return inner

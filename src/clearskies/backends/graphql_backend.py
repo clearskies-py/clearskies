@@ -842,13 +842,9 @@ class GraphqlBackend(Backend, InjectableProperties):
                 var_name = f"filter_{condition.column_name}_{index}"
                 args_parts.append(f"{api_column_name}: ${var_name}")
 
-                if isinstance(value, bool) or str(value).lower() in ("true", "false"):
+                if isinstance(value, bool):
                     variable_definitions.append(f"${var_name}: Boolean")
-                    # Convert string 'true'/'false' to boolean
-                    if isinstance(value, str):
-                        variables[var_name] = value.lower() == "true"
-                    else:
-                        variables[var_name] = value
+                    variables[var_name] = value
                 elif isinstance(value, int):
                     variable_definitions.append(f"${var_name}: Int")
                     variables[var_name] = int(value)

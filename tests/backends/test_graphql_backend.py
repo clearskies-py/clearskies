@@ -7,6 +7,7 @@ import clearskies
 from clearskies.backends import GraphqlBackend, GraphqlOffsetBackend
 from clearskies.clients import GraphqlClient
 from clearskies.query import Condition, Query
+from clearskies.query.condition import ParsedCondition
 
 
 class User(clearskies.Model):
@@ -510,6 +511,27 @@ class TestGraphqlBackendNestedFields(unittest.TestCase):
         # Should handle missing nested data without errors
         assert mapped["id"] == "1"
         assert "user__name" not in mapped or mapped["user__name"] is None
+
+    def test_build_query_with_boolean_filter_zero_one(self):
+        """Boolean condition values normalised by Query.add_where arrive as Python bools."""
+
+        class ModelWithBoolean(clearskies.Model):
+            id_column_name = "id"
+            backend = None  # type: ignore[assignment]
+            id = clearskies.columns.String()
+            deleted = clearskies.columns.Boolean()
+
+        backend = GraphqlBackend(graphql_client=self.mock_client, root_field="items")
+
+        query_false = Query(ModelWithBoolean, conditions=[ParsedCondition("deleted", "=", [False])])
+        query_str, variables = backend._build_query(query_false)
+        assert "$filter_deleted_0: Boolean" in query_str
+        assert variables.get("filter_deleted_0") is False
+
+        query_true = Query(ModelWithBoolean, conditions=[ParsedCondition("deleted", "=", [True])])
+        query_str, variables = backend._build_query(query_true)
+        assert "$filter_deleted_0: Boolean" in query_str
+        assert variables.get("filter_deleted_0") is True
 
 
 if __name__ == "__main__":

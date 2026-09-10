@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 
@@ -224,13 +226,17 @@ class Condition:
         # the only thing left is "in" which has a variable number of placeholders
         return f"{quote}{column}{quote} IN ({', '.join([placeholder for i in range(len(values))])})"
 
+    def with_values(self, values: list[Any]) -> Condition:
+        """Return a new condition identical to this one, but replace the condition values with the ones passed in."""
+        return ParsedCondition(self.column_name, self.operator, values, self.table_name)
+
 
 class ParsedCondition(Condition):
     def __init__(self, column_name: str, operator: str, values: list[Any], table_name: str = ""):
         self.column_name = column_name
-        if operator not in self.operators:
+        if operator.lower() not in self.operators:
             raise ValueError(f"Unknown operator '{operator}'")
-        self.operator = operator
+        self.operator = operator.upper()
         self.values = values
         self.table_name = table_name
         column_for_parsed = f"{self.table_name}.{self.column_name}" if self.table_name else self.column_name
