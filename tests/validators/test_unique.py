@@ -13,6 +13,7 @@ class MyModel(clearskies.Model):
 
 class UniqueTest(unittest.TestCase):
     def setUp(self):
+        clearskies.backends.MemoryBackend.clear_table_cache()
         di = clearskies.di.Di()
         self.my_models = di.build(MyModel)
         self.bob = self.my_models.create({"name": "Bob"})
