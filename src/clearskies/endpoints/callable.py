@@ -219,6 +219,9 @@ class Callable(Endpoint):
     def handle(self, input_output: InputOutput):
         # Force query and routing data types if enabled
         schema = self.input_schema if self.input_schema else self.model_class
+        if self.input_schema:
+            for column in self.input_schema.get_columns().values():
+                self.di.inject_properties(column.__class__)
         if input_output.routing_data and schema:
             if self.transform_input_types:
                 forced_routing = self.force_routing_data(input_output.routing_data, schema)

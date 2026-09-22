@@ -70,6 +70,31 @@ class CallableTest(TestBase):
             "check": "Input column check is not an allowed input column.",
         }
 
+    def test_input_schema(self):
+        class ColumnWithInjectable(clearskies.Column):
+            environment = clearskies.di.inject.Environment()
+
+            def input_error_for_value(self, value, operator=None):
+                return "" if self.environment.get("test") == "value" else "oops"
+
+        class ExpectedInput(clearskies.Schema):
+            test_injectable = ColumnWithInjectable()
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                lambda request_data: request_data,
+                request_methods=["POST"],
+                input_schema=ExpectedInput,
+            ),
+            bindings={
+                "environment": {"test": "value"},
+            },
+        )
+
+        status_code, response, response_headers = context(body={"test_injectable": True}, request_method="POST")
+        assert status_code == 200
+        assert response["input_errors"] == {}
+
     def test_standard_response(self):
         context = Context(
             clearskies.endpoints.Callable(
