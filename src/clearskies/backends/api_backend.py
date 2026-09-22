@@ -927,6 +927,8 @@ class ApiBackend(Backend, InjectableProperties):
         """
         # Always check direct param first (it may have changed)
         if self.url_adapter is not None:
+            if isinstance(self.url_adapter, UrlAdapter):
+                self.url_adapter.base_url = self.base_url
             return self.url_adapter
 
         # Check cache
@@ -936,6 +938,7 @@ class ApiBackend(Backend, InjectableProperties):
         # Resolve from DI or create default
         try:
             self._url_adapter_instance_cached: UrlAdapter = self.di.build(self.url_adapter_dependency_name)
+            self._url_adapter_instance_cached.base_url = self.base_url
         except MissingDependency:
             self._url_adapter_instance_cached = UrlAdapter(
                 base_url=self.base_url,
