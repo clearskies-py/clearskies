@@ -251,6 +251,7 @@
                 "clearskies.validators.MaximumLength",
                 "clearskies.validators.MinimumValue",
                 "clearskies.validators.MaximumValue",
+                "clearskies.validators.Regexp",
                 "clearskies.validators.Required",
                 "clearskies.validators.Timedelta",
                 "clearskies.validators.Unique"
