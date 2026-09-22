@@ -499,7 +499,7 @@ wheels = [
 
 [[package]]
 name = "clear-skies"
-version = "2.1.11"
+version = "2.1.12"
 source = { editable = "." }
 dependencies = [
     { name = "dateparser" },
