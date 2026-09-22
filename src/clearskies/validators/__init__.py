@@ -10,6 +10,7 @@ from clearskies.validators.maximum_length import MaximumLength
 from clearskies.validators.maximum_value import MaximumValue
 from clearskies.validators.minimum_length import MinimumLength
 from clearskies.validators.minimum_value import MinimumValue
+from clearskies.validators.regexp import Regexp
 from clearskies.validators.required import Required
 from clearskies.validators.timedelta import Timedelta
 from clearskies.validators.unique import Unique
@@ -27,6 +28,7 @@ __all__ = [
     "MaximumValue",
     "MinimumValue",
     "MinimumLength",
+    "Regexp",
     "Required",
     "Timedelta",
     "Unique",
