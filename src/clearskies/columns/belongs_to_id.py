@@ -6,6 +6,7 @@ from clearskies import configs, decorators
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
+from clearskies.column import Column
 from clearskies.columns.string import String
 from clearskies.di.inject import InputOutput
 from clearskies.functional import validations
@@ -349,10 +350,33 @@ class BelongsToId(String, Generic[ParentModel]):
     def parent_columns(self) -> dict[str, Any]:
         return self.parent_model_class.get_columns()
 
-    def input_error_for_value(self, value: str, operator: str | None = None) -> str:
-        parent_check = super().input_error_for_value(value)
-        if parent_check:
-            return parent_check
+    @property
+    def parent_id_column(self) -> Column:
+        return self.parent_columns[self.parent_model_class.id_column_name]
+
+    def from_backend(self, value) -> Any:
+        return self.parent_id_column.from_backend(value)
+
+    def to_backend(self, data: dict[str, Any]) -> dict[str, Any]:
+        if self.name not in data or data[self.name] is None:
+            return data
+        # Run the parent id column's to_backend on a scratch dict so we get the
+        # coerced value (e.g. int for Integer ids) without touching any other key.
+        parent_id_col = self.parent_id_column
+        scratch = parent_id_col.to_backend({parent_id_col.name: data[self.name]})
+        coerced = scratch.get(parent_id_col.name, data[self.name])
+        return {**data, self.name: coerced}
+
+    def force_value_from_input(self, value: Any) -> Any:
+        return self.parent_id_column.force_value_from_input(value)
+
+    def condition_value_to_backend(self, value: Any) -> Any:
+        return self.parent_id_column.condition_value_to_backend(value)
+
+    def input_error_for_value(self, value: Any, operator: str | None = None) -> str:
+        type_error = self.parent_id_column.input_error_for_value(value, operator=operator)
+        if type_error:
+            return type_error
         parent_model = self.parent_model
         matching_parents = parent_model.where(f"{parent_model.id_column_name}={value}")
         matching_parents = self.apply_wheres(matching_parents)
@@ -460,7 +484,9 @@ class BelongsToId(String, Generic[ParentModel]):
     ) -> list[AutoDocSchema]:
         columns = self.parent_columns
         parent_id_column_name = self.parent_model_class.id_column_name
-        parent_id_doc = AutoDocString(name if name is not None else self.name)
+        # Use the parent id column's own documentation for the correct type (e.g. integer, UUID).
+        parent_id_docs = self.parent_id_column.documentation(name=name if name is not None else self.name)
+        parent_id_doc = parent_id_docs[0] if parent_id_docs else AutoDocString(name if name is not None else self.name)
 
         readable_parent_columns = self.readable_parent_columns
         if not readable_parent_columns:
