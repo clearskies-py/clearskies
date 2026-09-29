@@ -202,6 +202,10 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
         if self.name not in data or data[self.name] is None:
             return data
 
+        # Normalise related ids to the typed value so the set-difference against old_ids
+        # (which come from __get__ and are already typed via the model's column) is reliable.
+        related_id_col = self.related_columns[self.related_model_class.id_column_name]
+
         # figure out what ids need to be created or deleted from the pivot table.
         if not model:
             old_ids = set()
@@ -236,7 +240,7 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
 
             # if they provide the related column id in the pivot data then we're good
             if related_column_name_in_pivot in pivot_record:
-                related_column_id = pivot_record[related_column_name_in_pivot]
+                related_column_id = related_id_col.force_value_from_input(pivot_record[related_column_name_in_pivot])
             elif len(unique_related_columns):
                 for pivot_column, pivot_value in pivot_record.items():
                     if pivot_column not in unique_related_columns:

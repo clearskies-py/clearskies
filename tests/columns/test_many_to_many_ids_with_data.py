@@ -68,3 +68,68 @@ class ManyToManyIdsWithDataTest(TestBase):
             "Widget Thing 1",
             "Widget Thing 2",
         ]
+
+    def test_integer_ids_post_save_normalises_string_ids(self):
+        """ManyToManyIdsWithData.post_save doesn't spuriously delete entries when ids arrive as strings."""
+
+        class ThingyWidgets(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            thingy_id = clearskies.columns.Integer()
+            widget_id = clearskies.columns.Integer()
+            kind = clearskies.columns.String()
+
+        class Thingy(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+        class Widget(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            thingy_ids = clearskies.columns.ManyToManyIdsWithData(
+                related_model_class=Thingy,
+                pivot_model_class=ThingyWidgets,
+                readable_pivot_column_names=["id", "thingy_id", "widget_id", "kind"],
+            )
+
+        di = clearskies.di.Di(classes=[Widget, Thingy, ThingyWidgets])
+        thingies = di.build(Thingy)
+        widgets = di.build(Widget)
+        pivots = di.build(ThingyWidgets)
+
+        thing_1 = thingies.create({"id": 1, "name": "Thing 1"})
+        thing_2 = thingies.create({"id": 2, "name": "Thing 2"})
+        widget = widgets.create(
+            {
+                "id": 10,
+                "name": "Widget 1",
+                "thingy_ids": [
+                    {"thingy_id": 1, "kind": "A"},
+                    {"thingy_id": 2, "kind": "B"},
+                ],
+            }
+        )
+
+        assert len(pivots.where("widget_id=10")) == 2
+
+        # Resave with string ids — should update, not delete+recreate
+        widget.save(
+            {
+                "thingy_ids": [
+                    {"thingy_id": "1", "kind": "A-updated"},
+                    {"thingy_id": "2", "kind": "B"},
+                ]
+            }
+        )
+
+        assert len(pivots.where("widget_id=10")) == 2
+        kinds = sorted(p.kind for p in pivots.where("widget_id=10"))
+        assert kinds == ["A-updated", "B"]
