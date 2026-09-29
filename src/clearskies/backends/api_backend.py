@@ -1375,7 +1375,7 @@ class ApiBackend(Backend, InjectableProperties):
         if condition_route_id:
             url = url.rstrip("/") + "/" + condition_route_id
         if url_parameters:
-            url = url + "?" + urllib.parse.urlencode(url_parameters)
+            url = url + "?" + self._urlencode(url_parameters)
 
         return (
             url,
@@ -1383,6 +1383,15 @@ class ApiBackend(Backend, InjectableProperties):
             body_parameters,
             self.get_record_headers(),
         )
+
+    def _urlencode(self, params: dict) -> str:
+        """Encode URL parameters, converting Python bools to lowercase strings.
+
+        urllib.parse.urlencode({"x": True}) → "x=True" (capital T).  APIs that
+        validate query strings as booleans (e.g. Joi.boolean()) only accept lowercase
+        "true"/"false", so we normalise at the single encoding boundary.
+        """
+        return urllib.parse.urlencode({k: str(v).lower() if isinstance(v, bool) else v for k, v in params.items()})
 
     def conditions_to_request_parameters(
         self, query: Query, used_routing_parameters: list[str]
@@ -1750,7 +1759,7 @@ class ApiBackend(Backend, InjectableProperties):
             url = url.rstrip("/") + "/" + str(condition_route_id)
 
         if condition_url_parameters:
-            url = url + "?" + urllib.parse.urlencode(condition_url_parameters)
+            url = url + "?" + self._urlencode(condition_url_parameters)
 
         response = self.execute_request(url, method, headers=self.get_count_headers())
         total_count, total_pages = self.extract_count_from_response(
