@@ -326,7 +326,6 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         own_id_column_name = self.model_class.id_column_name
         pivot_table_name = self.pivot_table_name
         my_table_name = self.model_class.destination_name()
-        related_table_name = self.related_model.destination_name()
         join_pivot = f"JOIN {pivot_table_name} ON {pivot_table_name}.{own_column_name_in_pivot}={my_table_name}.{own_id_column_name}"
         # no reason we can't support searching by both an id or a list of ids
         values = value if type(value) == list else [value]
