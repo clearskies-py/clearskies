@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, overload
+from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar, overload
 
 from clearskies import configs, configurable, decorators, loggable
 from clearskies.autodoc.schema import String as AutoDocString
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from clearskies import Model, Schema, typing
     from clearskies.autodoc.schema import Schema as AutoDocSchema
     from clearskies.query.condition import Condition
+
+_ModelT = TypeVar("_ModelT", bound="Model")
 
 
 class Column(configurable.Configurable, InjectableProperties, loggable.Loggable):
@@ -1122,11 +1124,11 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
 
     def where_for_request(
         self,
-        model: Model,
+        model: _ModelT,
         routing_data: dict[str, str],
         authorization_data: dict[str, Any],
         input_output,
-    ) -> Model:
+    ) -> _ModelT:
         """
         Create a hook to automatically apply filtering whenever the column makes an appearance in a get/update/list/search handler.
 
