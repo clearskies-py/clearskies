@@ -26,3 +26,19 @@ class IntegerTest(TestBase):
         status_code, response_data, response_headers = context(request_method="POST", body={"age": "asdf"})
         assert "age" not in response_data["data"]
         assert "age" in response_data["input_errors"]
+
+    def test_input_error_for_value_non_primitive_returns_error_not_exception(self):
+        """input_error_for_value returns a string for list/dict input rather than raising TypeError."""
+
+        class MyModel(clearskies.Model):
+            backend = clearskies.backends.MemoryBackend()
+            id_column_name = "id"
+
+            id = clearskies.columns.Uuid()
+            count = clearskies.columns.Integer()
+
+        MyModel().get_columns()
+        col = MyModel.count
+        assert col.input_error_for_value([1, 2]) != ""
+        assert col.input_error_for_value({"a": 1}) != ""
+        assert col.input_error_for_value(None) != ""

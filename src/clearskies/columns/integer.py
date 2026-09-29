@@ -139,7 +139,7 @@ class Integer(Column):
     def input_error_for_value(self, value, operator=None):
         try:
             int(value)
-        except ValueError:
+        except (ValueError, TypeError):
             return "value should be an integer"
         return ""
 
