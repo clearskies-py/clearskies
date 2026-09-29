@@ -352,7 +352,9 @@ class BelongsToId(String, Generic[ParentModel]):
 
     @property
     def parent_id_column(self) -> Column:
-        return self.parent_columns[self.parent_model_class.id_column_name]
+        if not hasattr(self, "_parent_id_column_cache") or self._parent_id_column_cache is None:
+            self._parent_id_column_cache = self.parent_columns[self.parent_model_class.id_column_name]
+        return self._parent_id_column_cache
 
     def from_backend(self, value) -> Any:
         return self.parent_id_column.from_backend(value)
