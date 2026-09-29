@@ -279,9 +279,8 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         return related_models
 
     def get_pivot_models(self, model: Model) -> Model:
-        return self.pivot_model.where(
-            f"{self.own_column_name_in_pivot}=" + getattr(model, self.model_class.id_column_name)
-        )
+        model_id = getattr(model, self.model_class.id_column_name)
+        return self.pivot_model.where(f"{self.own_column_name_in_pivot}={model_id}")
 
     def post_save(self, data: dict[str, Any], model: Model, id: int | str) -> None:
         # if our incoming data is not in the data array or is None, then nothing has been set and we do not want
@@ -289,13 +288,17 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         if self.name not in data or data[self.name] is None:
             return
 
+        # Normalise incoming ids to the same type as the related id column to avoid spurious
+        # set-difference mismatches when one side is a string and the other is an int.
+        related_id_col = self.related_columns[self.related_model_class.id_column_name]
+
         # figure out what ids need to be created or deleted from the pivot table.
         if not model:
             old_ids = set()
         else:
             old_ids = set(self.__get__(model, model.__class__))
 
-        new_ids = set(data[self.name])
+        new_ids = {related_id_col.force_value_from_input(v) for v in data[self.name]}
         to_delete = old_ids - new_ids
         to_create = new_ids - old_ids
         pivot_model = self.pivot_model.as_query()
@@ -327,7 +330,7 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         join_pivot = f"JOIN {pivot_table_name} ON {pivot_table_name}.{own_column_name_in_pivot}={my_table_name}.{own_id_column_name}"
         # no reason we can't support searching by both an id or a list of ids
         values = value if type(value) == list else [value]
-        search = " IN (" + ", ".join([str(val) for val in value]) + ")"
+        search = " IN (" + ", ".join([str(val) for val in values]) + ")"
         return model.join(join_pivot).where(f"{pivot_table_name}.{related_column_name_in_pivot}{search}")
 
     def to_json(self, model: Model) -> dict[str, Any]:
@@ -337,4 +340,7 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
         related_id_column_name = self.related_model_class.id_column_name
-        return [AutoDocArray(name if name is not None else self.name, AutoDocString(related_id_column_name))]
+        related_id_col = self.related_columns[related_id_column_name]
+        related_id_docs = related_id_col.documentation(name=related_id_column_name)
+        inner_doc = related_id_docs[0] if related_id_docs else AutoDocString(related_id_column_name)
+        return [AutoDocArray(name if name is not None else self.name, inner_doc)]
