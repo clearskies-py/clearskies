@@ -1130,8 +1130,15 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         overrides: dict[str, Column] = {},
     ) -> Self:
         """Add a hook to automatically apply filtering whenever the model makes an appearance in a get/update/list/search handler."""
-        for column in self.get_columns(overrides=overrides).values():
-            models = column.where_for_request(model, input_output, routing_data, authorization_data)
+        columns = self.get_columns(overrides=overrides)
+        for column in columns.values():
+            model = column.where_for_request(model, input_output, routing_data, authorization_data)
+        # Automatically apply routing_data values as WHERE filters for any key that
+        # matches a column name.  This handles nested resource URL parameters without
+        # requiring a manual where_for_request override on every child model.
+        for key, value in routing_data.items():
+            if key in columns:
+                model = model.where(f"{key}={value}")
         return self.where_for_request(
             model, input_output, routing_data=routing_data, authorization_data=authorization_data, overrides=overrides
         )
