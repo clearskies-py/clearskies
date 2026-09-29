@@ -191,3 +191,78 @@ class HasManyTest(TestBase):
                     ],
                 }
             )
+
+    def test_integer_child_ids_typed_in_to_json_and_no_key_bleed(self):
+        """HasMany.to_json returns int ids for Integer children, no key bleed between items."""
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.Integer()
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            products = clearskies.columns.HasMany(Product, readable_child_column_names=["id", "name"])
+
+        di = clearskies.di.Di(classes=[Category, Product])
+        categories = di.build(Category)
+        products = di.build(Product)
+
+        cat = categories.create({"id": 1, "name": "Toys"})
+        products.create({"id": 10, "name": "Ball", "category_id": 1})
+        products.create({"id": 20, "name": "Kite", "category_id": 1})
+
+        col = cat.__class__.products
+        result = col.to_json(cat)
+        items = result["products"]
+
+        assert len(items) == 2
+        assert all(isinstance(p["id"], int) for p in items)
+        # no key bleed: each item has exactly the same set of keys
+        assert items[0].keys() == items[1].keys()
+
+    def test_integer_id_post_save_normalises_incoming_string_ids(self):
+        """HasMany.post_save doesn't spuriously delete children when ids arrive as strings."""
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.Integer()
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            products = clearskies.columns.HasMany(
+                Product,
+                readable_child_column_names=["id", "name"],
+                writeable_child_column_names=["id", "name"],
+            )
+
+        di = clearskies.di.Di(classes=[Category, Product])
+        categories = di.build(Category)
+        products = di.build(Product)
+
+        # Create the parent first, then create children separately so they already exist
+        cat = categories.create({"id": 1, "name": "Toys"})
+        products.create({"id": 10, "name": "Ball", "category_id": 1})
+        products.create({"id": 20, "name": "Kite", "category_id": 1})
+
+        # Save with string ids — simulates values arriving from a JSON endpoint body.
+        # Without normalisation the set-diff would see {"10"} vs {10} and delete+recreate.
+        cat.save({"products": [{"id": "10", "name": "Big Ball"}, {"id": "20", "name": "Kite"}]})
+
+        names = sorted(p.name for p in products.where("category_id=1"))
+        assert names == ["Big Ball", "Kite"]
