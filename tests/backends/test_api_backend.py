@@ -363,7 +363,7 @@ class ApiBackendTest(unittest.TestCase):
         }
 
     def test_conditions_to_request_parameters_boolean(self):
-        """Boolean condition values normalised by Query.add_where arrive as Python bools."""
+        """Boolean condition values are passed through as-is; _urlencode handles serialisation."""
 
         class Item(clearskies.Model):
             id_column_name = "id"
@@ -379,6 +379,26 @@ class ApiBackendTest(unittest.TestCase):
         query_true = Query(Item, conditions=[ParsedCondition("deleted", "=", [True])])
         _, url_params, _ = backend.conditions_to_request_parameters(query_true, [])
         assert url_params["deleted"] is True
+
+    def test_urlencode_serialises_booleans_as_lowercase(self):
+        """_urlencode must produce 'true'/'false', not 'True'/'False'.
+
+        urllib.parse.urlencode({"x": True}) → "x=True" (capital T).
+        Strict API validators (e.g. Joi.boolean()) only accept lowercase "true"/"false".
+        """
+
+        class Item(clearskies.Model):
+            id_column_name = "id"
+            backend = ApiBackend(base_url="https://api.example.com")
+            id = clearskies.columns.String()
+            deleted = clearskies.columns.Boolean()
+
+        backend = Item.backend
+        assert backend._urlencode({"deleted": True}) == "deleted=true"
+        assert backend._urlencode({"deleted": False}) == "deleted=false"
+        # non-booleans pass through unchanged
+        assert backend._urlencode({"page": 2}) == "page=2"
+        assert backend._urlencode({"name": "alice"}) == "name=alice"
 
     def test_casing(self):
         class User(clearskies.Model):
