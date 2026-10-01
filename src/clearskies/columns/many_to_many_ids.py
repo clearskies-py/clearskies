@@ -290,7 +290,7 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
 
         # Normalise incoming ids to the same type as the related id column to avoid spurious
         # set-difference mismatches when one side is a string and the other is an int.
-        related_id_col = self.related_columns[self.related_model_class.id_column_name]
+        related_id_column = self.related_columns[self.related_model_class.id_column_name]
 
         # figure out what ids need to be created or deleted from the pivot table.
         if not model:
@@ -298,7 +298,7 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         else:
             old_ids = set(self.__get__(model, model.__class__))
 
-        new_ids = {related_id_col.force_value_from_input(v) for v in data[self.name]}
+        new_ids = {related_id_column.force_value_from_input(related_id) for related_id in data[self.name]}
         to_delete = old_ids - new_ids
         to_create = new_ids - old_ids
         pivot_model = self.pivot_model.as_query()
@@ -341,7 +341,7 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
 
     def documentation(self, name: str | None = None, example: str | None = None, value: str | None = None):
         related_id_column_name = self.related_model_class.id_column_name
-        related_id_col = self.related_columns[related_id_column_name]
-        related_id_docs = related_id_col.documentation(name=related_id_column_name)
+        related_id_column = self.related_columns[related_id_column_name]
+        related_id_docs = related_id_column.documentation(name=related_id_column_name)
         inner_doc = related_id_docs[0] if related_id_docs else AutoDocString(related_id_column_name)
         return [AutoDocArray(name if name is not None else self.name, inner_doc)]

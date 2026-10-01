@@ -131,7 +131,7 @@ class ManyToManyIdsWithDataTest(TestBase):
         )
 
         assert len(pivots.where("widget_id=10")) == 2
-        kinds = sorted(p.kind for p in pivots.where("widget_id=10"))
+        kinds = sorted(pivot.kind for pivot in pivots.where("widget_id=10"))
         assert kinds == ["A-updated", "B"]
 
     def test_removing_related_id_does_not_touch_other_records(self):
@@ -179,5 +179,5 @@ class ManyToManyIdsWithDataTest(TestBase):
 
         widget_a.save({"thingy_ids": [{"thingy_id": other.id, "kind": "y"}]})
 
-        assert [p.thingy_id for p in pivots.where(f"widget_id={widget_a.id}")] == [other.id]
-        assert [p.thingy_id for p in pivots.where(f"widget_id={widget_b.id}")] == [shared.id]
+        assert [pivot.thingy_id for pivot in pivots.where(f"widget_id={widget_a.id}")] == [other.id]
+        assert [pivot.thingy_id for pivot in pivots.where(f"widget_id={widget_b.id}")] == [shared.id]

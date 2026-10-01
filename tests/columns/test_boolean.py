@@ -109,11 +109,11 @@ class BooleanTest(TestBase):
         The API backend layer (conditions_to_request_parameters) is responsible for
         converting Python bools to lowercase strings before URL encoding.
         """
-        col = Boolean()
-        assert col.condition_value_to_backend(True) is True
-        assert col.condition_value_to_backend(False) is False
+        column = Boolean()
+        assert column.condition_value_to_backend(True) is True
+        assert column.condition_value_to_backend(False) is False
         # string inputs (common when conditions are parsed from raw where-clauses)
-        assert col.condition_value_to_backend("true") is True
-        assert col.condition_value_to_backend("false") is False
-        assert col.condition_value_to_backend("1") is True
-        assert col.condition_value_to_backend("0") is False
+        assert column.condition_value_to_backend("true") is True
+        assert column.condition_value_to_backend("false") is False
+        assert column.condition_value_to_backend("1") is True
+        assert column.condition_value_to_backend("0") is False

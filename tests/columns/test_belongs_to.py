@@ -375,17 +375,17 @@ class BelongsToTest(TestBase):
         categories = di.build(Category)
         products = di.build(Product)
 
-        cat = categories.create({"id": 5, "name": "Toys"})
+        category = categories.create({"id": 5, "name": "Toys"})
 
         # Simulate a string coming in from a URL parameter
         Product().get_columns()
-        col = Product.category_id
-        forced = col.force_value_from_input("5")
+        column = Product.category_id
+        forced = column.force_value_from_input("5")
         assert forced == 5
         assert isinstance(forced, int)
 
         # The column should also reject non-integer input
-        error = col.input_error_for_value("not-a-number")
+        error = column.input_error_for_value("not-a-number")
         assert error != ""
 
     def test_belongs_to_id_integer_parent_null_is_none(self):
@@ -477,10 +477,10 @@ class BelongsToTest(TestBase):
             classes=[Category, Product],
             bindings={
                 "memory_backend_default_data": [
-                    {"model_class": Category, "records": [{"id": "cat-uuid", "name": "Toys"}]},
+                    {"model_class": Category, "records": [{"id": "category-uuid", "name": "Toys"}]},
                     {
                         "model_class": Product,
-                        "records": [{"id": "prod-uuid", "name": "Ball", "category_id": "cat-uuid"}],
+                        "records": [{"id": "prod-uuid", "name": "Ball", "category_id": "category-uuid"}],
                     },
                 ],
             },
@@ -489,5 +489,5 @@ class BelongsToTest(TestBase):
         status_code, response, response_headers = context()
         assert status_code == 200
         product = response["data"][0]
-        assert product["category_id"] == "cat-uuid"
+        assert product["category_id"] == "category-uuid"
         assert isinstance(product["category_id"], str)
