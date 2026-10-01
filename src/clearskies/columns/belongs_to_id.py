@@ -386,10 +386,10 @@ class BelongsToId(String, Generic[ParentModel]):
         value = parent_id_column.to_backend({parent_id_column.name: data[self.name]})[parent_id_column.name]
         return {**data, self.name: value}
 
-    def force_value_from_input(self, value: Any) -> Any:
+    def force_value_from_input(self, value: Any) -> int | str:
         return self.parent_id_column.force_value_from_input(value)
 
-    def condition_value_to_backend(self, value: Any) -> Any:
+    def condition_value_to_backend(self, value: Any) -> int | str:
         return self.parent_id_column.condition_value_to_backend(value)
 
     def input_error_for_value(self, value: Any, operator: str | None = None) -> str:
