@@ -668,7 +668,7 @@ class HasMany(Column, Generic[ChildModel]):
         if self.name not in data or data[self.name] is None:
             return
 
-        child_id_col = self.child_columns[self.child_model_class.id_column_name]
+        child_id_column = self.child_columns[self.child_model_class.id_column_name]
 
         # figure out what ids need to be created or deleted from the pivot table.
         if not model:
@@ -690,7 +690,7 @@ class HasMany(Column, Generic[ChildModel]):
             if not child_id_raw:
                 continue
             # Normalise to the typed value so comparisons against loaded model ids are reliable.
-            child_id = child_id_col.force_value_from_input(child_id_raw)
+            child_id = child_id_column.force_value_from_input(child_id_raw)
 
             # we shouldn't find child ids if our current model doesn't exist yet, because we can't have children yet
             if not model and not self.allow_child_reassignment:
@@ -725,7 +725,7 @@ class HasMany(Column, Generic[ChildModel]):
                 new_child = self.child_model.create(final_child_data)
                 new_ids.add(getattr(new_child, self.child_model_class.id_column_name))
             else:
-                child_id = child_id_col.force_value_from_input(child_id_raw)
+                child_id = child_id_column.force_value_from_input(child_id_raw)
                 loaded_children[child_id].save(final_child_data)
                 new_ids.add(child_id)
 

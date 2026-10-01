@@ -38,7 +38,7 @@ class IntegerTest(TestBase):
             count = clearskies.columns.Integer()
 
         MyModel().get_columns()
-        col = MyModel.count
-        assert col.input_error_for_value([1, 2]) != ""
-        assert col.input_error_for_value({"a": 1}) != ""
-        assert col.input_error_for_value(None) != ""
+        column = MyModel.count
+        assert column.input_error_for_value([1, 2]) != ""
+        assert column.input_error_for_value({"a": 1}) != ""
+        assert column.input_error_for_value(None) != ""

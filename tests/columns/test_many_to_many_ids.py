@@ -103,12 +103,12 @@ class ManyToManyIdsTest(TestBase):
         thing_2 = thingies.create({"id": 2, "name": "Thing 2"})
         widget = widgets.create({"id": 10, "name": "Widget 1", "thingy_ids": [1, 2]})
 
-        col = Widget.thingy_ids
-        result = col.to_json(widget)
+        column = Widget.thingy_ids
+        result = column.to_json(widget)
         ids = result["thingy_ids"]
 
         assert sorted(ids) == [1, 2]
-        assert all(isinstance(i, int) for i in ids)
+        assert all(isinstance(thingy_id, int) for thingy_id in ids)
 
         # documentation should reflect integer type
         Widget().get_columns()
