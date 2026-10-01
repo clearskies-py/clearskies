@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Object as AutoDocObject
@@ -356,18 +356,35 @@ class BelongsToId(String, Generic[ParentModel]):
             self._parent_id_column_cache = self.parent_columns[self.parent_model_class.id_column_name]
         return self._parent_id_column_cache
 
-    def from_backend(self, value) -> Any:
+    @overload
+    def __get__(self, instance: None, cls: type[Model]) -> Self:
+        pass
+
+    @overload
+    def __get__(self, instance: Model, cls: type[Model]) -> int | str:
+        pass
+
+    def __get__(self, instance, cls):  # ty: ignore[invalid-method-override]
+        return super().__get__(instance, cls)
+
+    def __set__(self, instance: Model, value: int | str) -> None:
+        # this makes sure we're initialized
+        if not self._config or "name" not in self._config:
+            instance.get_columns()
+
+        instance._next_data[self.name] = value
+
+    def from_backend(self, value) -> int | str | None:  # ty: ignore[invalid-method-override]
         return self.parent_id_column.from_backend(value)
 
     def to_backend(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.name not in data or data[self.name] is None:
             return data
-        # Run the parent id column's to_backend on a scratch dict so we get the
-        # coerced value (e.g. int for Integer ids) without touching any other key.
-        parent_id_col = self.parent_id_column
-        scratch = parent_id_col.to_backend({parent_id_col.name: data[self.name]})
-        coerced = scratch.get(parent_id_col.name, data[self.name])
-        return {**data, self.name: coerced}
+        # Pass only our value to the parent id column's to_backend (under its own name) so we get
+        # the coerced value (e.g. int for Integer ids) without touching any other key in data.
+        parent_id_column = self.parent_id_column
+        value = parent_id_column.to_backend({parent_id_column.name: data[self.name]})[parent_id_column.name]
+        return {**data, self.name: value}
 
     def force_value_from_input(self, value: Any) -> Any:
         return self.parent_id_column.force_value_from_input(value)
