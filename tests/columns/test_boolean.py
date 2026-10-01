@@ -1,4 +1,5 @@
 import clearskies
+from clearskies.columns.boolean import Boolean
 from tests.test_base import TestBase
 
 
@@ -101,3 +102,18 @@ class BooleanTest(TestBase):
         assert len(response["data"]) == 1
         pet_data = response["data"][0]
         assert pet_data["is_active"] is True
+
+    def test_condition_value_to_backend_returns_python_bools(self):
+        """condition_value_to_backend coerces string inputs to Python booleans.
+
+        The API backend layer (conditions_to_request_parameters) is responsible for
+        converting Python bools to lowercase strings before URL encoding.
+        """
+        column = Boolean()
+        assert column.condition_value_to_backend(True) is True
+        assert column.condition_value_to_backend(False) is False
+        # string inputs (common when conditions are parsed from raw where-clauses)
+        assert column.condition_value_to_backend("true") is True
+        assert column.condition_value_to_backend("false") is False
+        assert column.condition_value_to_backend("1") is True
+        assert column.condition_value_to_backend("0") is False

@@ -305,3 +305,256 @@ class BelongsToTest(TestBase):
         assert docs[0].name == "category"
         child_names = [child.name for child in (docs[0].children or [])]
         assert child_names == ["id", "name"]
+
+    def test_belongs_to_id_integer_parent_returns_int_in_rest(self):
+        """BelongsToId with an Integer id parent returns int in REST output, not str."""
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+            category = clearskies.columns.BelongsToModel("category_id")
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": Category,
+                        "records": [{"id": 1, "name": "Toys"}],
+                    },
+                    {
+                        "model_class": Product,
+                        "records": [{"id": 10, "name": "Ball", "category_id": 1}],
+                    },
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        product = response["data"][0]
+        assert product["category_id"] == 1
+        assert isinstance(product["category_id"], int)
+
+    def test_belongs_to_id_integer_parent_accepts_string_input(self):
+        """force_value_from_input coerces '5' -> 5 for an Integer parent id."""
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        di = clearskies.di.Di(classes=[Category, Product])
+        categories = di.build(Category)
+        products = di.build(Product)
+
+        category = categories.create({"id": 5, "name": "Toys"})
+
+        # Simulate a string coming in from a URL parameter
+        Product().get_columns()
+        column = Product.category_id
+        forced = column.force_value_from_input("5")
+        assert forced == 5
+        assert isinstance(forced, int)
+
+        # The column should also reject non-integer input
+        error = column.input_error_for_value("not-a-number")
+        assert error != ""
+
+    def test_belongs_to_id_integer_parent_null_is_none(self):
+        """A NULL backend value still produces None for an Integer parent."""
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {"model_class": Category, "records": []},
+                    {"model_class": Product, "records": [{"id": 1, "name": "Orphan", "category_id": None}]},
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        assert response["data"][0]["category_id"] is None
+
+    def test_belongs_to_id_integer_parent_documentation_uses_integer_type(self):
+        """documentation() returns an AutoDocInteger when the parent id is an Integer."""
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        Product().get_columns()
+        docs = Product.category_id.documentation()
+        assert len(docs) == 1
+        assert isinstance(docs[0], clearskies.autodoc.schema.Integer)
+
+    def test_belongs_to_id_uuid_parent_still_returns_string(self):
+        """Regression: UUID parent ids remain strings after the typing change."""
+
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Product,
+                readable_column_names=["id", "name", "category_id"],
+                sortable_column_names=["id"],
+                default_sort_column_name="id",
+            ),
+            classes=[Category, Product],
+            bindings={
+                "memory_backend_default_data": [
+                    {"model_class": Category, "records": [{"id": "category-uuid", "name": "Toys"}]},
+                    {
+                        "model_class": Product,
+                        "records": [{"id": "prod-uuid", "name": "Ball", "category_id": "category-uuid"}],
+                    },
+                ],
+            },
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        product = response["data"][0]
+        assert product["category_id"] == "category-uuid"
+        assert isinstance(product["category_id"], str)
+
+    def _create_product_context(self, parent_id_column_class):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = parent_id_column_class()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        return clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                Product,
+                writeable_column_names=["name", "category_id"],
+                readable_column_names=["id", "category_id"],
+            ),
+            classes=[Category, Product],
+        )
+
+    def test_belongs_to_id_integer_parent_rejects_empty_and_falsy_values(self):
+        """Empty and falsy values are validated instead of being saved unchecked (or crashing in to_backend)."""
+        context = self._create_product_context(clearskies.columns.Integer)
+        expected_errors = {
+            "[]": "value should be an integer",
+            "{}": "value should be an integer",
+            "''": "value should be an integer",
+            "False": "value should be an integer or a string, but a 'bool' was given",
+            "True": "value should be an integer or a string, but a 'bool' was given",
+            "1.5": "value should be an integer or a string, but a 'float' was given",
+            "0": "Invalid selection for category_id: record does not exist",
+        }
+        for value in [[], {}, "", False, True, 1.5, 0]:
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": value}
+            )
+            assert response["input_errors"] == {"category_id": expected_errors[repr(value)]}, repr(value)
+
+    def test_belongs_to_id_uuid_parent_rejects_empty_and_falsy_values(self):
+        context = self._create_product_context(clearskies.columns.Uuid)
+        expected_errors = {
+            "[]": "value should be a string",
+            "{}": "value should be a string",
+            "''": "Invalid selection for category_id: record does not exist",
+            "False": "value should be a string",
+            "0": "value should be a string",
+        }
+        for value in [[], {}, "", False, 0]:
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": value}
+            )
+            assert response["input_errors"] == {"category_id": expected_errors[repr(value)]}, repr(value)
+
+    def test_belongs_to_id_none_unsets_the_parent(self):
+        for parent_id_column_class in [clearskies.columns.Integer, clearskies.columns.Uuid]:
+            context = self._create_product_context(parent_id_column_class)
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": None}
+            )
+            assert response["status"] == "success"
+            assert response["data"]["category_id"] is None

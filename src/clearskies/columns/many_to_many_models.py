@@ -138,7 +138,7 @@ class ManyToManyModels(Column, Generic[RelatedModel]):
         for related in many_to_many_column.get_related_models(model):
             json = OrderedDict()
             if related_id_column_name not in readable_related_column_names:
-                json[related_id_column_name] = columns[related_id_column_name].to_json(related)
+                json = {**json, **columns[related_id_column_name].to_json(related)}
             for column_name in readable_related_column_names:
                 column_data = columns[column_name].to_json(related)
                 if type(column_data) == dict:

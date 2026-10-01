@@ -668,6 +668,8 @@ class HasMany(Column, Generic[ChildModel]):
         if self.name not in data or data[self.name] is None:
             return
 
+        child_id_column = self.child_columns[self.child_model_class.id_column_name]
+
         # figure out what ids need to be created or deleted from the pivot table.
         if not model:
             old_ids = set()
@@ -684,9 +686,11 @@ class HasMany(Column, Generic[ChildModel]):
         loaded_children = {}
         for index, entry in enumerate(data[self.name]):
             # we're mostly concerned about updates, in which case the child id is in the data
-            child_id = entry.get(self.child_model_class.id_column_name, None)
-            if not child_id:
+            child_id_raw = entry.get(self.child_model_class.id_column_name, None)
+            if not child_id_raw:
                 continue
+            # Normalise to the typed value so comparisons against loaded model ids are reliable.
+            child_id = child_id_column.force_value_from_input(child_id_raw)
 
             # we shouldn't find child ids if our current model doesn't exist yet, because we can't have children yet
             if not model and not self.allow_child_reassignment:
@@ -713,14 +717,15 @@ class HasMany(Column, Generic[ChildModel]):
         for entry in data[self.name]:
             # we need to figure out if this is a new record or an old one.
             # the way we tell the difference is by looking for our child columns id in the dict
-            child_id = entry.get(self.child_model_class.id_column_name, None)
+            child_id_raw = entry.get(self.child_model_class.id_column_name, None)
 
             # inserting a new record is easiest, so let's do that first.
             final_child_data = {self.foreign_column_name: id, **entry}
-            if not child_id:
+            if not child_id_raw:
                 new_child = self.child_model.create(final_child_data)
                 new_ids.add(getattr(new_child, self.child_model_class.id_column_name))
             else:
+                child_id = child_id_column.force_value_from_input(child_id_raw)
                 loaded_children[child_id].save(final_child_data)
                 new_ids.add(child_id)
 
@@ -736,12 +741,8 @@ class HasMany(Column, Generic[ChildModel]):
         children = []
         columns = self.child_columns
         child_id_column_name = self.child_model_class.id_column_name
-        json: dict[str, Any] = {}
         for child in getattr(model, self.name):
-            json = {
-                **json,
-                **columns[child_id_column_name].to_json(child),
-            }
+            json: dict[str, Any] = {**columns[child_id_column_name].to_json(child)}
             for column_name in self.readable_child_column_names or []:
                 json = {
                     **json,

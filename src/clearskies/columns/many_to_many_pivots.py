@@ -106,7 +106,7 @@ class ManyToManyPivots(Column, Generic[PivotModel]):
         for pivot in many_to_many_column.get_pivot_models(model):
             json = OrderedDict()
             if pivot_id_column_name not in readable_column_names:
-                json[pivot_id_column_name] = columns[pivot_id_column_name].to_json(pivot)
+                json = {**json, **columns[pivot_id_column_name].to_json(pivot)}
             for column_name in readable_column_names:
                 column_data = columns[column_name].to_json(pivot)
                 if type(column_data) == dict:

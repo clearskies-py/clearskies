@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar, overload
 
 from clearskies import configs, decorators
 from clearskies.autodoc.schema import Object as AutoDocObject
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.autodoc.schema import String as AutoDocString
+from clearskies.column import Column
 from clearskies.columns.string import String
 from clearskies.di.inject import InputOutput
 from clearskies.functional import validations
@@ -349,10 +350,65 @@ class BelongsToId(String, Generic[ParentModel]):
     def parent_columns(self) -> dict[str, Any]:
         return self.parent_model_class.get_columns()
 
-    def input_error_for_value(self, value: str, operator: str | None = None) -> str:
-        parent_check = super().input_error_for_value(value)
-        if parent_check:
-            return parent_check
+    @property
+    def parent_id_column(self) -> Column:
+        if not hasattr(self, "_parent_id_column_cache") or self._parent_id_column_cache is None:
+            self._parent_id_column_cache = self.parent_columns[self.parent_model_class.id_column_name]
+        return self._parent_id_column_cache
+
+    @overload
+    def __get__(self, instance: None, cls: type[Model]) -> Self:
+        pass
+
+    @overload
+    def __get__(self, instance: Model, cls: type[Model]) -> int | str:
+        pass
+
+    def __get__(self, instance, cls):  # ty: ignore[invalid-method-override]
+        return super().__get__(instance, cls)
+
+    def __set__(self, instance: Model, value: int | str) -> None:
+        # this makes sure we're initialized
+        if not self._config or "name" not in self._config:
+            instance.get_columns()
+
+        instance._next_data[self.name] = value
+
+    def from_backend(self, value) -> int | str | None:  # ty: ignore[invalid-method-override]
+        return self.parent_id_column.from_backend(value)
+
+    def to_backend(self, data: dict[str, Any]) -> dict[str, Any]:
+        if self.name not in data or data[self.name] is None:
+            return data
+        # Pass only our value to the parent id column's to_backend (under its own name) so we get
+        # the coerced value (e.g. int for Integer ids) without touching any other key in data.
+        parent_id_column = self.parent_id_column
+        value = parent_id_column.to_backend({parent_id_column.name: data[self.name]})[parent_id_column.name]
+        return {**data, self.name: value}
+
+    def force_value_from_input(self, value: Any) -> int | str:
+        return self.parent_id_column.force_value_from_input(value)
+
+    def condition_value_to_backend(self, value: Any) -> int | str:
+        return self.parent_id_column.condition_value_to_backend(value)
+
+    def input_errors(self, model: Model, data: dict[str, Any]) -> dict[str, Any]:
+        # Column.input_errors only checks truthy values, so empty and falsy values ([], {}, "", 0, False) would
+        # be saved unchecked. Only None means "unset", so check everything else here.
+        if self.name in data and data[self.name] is not None and not data[self.name]:
+            error = self.input_error_for_value(data[self.name])
+            if error:
+                return {self.name: error}
+        return super().input_errors(model, data)
+
+    def input_error_for_value(self, value: Any, operator: str | None = None) -> str:
+        type_error = self.parent_id_column.input_error_for_value(value, operator=operator)
+        if type_error:
+            return type_error
+        # ids are integers or strings, but numeric id columns also accept floats and booleans (int(True) is 1).
+        # bool is a subclass of int, so it has to be excluded explicitly.
+        if isinstance(value, bool) or not isinstance(value, str | int):
+            return f"value should be an integer or a string, but a '{value.__class__.__name__}' was given"
         parent_model = self.parent_model
         matching_parents = parent_model.where(f"{parent_model.id_column_name}={value}")
         matching_parents = self.apply_wheres(matching_parents)
@@ -460,7 +516,9 @@ class BelongsToId(String, Generic[ParentModel]):
     ) -> list[AutoDocSchema]:
         columns = self.parent_columns
         parent_id_column_name = self.parent_model_class.id_column_name
-        parent_id_doc = AutoDocString(name if name is not None else self.name)
+        # Use the parent id column's own documentation for the correct type (e.g. integer, UUID).
+        parent_id_docs = self.parent_id_column.documentation(name=name if name is not None else self.name)
+        parent_id_doc = parent_id_docs[0] if parent_id_docs else AutoDocString(name if name is not None else self.name)
 
         readable_parent_columns = self.readable_parent_columns
         if not readable_parent_columns:
