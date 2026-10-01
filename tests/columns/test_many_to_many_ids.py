@@ -161,3 +161,46 @@ class ManyToManyIdsTest(TestBase):
         assert sorted(widget.thingy_ids) == [1, 2]
         # pivot table should still have exactly 2 rows
         assert len(pivots.where("widget_id=10")) == 2
+
+    def test_removing_related_id_does_not_touch_other_records(self):
+        """Removing a related id from one record must not delete other records' links to it."""
+
+        class ThingyToWidget(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            thingy_id = clearskies.columns.String()
+            widget_id = clearskies.columns.String()
+
+        class Thingy(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class Widget(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            thingy_ids = clearskies.columns.ManyToManyIds(
+                related_model_class=Thingy,
+                pivot_model_class=ThingyToWidget,
+            )
+
+        di = clearskies.di.Di(classes=[Widget, Thingy, ThingyToWidget])
+        thingies = di.build(Thingy)
+        widgets = di.build(Widget)
+
+        shared = thingies.create({"name": "Shared"})
+        other = thingies.create({"name": "Other"})
+        widget_a = widgets.create({"name": "A", "thingy_ids": [shared.id, other.id]})
+        widget_b = widgets.create({"name": "B", "thingy_ids": [shared.id]})
+
+        widget_a.save({"thingy_ids": [other.id]})
+
+        assert widget_a.thingy_ids == [other.id]
+        assert widget_b.thingy_ids == [shared.id]

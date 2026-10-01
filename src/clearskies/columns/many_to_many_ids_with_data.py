@@ -279,7 +279,9 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
         # records that are no longer needed.
         to_delete = old_ids - new_ids
         if to_delete:
-            for model_to_delete in pivot_model.where(
+            # scope the delete to our own record, otherwise we would remove the links other records
+            # have with the same related ids.
+            for model_to_delete in pivot_model.where(f"{own_column_name_in_pivot}={id}").where(
                 f"{related_column_name_in_pivot} IN (" + ",".join(map(str, to_delete)) + ")"
             ):
                 model_to_delete.delete()

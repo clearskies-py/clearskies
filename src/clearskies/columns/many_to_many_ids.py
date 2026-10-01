@@ -303,13 +303,15 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
         to_create = new_ids - old_ids
         pivot_model = self.pivot_model.as_query()
         related_column_name_in_pivot = self.related_column_name_in_pivot
+        own_column_name_in_pivot = self.own_column_name_in_pivot
         if to_delete:
-            for model_to_delete in pivot_model.where(
+            # scope the delete to our own record, otherwise we would remove the links other records
+            # have with the same related ids.
+            for model_to_delete in pivot_model.where(f"{own_column_name_in_pivot}={id}").where(
                 f"{related_column_name_in_pivot} IN ({','.join(str(x) for x in to_delete)})"
             ):
                 model_to_delete.delete()
         if to_create:
-            own_column_name_in_pivot = self.own_column_name_in_pivot
             for id_to_create in to_create:
                 pivot_model.create(
                     {
