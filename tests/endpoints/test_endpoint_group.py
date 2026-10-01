@@ -1,5 +1,6 @@
 import clearskies
 from clearskies import columns
+from clearskies.contexts import Context
 from clearskies.validators import Required, Unique
 from tests.test_base import TestBase
 
@@ -137,3 +138,92 @@ class EndpointGroupTest(TestBase):
         status, response_data, response_headers = context(url="users")
         assert [user["username"] for user in response_data["data"]] == ["bobbrown", "janedoe"]
         assert [user["company"]["name"] for user in response_data["data"]] == ["Box Store", "Box Store"]
+
+    def test_cors_preflight_bypasses_authentication(self):
+        """OPTIONS preflight must return 200 with CORS headers even when the group has auth."""
+
+        class Item(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = columns.Uuid()
+            name = columns.String()
+
+        group = clearskies.EndpointGroup(
+            [
+                clearskies.endpoints.SimpleSearch(
+                    model_class=Item,
+                    url="items",
+                    readable_column_names=["id", "name"],
+                    sortable_column_names=["name"],
+                    searchable_column_names=["name"],
+                    default_sort_column_name="name",
+                    authentication=clearskies.authentication.SecretBearer(environment_key="MY_SECRET"),
+                ),
+            ],
+            security_headers=[clearskies.security_headers.Cors(origin="https://example.com")],
+        )
+        context = Context(group)
+
+        status, _, response_headers = context(url="/items", request_method="OPTIONS")
+        assert status == 200
+        assert response_headers.access_control_allow_origin == "https://example.com"
+
+    def test_cors_preflight_on_group_with_auth_returns_404_for_unknown_url(self):
+        """OPTIONS to an unknown URL should return 404, not bypass routing."""
+
+        class Item(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = columns.Uuid()
+            name = columns.String()
+
+        group = clearskies.EndpointGroup(
+            [
+                clearskies.endpoints.SimpleSearch(
+                    model_class=Item,
+                    url="items",
+                    readable_column_names=["id", "name"],
+                    sortable_column_names=["name"],
+                    searchable_column_names=["name"],
+                    default_sort_column_name="name",
+                    authentication=clearskies.authentication.SecretBearer(environment_key="MY_SECRET"),
+                ),
+            ],
+            security_headers=[clearskies.security_headers.Cors(origin="https://example.com")],
+        )
+        context = Context(group)
+
+        status, _, _ = context(url="/unknown", request_method="OPTIONS")
+        assert status == 404
+
+    def test_non_options_requests_still_require_authentication(self):
+        """Normal requests through the group still go through authentication."""
+        import os
+
+        class Item(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = columns.Uuid()
+            name = columns.String()
+
+        os.environ["MY_SECRET"] = "supersecret"
+        try:
+            group = clearskies.EndpointGroup(
+                [
+                    clearskies.endpoints.SimpleSearch(
+                        model_class=Item,
+                        url="items",
+                        readable_column_names=["id", "name"],
+                        sortable_column_names=["name"],
+                        searchable_column_names=["name"],
+                        default_sort_column_name="name",
+                        authentication=clearskies.authentication.SecretBearer(environment_key="MY_SECRET"),
+                    ),
+                ],
+            )
+            context = Context(group)
+
+            status, _, _ = context(url="/items", request_method="GET")
+            assert status == 401
+        finally:
+            del os.environ["MY_SECRET"]
