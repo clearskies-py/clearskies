@@ -392,10 +392,23 @@ class BelongsToId(String, Generic[ParentModel]):
     def condition_value_to_backend(self, value: Any) -> int | str:
         return self.parent_id_column.condition_value_to_backend(value)
 
+    def input_errors(self, model: Model, data: dict[str, Any]) -> dict[str, Any]:
+        # Column.input_errors only checks truthy values, so empty and falsy values ([], {}, "", 0, False) would
+        # be saved unchecked. Only None means "unset", so check everything else here.
+        if self.name in data and data[self.name] is not None and not data[self.name]:
+            error = self.input_error_for_value(data[self.name])
+            if error:
+                return {self.name: error}
+        return super().input_errors(model, data)
+
     def input_error_for_value(self, value: Any, operator: str | None = None) -> str:
         type_error = self.parent_id_column.input_error_for_value(value, operator=operator)
         if type_error:
             return type_error
+        # ids are integers or strings, but numeric id columns also accept floats and booleans (int(True) is 1).
+        # bool is a subclass of int, so it has to be excluded explicitly.
+        if isinstance(value, bool) or not isinstance(value, str | int):
+            return f"value should be an integer or a string, but a '{value.__class__.__name__}' was given"
         parent_model = self.parent_model
         matching_parents = parent_model.where(f"{parent_model.id_column_name}={value}")
         matching_parents = self.apply_wheres(matching_parents)

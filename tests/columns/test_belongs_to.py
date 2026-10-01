@@ -491,3 +491,70 @@ class BelongsToTest(TestBase):
         product = response["data"][0]
         assert product["category_id"] == "category-uuid"
         assert isinstance(product["category_id"], str)
+
+    def _create_product_context(self, parent_id_column_class):
+        class Category(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = parent_id_column_class()
+            name = clearskies.columns.String()
+
+        class Product(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            category_id = clearskies.columns.BelongsToId(Category)
+
+        return clearskies.contexts.Context(
+            clearskies.endpoints.Create(
+                Product,
+                writeable_column_names=["name", "category_id"],
+                readable_column_names=["id", "category_id"],
+            ),
+            classes=[Category, Product],
+        )
+
+    def test_belongs_to_id_integer_parent_rejects_empty_and_falsy_values(self):
+        """Empty and falsy values are validated instead of being saved unchecked (or crashing in to_backend)."""
+        context = self._create_product_context(clearskies.columns.Integer)
+        expected_errors = {
+            "[]": "value should be an integer",
+            "{}": "value should be an integer",
+            "''": "value should be an integer",
+            "False": "value should be an integer or a string, but a 'bool' was given",
+            "True": "value should be an integer or a string, but a 'bool' was given",
+            "1.5": "value should be an integer or a string, but a 'float' was given",
+            "0": "Invalid selection for category_id: record does not exist",
+        }
+        for value in [[], {}, "", False, True, 1.5, 0]:
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": value}
+            )
+            assert response["input_errors"] == {"category_id": expected_errors[repr(value)]}, repr(value)
+
+    def test_belongs_to_id_uuid_parent_rejects_empty_and_falsy_values(self):
+        context = self._create_product_context(clearskies.columns.Uuid)
+        expected_errors = {
+            "[]": "value should be a string",
+            "{}": "value should be a string",
+            "''": "Invalid selection for category_id: record does not exist",
+            "False": "value should be a string",
+            "0": "value should be a string",
+        }
+        for value in [[], {}, "", False, 0]:
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": value}
+            )
+            assert response["input_errors"] == {"category_id": expected_errors[repr(value)]}, repr(value)
+
+    def test_belongs_to_id_none_unsets_the_parent(self):
+        for parent_id_column_class in [clearskies.columns.Integer, clearskies.columns.Uuid]:
+            context = self._create_product_context(parent_id_column_class)
+            status_code, response, response_headers = context(
+                request_method="POST", body={"name": "Ball", "category_id": None}
+            )
+            assert response["status"] == "success"
+            assert response["data"]["category_id"] is None
