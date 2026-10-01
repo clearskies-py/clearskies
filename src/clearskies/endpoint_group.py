@@ -290,6 +290,22 @@ class EndpointGroup(
         return matches
 
     def populate_routing_data(self, input_output: InputOutput) -> Any:
+        # Handle CORS preflight here, before End.__call__ runs authentication.
+        # Individual Endpoint subclasses already short-circuit OPTIONS in their own
+        # populate_routing_data (before auth), but EndpointGroup.__call__ inherits
+        # the base End.__call__ which checks auth first and only then delegates to
+        # handle().  A browser preflight carries no Authorization header, so any
+        # non-Public authentication on the group would return 401 and block CORS.
+        if input_output.supports_request_method and input_output.request_method.upper() == "OPTIONS":
+            if not self.endpoints_initialized:
+                self.endpoints_initialized = True
+                for endpoint in self.endpoints:
+                    endpoint.injectable_properties(self.di)
+            for endpoint in self.endpoints:
+                if endpoint.matches_request(input_output):
+                    self.add_response_headers(input_output)
+                    return endpoint(input_output)
+            return self.error(input_output, "Not Found", 404)
         # only endpoints (not the endpoint group) can handle this because the endpoint group doesn't have the full url
         return None
 
