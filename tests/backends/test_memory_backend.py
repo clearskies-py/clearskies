@@ -116,3 +116,64 @@ class MemoryBackendTest(unittest.TestCase):
         assert response["active_name"] == "active"
         assert response["gone_count"] == 1
         assert response["gone_name"] == "gone"
+
+    def _like_names(self, *conditions):
+        class Person(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String()
+
+        def run(persons):
+            for name in ["Alice", "alfred", "Bob", "50% off", "a.c", "abc", None]:
+                persons.create({"name": name})
+            return [sorted(str(person.name) for person in persons.where(condition)) for condition in conditions]
+
+        status_code, response, _ = clearskies.contexts.Context(run, classes=[Person])()
+        assert status_code == 200
+        return response
+
+    def test_like_wildcards(self):
+        assert self._like_names(
+            "name like 'al%'",
+            "name like '%b'",
+            "name like '%L%'",
+            "name like 'a_c'",
+            "name like 'bob'",
+            "name like 'bo'",
+        ) == [
+            ["Alice", "alfred"],
+            ["Bob"],
+            ["Alice", "alfred"],
+            ["a.c", "abc"],
+            ["Bob"],
+            [],
+        ]
+
+    def test_like_escaping(self):
+        assert self._like_names("name like 'a.c'", "name like '50\\% off'", "name like '%(%'") == [
+            ["a.c"],
+            ["50% off"],
+            [],
+        ]
+
+    def test_not_like(self):
+        # NULL matches neither LIKE nor NOT LIKE, as in SQL
+        assert self._like_names("name not like 'a%'") == [["50% off", "Bob"]]
+
+    def test_like_column_condition(self):
+        class Person(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String()
+
+        def run(persons):
+            persons.create({"name": "Alice"})
+            persons.create({"name": "Bob"})
+            return [person.name for person in persons.where(Person.name.like("%LIC%"))]
+
+        status_code, response, _ = clearskies.contexts.Context(run, classes=[Person])()
+        assert response == ["Alice"]
