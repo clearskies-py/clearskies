@@ -115,3 +115,90 @@ class CallableTest(TestBase):
 
         status_code, response, response_headers = context()
         assert response == {"hello": "world"}
+
+    def test_default_status_code(self):
+        context = Context(clearskies.endpoints.Callable(lambda: {"hello": "world"}))
+
+        status_code, response, response_headers = context()
+        assert status_code == 200
+        assert response["status"] == "success"
+        assert response["data"] == {"hello": "world"}
+
+    def test_static_status_code(self):
+        context = Context(clearskies.endpoints.Callable(lambda: {"hello": "world"}, status_code=201))
+
+        status_code, response, response_headers = context()
+        assert status_code == 201
+        assert response["data"] == {"hello": "world"}
+
+        context = Context(
+            clearskies.endpoints.Callable(lambda: {"hello": "world"}, status_code=202, return_standard_response=False)
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 202
+        assert response == {"hello": "world"}
+
+    def test_callable_response(self):
+        context = Context(
+            clearskies.endpoints.Callable(
+                lambda: clearskies.endpoints.CallableResponse(
+                    {"hello": "world"}, status_code=201, headers={"location": "/hello/1"}
+                ),
+                status_code=202,
+            )
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 201
+        assert response["status"] == "success"
+        assert response["data"] == {"hello": "world"}
+        assert response_headers["location"] == "/hello/1"
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                lambda: clearskies.endpoints.CallableResponse("created", status_code=201),
+                return_standard_response=False,
+            )
+        )
+
+        status_code, response, response_headers = context()
+        assert status_code == 201
+        assert response == "created"
+
+    def test_callable_response_with_model(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = clearskies.columns.Uuid()
+            first_name = clearskies.columns.String()
+            age = clearskies.columns.Integer()
+
+        def create_user(users: User):
+            return clearskies.endpoints.CallableResponse(
+                users.create({"first_name": "Alice", "age": 10}), status_code=201
+            )
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                create_user,
+                model_class=User,
+                readable_column_names=["id", "first_name"],
+            ),
+            classes=[User],
+        )
+
+        status_code, response, response_headers = context()
+        alice = context.di.build("users").find("first_name=Alice")
+        assert status_code == 201
+        assert response["data"] == {"id": alice.id, "first_name": "Alice"}
+
+    def test_status_code_documentation(self):
+        class Output(clearskies.Schema):
+            hello = clearskies.columns.String()
+
+        default = clearskies.endpoints.Callable(lambda: {}, output_schema=Output)
+        custom = clearskies.endpoints.Callable(lambda: {}, output_schema=Output, status_code=201)
+
+        assert default.documentation()[0].responses[0].status == 200
+        assert custom.documentation()[0].responses[0].status == 201

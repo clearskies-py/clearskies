@@ -5,6 +5,7 @@ from typing import Callable as CallableType
 
 from clearskies import authentication, autodoc, configs, decorators, exceptions
 from clearskies.endpoint import Endpoint
+from clearskies.endpoints.callable_response import CallableResponse
 from clearskies.functional import string
 
 if TYPE_CHECKING:
@@ -103,6 +104,41 @@ class Callable(Endpoint):
     )()
     ```
 
+    Successful responses use a 200 status code by default.  Set `status_code` to change it for every response:
+
+    ```python
+    import clearskies
+
+    clearskies.contexts.WsgiRef(
+        clearskies.endpoints.Callable(
+            lambda: {"queued": True},
+            request_methods=["POST"],
+            status_code=202,
+        )
+    )()
+    ```
+
+    If the status code depends on the request, return a `clearskies.endpoints.CallableResponse` instead.  Its data
+    is handled like any other return value, while its status code and headers are applied to the response:
+
+    ```python
+    import clearskies
+
+
+    def upsert_widget(request_data):
+        created = request_data.get("new", False)
+        return clearskies.endpoints.CallableResponse(
+            {"name": "widget"},
+            status_code=201 if created else 200,
+            headers={"location": "/widgets/1"},
+        )
+
+
+    clearskies.contexts.WsgiRef(
+        clearskies.endpoints.Callable(upsert_widget, request_methods=["POST"]),
+    )()
+    ```
+
     """
 
     """
@@ -183,6 +219,27 @@ class Callable(Endpoint):
     """
     return_records = configs.Boolean(default=False)
 
+    """
+    The HTTP status code to use for successful responses.
+
+    This applies whether or not `return_standard_response` is enabled, and is also used in the auto-generated
+    documentation.  To pick the status code per request, return a `clearskies.endpoints.CallableResponse`:
+
+    ```python
+    import clearskies
+
+    wsgi = clearskies.contexts.WsgiRef(
+        clearskies.endpoints.Callable(
+            lambda: {"hello": "world"},
+            request_methods=["POST"],
+            status_code=201,
+        )
+    )
+    wsgi()
+    ```
+    """
+    status_code = configs.Integer(default=200, min=100, max=599)
+
     @decorators.parameters_to_properties
     def __init__(
         self,
@@ -197,6 +254,7 @@ class Callable(Endpoint):
         input_validation_callable: CallableType | None = None,
         return_standard_response: bool = True,
         return_records: bool = False,
+        status_code: int = 200,
         response_headers: list[str | CallableType[..., list[str]]] = [],
         output_map: CallableType[..., dict[str, Any]] | None = None,
         column_overrides: dict[str, Column] = {},
@@ -246,14 +304,21 @@ class Callable(Endpoint):
                 raise exceptions.InputErrors(input_errors)
         response = self.di.call_function(self.to_call, **input_output.get_context_for_callables())
 
+        status_code = self.status_code
+        if isinstance(response, CallableResponse):
+            status_code = response.status_code
+            for key, value in response.headers.items():
+                input_output.response_headers.add(key, value)
+            response = response.data
+
         if not self.return_standard_response:
-            return input_output.respond(response, 200)
+            return input_output.respond(response, status_code)
 
         # did the developer return a model?
         if self.model_class and isinstance(response, self.model_class):
             # and is it a query or a single model?
             if response._data:
-                return self.success(input_output, self.model_as_json(response, input_output))
+                return self.success(input_output, self.model_as_json(response, input_output), status_code=status_code)
             else:
                 # with a query we can also get pagination data, maybe?
                 converted_models = [self.model_as_json(model, input_output) for model in response]
@@ -263,6 +328,7 @@ class Callable(Endpoint):
                     number_results=len(response) if response.backend.can_count else None,
                     next_page=response.next_page_data(),
                     limit=response.get_query().limit,
+                    status_code=status_code,
                 )
 
         # or did they return a list of models?
@@ -271,10 +337,14 @@ class Callable(Endpoint):
             and self.model_class
             and all(isinstance(item, self.model_class) for item in response)
         ):
-            return self.success(input_output, [self.model_as_json(model, input_output) for model in response])
+            return self.success(
+                input_output,
+                [self.model_as_json(model, input_output) for model in response],
+                status_code=status_code,
+            )
 
         # if none of the above, just return the data
-        return self.success(input_output, response)
+        return self.success(input_output, response, status_code=status_code)
 
     def documentation(self) -> list[autodoc.request.Request]:
         output_schema = self.output_schema if self.output_schema else self.model_class
@@ -315,6 +385,7 @@ class Callable(Endpoint):
                         output_autodoc,
                         description=self.description,
                         include_pagination=self.return_records,
+                        status_code=self.status_code,
                     ),
                     *standard_error_responses,
                     self.documentation_generic_error_response(),

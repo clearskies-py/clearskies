@@ -1101,6 +1101,7 @@ class Endpoint(
         number_results: int | None = None,
         limit: int | None = None,
         next_page: Any = None,
+        status_code: int = 200,
     ) -> Any:
         """Return a successful response."""
         response_data = {"status": "success", "data": data, "pagination": {}}
@@ -1117,7 +1118,7 @@ class Endpoint(
                 "next_page": next_page,
             }
 
-        return self.respond_json(input_output, response_data, 200)
+        return self.respond_json(input_output, response_data, status_code)
 
     def model_as_json(self, model: Model, input_output: InputOutput) -> dict[str, Any]:
         if self.output_map:
@@ -1335,10 +1336,14 @@ class Endpoint(
         )
 
     def documentation_success_response(
-        self, data_schema: schema.Object | schema.Array, description: str = "", include_pagination: bool = False
+        self,
+        data_schema: schema.Object | schema.Array,
+        description: str = "",
+        include_pagination: bool = False,
+        status_code: int = 200,
     ) -> Response:
         return Response(
-            200,
+            status_code,
             schema.Object(
                 "body",
                 [
