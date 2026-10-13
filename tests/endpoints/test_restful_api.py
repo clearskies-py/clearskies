@@ -144,3 +144,84 @@ class RestfulApiTest(TestBase):
             url="resources/res-123/setting",
         )
         assert response_data["status"] == "success"
+
+    def test_search_and_sort_columns_empty(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String(validators=[Required()])
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.RestfulApi(
+                url="users",
+                model_class=User,
+                readable_column_names=["id", "name"],
+                writeable_column_names=["name"],
+                searchable_column_names=[],
+                sortable_column_names=[],
+                default_sort_column_name="name",
+            )
+        )
+
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": "Bob"}, url="users")
+        assert status_code == 200
+        bob_id = response_data["data"]["id"]
+        status_code, response_data, response_headers = context(
+            request_method="POST", body={"name": "Alice"}, url="users"
+        )
+        alice_id = response_data["data"]["id"]
+
+        status_code, response_data, response_headers = context(url=f"users/{bob_id}")
+        assert response_data["data"]["name"] == "Bob"
+
+        status_code, response_data, response_headers = context(
+            request_method="PATCH", body={"name": "Bobby"}, url=f"users/{bob_id}"
+        )
+        assert response_data["data"]["name"] == "Bobby"
+
+        status_code, response_data, response_headers = context(url="users")
+        assert response_data["status"] == "success"
+        assert sorted(record["name"] for record in response_data["data"]) == ["Alice", "Bobby"]
+
+        status_code, response_data, response_headers = context(url="users", query_parameters={"name": "Alice"})
+        assert status_code == 400
+        assert "Invalid request parameter" in response_data["error"]
+
+        status_code, response_data, response_headers = context(
+            url="users", query_parameters={"sort": "name", "direction": "asc"}
+        )
+        assert status_code == 400
+        assert "invalid sort column" in response_data["error"]
+
+        status_code, response_data, response_headers = context(request_method="DELETE", url=f"users/{alice_id}")
+        assert response_data["status"] == "success"
+        status_code, response_data, response_headers = context(url="users")
+        assert [record["name"] for record in response_data["data"]] == ["Bobby"]
+
+    def test_default_sort_without_sortable_columns(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.RestfulApi(
+                url="users",
+                model_class=User,
+                readable_column_names=["id", "name"],
+                writeable_column_names=["name"],
+                searchable_column_names=[],
+                sortable_column_names=[],
+                default_sort_column_name="name",
+                default_sort_direction="DESC",
+            )
+        )
+        for name in ["Alice", "Charlie", "Bob"]:
+            context(request_method="POST", body={"name": name}, url="users")
+
+        status_code, response_data, response_headers = context(url="users")
+        assert [record["name"] for record in response_data["data"]] == ["Charlie", "Bob", "Alice"]
