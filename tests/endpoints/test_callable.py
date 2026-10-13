@@ -202,3 +202,63 @@ class CallableTest(TestBase):
 
         assert default.documentation()[0].responses[0].status == 200
         assert custom.documentation()[0].responses[0].status == 201
+
+    def test_input_errors_status_code(self):
+        class ExpectedInput(clearskies.Schema):
+            name = clearskies.columns.String(validators=[clearskies.validators.Required()])
+
+        def build_context(**kwargs):
+            return Context(
+                clearskies.endpoints.Callable(
+                    lambda request_data: request_data,
+                    request_methods=["POST"],
+                    input_schema=ExpectedInput,
+                    **kwargs,
+                )
+            )
+
+        status_code, response, response_headers = build_context()(body={"name": ""}, request_method="POST")
+        assert status_code == 200
+        assert response["status"] == "input_errors"
+        assert response["input_errors"] == {"name": "'name' is required."}
+
+        for configured_status_code in [400, 422]:
+            context = build_context(input_errors_status_code=configured_status_code)
+            status_code, response, response_headers = context(body={"name": ""}, request_method="POST")
+            assert status_code == configured_status_code
+            assert response["status"] == "input_errors"
+            assert response["input_errors"] == {"name": "'name' is required."}
+
+    def test_input_errors_status_code_with_custom_status_code(self):
+        class ExpectedInput(clearskies.Schema):
+            name = clearskies.columns.String(validators=[clearskies.validators.Required()])
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.Callable(
+                lambda request_data: {"ok": True},
+                input_schema=ExpectedInput,
+                request_methods=["POST"],
+                status_code=201,
+                input_errors_status_code=422,
+            ),
+        )
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": "alice"})
+        assert status_code == 201
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": ""})
+        assert status_code == 422
+        assert response_data["status"] == "input_errors"
+
+    def test_input_errors_status_code_documentation(self):
+        endpoint = clearskies.endpoints.Callable(lambda: {})
+        assert endpoint.documentation_input_error_response().status == 200
+
+        endpoint = clearskies.endpoints.Callable(lambda: {}, input_errors_status_code=422)
+        assert endpoint.documentation_input_error_response().status == 422
+
+    def test_input_errors_status_code_validation(self):
+        with self.assertRaises(ValueError):
+            clearskies.endpoints.Callable(lambda: {}, input_errors_status_code=99)
+        with self.assertRaises(ValueError):
+            clearskies.endpoints.Callable(lambda: {}, input_errors_status_code=600)
+        with self.assertRaises(TypeError):
+            clearskies.endpoints.Callable(lambda: {}, input_errors_status_code="422")

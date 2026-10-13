@@ -176,6 +176,7 @@ class Get(Endpoint):
         transform_input_types: bool = False,
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
+        input_errors_status_code: int = 200,
     ):
         try:
             # we will set the value for this if it isn't already set, and the easiest way is to just fetch it and see if it blows up

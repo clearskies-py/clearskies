@@ -234,6 +234,7 @@ class EndpointGroup(
     authentication = configs.Authentication(default=Public())
     authorization = configs.Authorization(default=Authorization())
     security_headers = configs.SecurityHeaders(default=[])
+    input_errors_status_code = configs.Integer(default=200, min=100, max=599)
 
     cors_header: SecurityHeader | None = None
     has_cors: bool = False
@@ -250,6 +251,7 @@ class EndpointGroup(
         external_casing: str = "snake_case",
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
+        input_errors_status_code: int = 200,
     ):
         self.finalize_and_validate_configuration()
         for security_header in self.security_headers:

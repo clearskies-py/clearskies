@@ -212,6 +212,7 @@ class SimpleSearch(List):
         description: str = "",
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
+        input_errors_status_code: int = 200,
     ):
         self.request_methods = request_methods
 

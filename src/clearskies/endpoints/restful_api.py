@@ -323,6 +323,7 @@ class RestfulApi(EndpointGroup):
         description: str = "",
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
+        input_errors_status_code: int = 200,
     ):
         self.finalize_and_validate_configuration()
 
@@ -432,4 +433,5 @@ class RestfulApi(EndpointGroup):
             security_headers=security_headers,
             authentication=authentication,
             authorization=authorization,
+            input_errors_status_code=input_errors_status_code,
         )
