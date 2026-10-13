@@ -5,9 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-10-13
+
+### Added
+- Support SQL LIKE wildcards in [#118](https://github.com/clearskies-py/clearskies/pull/118)
+
+### Changed
+- Make input error status code configurable in [#117](https://github.com/clearskies-py/clearskies/pull/117)
+- Type BelongsToId input conversion as int | str
+- Type BelongsToId values as int | str
+- Spell out abbreviated variable names
+- Cache parent_id_column resolution on BelongsToId
+- Type relationship ids from the related id column
+- Allow custom success status codes in [#116](https://github.com/clearskies-py/clearskies/pull/116)
+- Document v2 connection setup
+
+### Fixed
+- Validate empty and falsy relationship ids in [#113](https://github.com/clearskies-py/clearskies/pull/113)
+- Cover Boolean.condition_value_to_backend coercion
+- Scope many-to-many pivot deletes to the saving record
+- Normalise related ids in ManyToManyIdsWithData.post_save
+- Catch TypeError in Integer.input_error_for_value
+- Stop nesting id output in ManyToManyModels and ManyToManyPivots
+- Fix integer id handling in ManyToManyIds
+- Normalise incoming ids before diffing in HasMany
+- Return 301 with Location header for redirects in [#115](https://github.com/clearskies-py/clearskies/pull/115)
+- Forward explicit empty column lists in [#119](https://github.com/clearskies-py/clearskies/pull/119)
+- Reject non-clearskies cursors with a clear error in [#120](https://github.com/clearskies-py/clearskies/pull/120)
+
+### Removed
+- Remove unused related_table_name in ManyToManyIds.add_search
+
 ## [2.1.15] - 2026-10-13
 
 ### Changed
+- Bump version to v2.1.15 by @github-actions[bot]
 - Regexp validator by @cmancone in [#111](https://github.com/clearskies-py/clearskies/pull/111)
 
 ### Fixed
@@ -1546,6 +1578,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.2.0]: https://github.com/clearskies-py/clearskies/compare/v2.1.15..v2.2.0
 [2.1.15]: https://github.com/clearskies-py/clearskies/compare/v2.1.14..v2.1.15
 [2.1.14]: https://github.com/clearskies-py/clearskies/compare/v2.1.13..v2.1.14
 [2.1.13]: https://github.com/clearskies-py/clearskies/compare/v2.1.12..v2.1.13
