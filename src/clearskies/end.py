@@ -100,9 +100,9 @@ class End(
         except exceptions.NotFound as not_found:
             return self.error(input_output, str(not_found), 404)
         except exceptions.MovedPermanently as redirect:
-            return self.redirect(input_output, str(redirect), 302)
+            return self.redirect(input_output, redirect.location, 301)
         except exceptions.MovedTemporarily as redirect:
-            return self.redirect(input_output, str(redirect), 307)
+            return self.redirect(input_output, redirect.location, 307)
 
         try:
             response = self.handle(input_output)
@@ -117,9 +117,9 @@ class End(
         except exceptions.NotFound as auth_error:
             return self.error(input_output, str(auth_error), 404)
         except exceptions.MovedPermanently as redirect:
-            return self.redirect(input_output, str(redirect), 302)
+            return self.redirect(input_output, redirect.location, 301)
         except exceptions.MovedTemporarily as redirect:
-            return self.redirect(input_output, str(redirect), 307)
+            return self.redirect(input_output, redirect.location, 307)
 
         return response
 
@@ -215,6 +215,7 @@ class End(
 
     def redirect(self, input_output: InputOutput, location: str, status_code: int) -> Any:
         """Return a redirect response (e.g. 302)."""
+        input_output.response_headers.add("location", location)
         return self.respond_json(input_output, {"status": "redirect", "location": location}, status_code)
 
     def handle(self, input_output: InputOutput) -> Any:

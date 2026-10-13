@@ -97,9 +97,11 @@ class Context:
             except exceptions.NotFound as e:
                 return input_output.respond(str(e), 404)
             except exceptions.MovedPermanently as e:
-                return input_output.respond(str(e), 302)
+                input_output.response_headers.add("location", e.location)
+                return input_output.respond(e.location, 301)
             except exceptions.MovedTemporarily as e:
-                return input_output.respond(str(e), 307)
+                input_output.response_headers.add("location", e.location)
+                return input_output.respond(e.location, 307)
 
     def __call__(
         self,
