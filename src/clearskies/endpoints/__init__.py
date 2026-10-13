@@ -1,5 +1,6 @@
 from clearskies.endpoints.advanced_search import AdvancedSearch
 from clearskies.endpoints.callable import Callable
+from clearskies.endpoints.callable_response import CallableResponse
 from clearskies.endpoints.create import Create
 from clearskies.endpoints.delete import Delete
 from clearskies.endpoints.get import Get
@@ -14,6 +15,7 @@ from clearskies.endpoints.update import Update
 __all__ = [
     "AdvancedSearch",
     "Callable",
+    "CallableResponse",
     "Create",
     "Delete",
     "Get",
