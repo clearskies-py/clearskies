@@ -34,43 +34,86 @@ class CursorBackend(Backend, InjectableProperties):
 
     ## Connecting to your server
 
-    By default, database credentials are expected in environment variables:
+    The backend fetches its cursor from the dependency injection container under the name `cursor` (configurable
+    via the `cursor_dependency_name` argument).  The value must be a clearskies cursor, i.e. an instance of
+    `clearskies.cursors.Cursor`, and not a raw DB-API cursor or connection.  By default, `cursor` is
+    `clearskies.cursors.from_environment.Mysql()`, which reads its connection details from the environment
+    (environment variables or a `.env` file):
 
-    | Name        | Default | Value                                                         |
-    |-------------|---------|---------------------------------------------------------------|
-    | db_host     |         | The hostname where the database can be found                  |
-    | db_username |         | The username to connect as                                    |
-    | db_password |         | The password to connect with                                  |
-    | db_database |         | The name of the database to use                               |
-    | db_port     | 3306    | The network port to connect to                                |
-    | db_ssl_ca   |         | Path to a certificate to use: enables SSL over the connection |
+    | Name                     | Default | Value                                                         |
+    |--------------------------|---------|---------------------------------------------------------------|
+    | DATABASE_HOST            |         | The hostname where the database can be found                  |
+    | DATABASE_USERNAME        |         | The username to connect as                                    |
+    | DATABASE_PASSWORD        |         | The password to connect with                                  |
+    | DATABASE_NAME            |         | The name of the database to use                               |
+    | DATABASE_PORT            | 3306    | The network port to connect to                                |
+    | DATABASE_CERT_PATH       |         | Path to a certificate to use: enables SSL over the connection |
+    | DATABASE_AUTOCOMMIT      |         | Enables autocommit when set to a non-empty value              |
+    | DATABASE_CONNECT_TIMEOUT | 2       | Connection timeout in seconds                                 |
 
-    However, you can fully control the credential provisioning process by declaring a dependency named `connection_details` and
-    setting it to a dictionary with the above keys, minus the `db_` prefix:
+    The names of these environment variables can be changed via the `*_environment_key` arguments of
+    `clearskies.cursors.from_environment.Mysql`.  `clearskies.cursors.from_environment.Postgresql` (same variables)
+    and `clearskies.cursors.from_environment.Sqlite` (`DATABASE_NAME` only) are also available.
+
+    To use a different cursor, bind one of the classes from `clearskies.cursors` to `cursor`.  For example, to
+    connect to a PostgreSQL server (requires `psycopg` to be installed) with explicit settings:
 
     ```python
-    class ConnectionDetails(clearskies.di.AdditionalConfig):
-        provide_connection_details(self, secrets):
-            return {
-                "host": secrets.get("database_host"),
-                "username": secrets.get("db_username"),
-                "password": secrets.get("db_password"),
-                "database": secrets.get("db_database"),
-                "port": 3306,
-                "ssl_ca": "/path/to/ca",
-            }
+    import clearskies
 
-    wsgi = clearskies.contexts.Wsgi(
+    wsgi = clearskies.contexts.WsgiRef(
         some_application,
-        additional_configs=[ConnectionDetails()],
         bindings={
-            "secrets": "" # some configuration here to point to your secret manager
-        }
+            "cursor": clearskies.cursors.Postgresql(
+                hostname="db.example.com",
+                username="example-user",
+                password="<YOUR_PASSWORD>",
+                database="appdb",
+            ),
+        },
     )
     ```
 
-    Similarly, some alternate credential provisioning schemes are built into clearskies.  See the
-    clearskies.secrets.additional_configs module for those options.
+    `clearskies.cursors.Mysql` and `clearskies.cursors.Sqlite` work the same way.  The MySQL and PostgreSQL cursors
+    also accept a `port_forwarding` argument (see `clearskies.cursors.port_forwarding`).  If different models need
+    different databases, bind each cursor under its own name and point the backend at it:
+
+    ```python
+    class Report(clearskies.Model):
+        backend = clearskies.backends.CursorBackend(cursor_dependency_name="reporting_cursor")
+
+
+    cli = clearskies.contexts.Cli(
+        some_application,
+        bindings={"reporting_cursor": clearskies.cursors.Sqlite(database="reports.db")},
+    )
+    ```
+
+    The cursors don't read from a secret manager directly.  To pull credentials from one, provide the cursor from
+    an `AdditionalConfig` class, which can have the `secrets` dependency injected:
+
+    ```python
+    import clearskies
+
+
+    class DatabaseConfig(clearskies.di.AdditionalConfig):
+        def provide_cursor(self, secrets):
+            return clearskies.cursors.Mysql(
+                hostname="db.example.com",
+                username="example-user",
+                password=secrets.get("/path/to/database/password"),
+                database="appdb",
+            )
+
+
+    wsgi = clearskies.contexts.WsgiRef(
+        some_application,
+        additional_configs=[DatabaseConfig()],
+        bindings={
+            "secrets": clearskies.secrets.Akeyless(access_id="p-abc123", access_type="aws_iam"),
+        },
+    )
+    ```
 
     ## Connecting models to tables
 

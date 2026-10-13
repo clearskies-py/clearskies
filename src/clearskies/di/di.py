@@ -98,9 +98,7 @@ class Di:
     | environment          | clearskies.Environment                                  | A clearskies helper that access config info from the environment or a .env file           |
     | sys                  | -                                                       | `import sys` - the sys module builtin to python                                           |
     | oai3_schema_resolver | -                                                       | Used by the autodoc system                                                                |
-    | connection_details   | -                                                       | A dictionary containing credentials that pymysql should use when connecting to a database |
-    | connection           | -                                                       | A pymysql connection object                                                               |
-    | cursor               | -                                                       | A pymysql cursor object                                                                   |
+    | cursor               | -                                                       | A clearskies database cursor, `clearskies.cursors.from_environment.Mysql()` by default    |
     | endpoint_groups      | -                                                       | The list of endpoint groups handling the request                                          |
 
     Note: for dependencies with an injection name but no injection type, this means that to inject those values you
