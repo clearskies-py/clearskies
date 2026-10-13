@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.15] - 2026-10-13
+
+### Changed
+- Regexp validator by @cmancone in [#111](https://github.com/clearskies-py/clearskies/pull/111)
+
+### Fixed
+- Handle CORS preflight before auth check in [#114](https://github.com/clearskies-py/clearskies/pull/114)
+
 ## [2.1.14] - 2026-09-29
+
+### Changed
+- Bump version to v2.1.14 by @github-actions[bot]
 
 ### Fixed
 - Encode boolean URL params as lowercase strings
@@ -1535,6 +1546,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.1.15]: https://github.com/clearskies-py/clearskies/compare/v2.1.14..v2.1.15
 [2.1.14]: https://github.com/clearskies-py/clearskies/compare/v2.1.13..v2.1.14
 [2.1.13]: https://github.com/clearskies-py/clearskies/compare/v2.1.12..v2.1.13
 [2.1.12]: https://github.com/clearskies-py/clearskies/compare/v2.1.11..v2.1.12
