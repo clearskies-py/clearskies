@@ -411,7 +411,8 @@ class RestfulApi(EndpointGroup):
             final_args: list[str] = []
             final_kwargs: dict[str, Any] = {}
             for arg in endpoint_args.args[1:]:
-                if not available_args.get(arg):
+                # skip only what wasn't provided: explicit empty lists must still reach the child endpoints
+                if available_args.get(arg) is None:
                     continue
                 final_kwargs[arg] = available_args[arg]
 
