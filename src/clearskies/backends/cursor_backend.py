@@ -203,7 +203,17 @@ class CursorBackend(Backend, InjectableProperties):
             The cursor object used for executing database queries.
         """
         if not hasattr(self, "_cursor"):
-            self._cursor = self.di.build(self.cursor_dependency_name)
+            cursor = self.di.build(self.cursor_dependency_name)
+            # duck-typed rather than isinstance so test doubles keep working
+            if not hasattr(cursor, "column_escape_character"):
+                raise TypeError(
+                    f"CursorBackend expected the '{self.cursor_dependency_name}' dependency to be a clearskies cursor "
+                    f"(clearskies.cursors.Cursor), but got {type(cursor).__module__}.{type(cursor).__qualname__}. "
+                    "Raw DB-API cursors and connections are not supported: bind a clearskies.cursors.Mysql, "
+                    "clearskies.cursors.Postgresql, clearskies.cursors.Sqlite, or one of the "
+                    "clearskies.cursors.from_environment classes instead."
+                )
+            self._cursor = cursor
         return self._cursor
 
     def _finalize_table_name(self, table_name):
