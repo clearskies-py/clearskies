@@ -1,6 +1,7 @@
 import re
 from typing import Any
 
+from ... import examples
 from ...schema import Object
 from .parameter import Parameter
 from .response import Response
@@ -108,9 +109,30 @@ class Request:
                 for content_type, body_parameters in grouped_by_content_type.items():
                     definitions = [parameter.definition for parameter in body_parameters]
                     json_body = Object("body", definitions)
+                    override_example = next(
+                        (
+                            param.documentation_example
+                            for param in body_parameters
+                            if param.documentation_example is not None
+                        ),
+                        None,
+                    )
+                    override_examples = next(
+                        (
+                            param.documentation_examples
+                            for param in body_parameters
+                            if param.documentation_examples is not None
+                        ),
+                        None,
+                    )
                     content[content_type] = {
                         "schema": self.oai3_schema_resolver(json_body).convert(),
+                        "example": override_example
+                        if override_example is not None
+                        else examples.schema_example(json_body),
                     }
+                    if override_examples is not None:
+                        content[content_type]["examples"] = override_examples
 
                 request_body_description = (
                     self.request.description
