@@ -51,3 +51,51 @@ class CursorBackendTest(unittest.TestCase):
                 ),
             ]
         )
+
+    def test_raw_dbapi_cursor_raises_type_error(self):
+        import sqlite3
+
+        class UserPreference(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.CursorBackend()
+            id = clearskies.columns.Uuid()
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                lambda user_preferences: user_preferences.create(no_data=True).id,
+            ),
+            classes=[UserPreference],
+            bindings={"cursor": sqlite3.connect(":memory:").cursor()},
+        )
+
+        with self.assertRaisesRegex(TypeError, r"clearskies\.cursors\.Sqlite"):
+            context()
+
+    def test_cursor_from_additional_config(self):
+        class UserPreference(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.CursorBackend()
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        class DatabaseConfig(clearskies.di.AdditionalConfig):
+            def provide_cursor(self, secrets):
+                cursor = clearskies.cursors.Sqlite(database=secrets.get("/path/to/database"))
+                cursor.execute("CREATE TABLE user_preferences (id TEXT PRIMARY KEY, name TEXT)")
+                return cursor
+
+        secrets = MagicMock()
+        secrets.get = MagicMock(return_value=":memory:")
+
+        context = Context(
+            clearskies.endpoints.Callable(
+                lambda user_preferences: user_preferences.create({"name": "alice"}).name,
+            ),
+            classes=[UserPreference],
+            additional_configs=[DatabaseConfig()],
+            bindings={"secrets": secrets},
+        )
+
+        status_code, response, _ = context()
+        assert status_code == 200
+        assert response["data"] == "alice"
