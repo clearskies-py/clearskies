@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from functools import cmp_to_key
 from typing import TYPE_CHECKING, Any, Callable, cast
 
@@ -95,6 +96,41 @@ def cheating_equals(column, values, null):
     return inner
 
 
+def like_to_regex(pattern: Any) -> re.Pattern:
+    r"""Convert an SQL LIKE pattern to a regex: `%` is any sequence, `_` one character, `\` escapes."""
+    parts = []
+    escaped = False
+    for char in str(pattern):
+        if escaped:
+            parts.append(re.escape(char))
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == "%":
+            parts.append(".*")
+        elif char == "_":
+            parts.append(".")
+        else:
+            parts.append(re.escape(char))
+    if escaped:
+        parts.append(re.escape("\\"))
+    # MySQL's default collations are case-insensitive
+    return re.compile("".join(parts), re.IGNORECASE | re.DOTALL)
+
+
+def like(column, values, null, negate=False):
+    regex = like_to_regex(values[0])
+
+    def inner(row):
+        value = row.get(column)
+        # NULL never matches LIKE or NOT LIKE in SQL
+        if value is None or isinstance(value, Null):
+            return False
+        return (regex.fullmatch(str(value)) is not None) != negate
+
+    return inner
+
+
 class MemoryTable:
     _table_name: str = ""
     _column_names: list[str] = []
@@ -135,7 +171,8 @@ class MemoryTable:
         "is null": lambda column, values, null: lambda row: column not in row or row[column] is None,
         "is not": lambda column, values, null: lambda row: row.get(column, null) != values[0],
         "is": lambda column, values, null: lambda row: row.get(column, null) == str(values[0]),
-        "like": lambda column, values, null: lambda row: row.get(column, null) == str(values[0]),
+        "like": like,
+        "not like": lambda column, values, null: like(column, values, null, negate=True),
         "in": lambda column, values, null: lambda row: row.get(column, null) in values,
     }
 

@@ -95,3 +95,40 @@ class AdvancedSearchTest(TestBase):
             },
         )
         assert ["curious", "greg"] == [record["username"] for record in response_data["data"]]
+
+    def test_like_search(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            username = clearskies.columns.String()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.AdvancedSearch(
+                model_class=User,
+                readable_column_names=["id", "username"],
+                sortable_column_names=["username"],
+                searchable_column_names=["username"],
+                default_sort_column_name="username",
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1", "username": "alice"},
+                            {"id": "2", "username": "bob"},
+                            {"id": "3", "username": "malcolm"},
+                        ],
+                    },
+                ],
+            },
+        )
+
+        status_code, response_data, response_headers = context(
+            request_method="POST",
+            body={"where": [{"column": "username", "operator": "like", "value": "%AL%"}]},
+        )
+        assert status_code == 200
+        assert ["alice", "malcolm"] == [record["username"] for record in response_data["data"]]
