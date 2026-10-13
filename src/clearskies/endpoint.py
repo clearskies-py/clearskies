@@ -762,6 +762,30 @@ class Endpoint(
     description = configs.String(default="")
 
     """
+    The HTTP status code returned when the request fails input validation.  Defaults to 200.
+
+    Responses with input errors have a status of `input_errors` in the body, but are returned with a 200 status
+    code by default.  REST clients often expect a 4xx status code for invalid input, so you can change it:
+
+    ```python
+    import clearskies
+
+    class ExpectedInput(clearskies.Schema):
+        name = clearskies.columns.String(validators=[clearskies.validators.Required()])
+
+    endpoint = clearskies.endpoints.Callable(
+        lambda request_data: request_data,
+        request_methods=["POST"],
+        input_schema=ExpectedInput,
+        input_errors_status_code=422,
+    )
+    ```
+
+    The configured status code is also used in the auto-generated documentation.
+    """
+    input_errors_status_code = configs.Integer(default=200, min=100, max=599)
+
+    """
     Whether or not the routing data should also be persisted to the model.  Defaults to False.
 
     Note: this is only relevant for handlers that accept request data
@@ -958,6 +982,7 @@ class Endpoint(
         description: str = "",
         authentication: Authentication = Public(),
         authorization: Authorization = Authorization(),
+        input_errors_status_code: int = 200,
     ):
         self.finalize_and_validate_configuration()
         for security_header in self.security_headers:
@@ -1376,7 +1401,7 @@ class Endpoint(
     def documentation_input_error_response(self, description="Invalid client-side input") -> Response:
         email_example = self.auto_case_internal_column_name("email")
         return Response(
-            200,
+            self.input_errors_status_code,
             schema.Object(
                 "body",
                 [

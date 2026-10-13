@@ -265,6 +265,7 @@ class Callable(Endpoint):
         transform_input_types: bool = False,
         authentication: Authentication = authentication.Public(),
         authorization: Authorization = authentication.Authorization(),
+        input_errors_status_code: int = 200,
     ):
         # we need to call the parent but don't have to pass along any of our kwargs.  They are all optional in our parent, and our parent class
         # just stores them in parameters, which we have already done.  However, the parent does do some extra initialization stuff that we need,

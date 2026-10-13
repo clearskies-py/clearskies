@@ -119,6 +119,7 @@ class Create(Endpoint):
         description: str = "",
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
+        input_errors_status_code: int = 200,
     ):
         # a bit weird, but we have to do this because the default in the above definition is different than
         # the default set on the request_mehtods config in the bsae endpoint class.  parameters_to_properties will copy

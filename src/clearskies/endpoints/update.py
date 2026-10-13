@@ -108,6 +108,7 @@ class Update(Get):
         transform_input_types: bool = False,
         authentication: authentication.Authentication = authentication.Public(),
         authorization: authentication.Authorization = authentication.Authorization(),
+        input_errors_status_code: int = 200,
     ):
         # see comment in clearskies.endpoints.Create.__init__
         self.request_methods = request_methods

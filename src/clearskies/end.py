@@ -40,6 +40,7 @@ class End(
     authentication = configs.Authentication(default=Public())
     authorization = configs.Authorization(default=Authorization())
     security_headers = configs.SecurityHeaders(default=[])
+    input_errors_status_code = configs.Integer(default=200, min=100, max=599)
 
     cors_header: SecurityHeader | None = None
     has_cors: bool = False
@@ -109,7 +110,7 @@ class End(
         except exceptions.ClientError as client_error:
             return self.error(input_output, str(client_error), 400)
         except exceptions.InputErrors as input_errors:
-            return self.input_errors(input_output, input_errors.errors)
+            return self.input_errors(input_output, input_errors.errors, self.input_errors_status_code)
         except exceptions.Authentication as auth_error:
             return self.error(input_output, str(auth_error), 401)
         except exceptions.Authorization as auth_error:

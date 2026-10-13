@@ -225,3 +225,29 @@ class RestfulApiTest(TestBase):
 
         status_code, response_data, response_headers = context(url="users")
         assert [record["name"] for record in response_data["data"]] == ["Charlie", "Bob", "Alice"]
+
+    def test_input_errors_status_code(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String(validators=[Required()])
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.RestfulApi(
+                url="users",
+                model_class=User,
+                readable_column_names=["id", "name"],
+                writeable_column_names=["name"],
+                sortable_column_names=["id", "name"],
+                searchable_column_names=["id", "name"],
+                default_sort_column_name="name",
+                input_errors_status_code=422,
+            )
+        )
+
+        status_code, response_data, response_headers = context(request_method="POST", body={"name": ""}, url="users")
+        assert status_code == 422
+        assert response_data["status"] == "input_errors"
+        assert response_data["input_errors"] == {"name": "'name' is required."}
