@@ -148,8 +148,8 @@ class ManyToManyIdsWithData(ManyToManyIds[RelatedModel, PivotModel]):
     """
     persist_unique_lookup_column_to_pivot_table = configs.Boolean(default=False)
 
-    default = configs.ListAnyDict(default=None)
-    setable = configs.ListAnyDictOrCallable(default=None)
+    default = configs.ListAnyDict(default=None)  # ty: ignore[invalid-attribute-override]
+    setable = configs.ListAnyDictOrCallable(default=None)  # ty: ignore[invalid-attribute-override]
     _descriptor_config_map = None
 
     @decorators.parameters_to_properties

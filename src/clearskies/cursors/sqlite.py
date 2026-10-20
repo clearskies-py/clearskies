@@ -46,7 +46,7 @@ class Sqlite(Cursor):
     """
     Connection timeout in seconds.
     """
-    connect_timeout = configs.Float(default=2.0)
+    connect_timeout = configs.Float(default=2.0)  # ty: ignore[invalid-attribute-override]
     value_placeholder = "?"
     sys = inject.ByName("sys")
 
@@ -77,7 +77,7 @@ class Sqlite(Cursor):
         return self._factory
 
     @property
-    def connection(self) -> SQLiteConnection:
+    def connection(self) -> SQLiteConnection:  # ty: ignore[invalid-property-type-override]
         """Get or create a database connection instance."""
         if hasattr(self, "_connection"):
             return cast(SQLiteConnection, self._connection)
@@ -86,7 +86,7 @@ class Sqlite(Cursor):
             fields = [column[0] for column in cursor.description]
             return dict(zip(fields, row))
 
-        self._connection: SQLiteConnection = cast(
+        self._connection: SQLiteConnection = cast(  # ty: ignore[invalid-attribute-override]
             SQLiteConnection,
             self.factory.connect(
                 database=self.database,
@@ -114,7 +114,7 @@ class Sqlite(Cursor):
                 self.connection.isolation_level = "DEFERRED"
 
     @property
-    def cursor(self) -> SQLiteCursor:
+    def cursor(self) -> SQLiteCursor:  # ty: ignore[invalid-property-type-override]
         """Get or create a database cursor instance."""
         if not hasattr(self, "_cursor"):
             self._cursor = self.connection.cursor()

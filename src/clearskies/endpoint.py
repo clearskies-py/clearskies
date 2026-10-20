@@ -959,7 +959,7 @@ class Endpoint(
     """
     joins = configs.Joins(default=[])
 
-    cors_header: Cors | None = None
+    cors_header: Cors | None = None  # ty: ignore[invalid-mutable-override]
     _model: Model | None = None
     _columns: dict[str, column.Column] | None = None
     _readable_columns: dict[str, column.Column] | None = None

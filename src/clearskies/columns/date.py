@@ -109,9 +109,9 @@ class Date(Column):
     The default is only used when creating a record for the first time, and only if
     a value for this column has not been set.
     """
-    default = configs.Datetime()
+    default = configs.Datetime()  # ty: ignore[invalid-attribute-override]
 
-    setable = configs.DatetimeOrCallable(default=None)
+    setable = configs.DatetimeOrCallable(default=None)  # ty: ignore[invalid-attribute-override]
 
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
     auto_doc_class: type[AutoDocSchema] = AutoDocDatetime

@@ -67,8 +67,8 @@ class Integer(Column):
     ```
     """
 
-    default = configs.Integer(default=None)
-    setable = configs.IntegerOrCallable(default=None)
+    default = configs.Integer(default=None)  # ty: ignore[invalid-attribute-override]
+    setable = configs.IntegerOrCallable(default=None)  # ty: ignore[invalid-attribute-override]
     _allowed_search_operators = ["<=>", "!=", "<=", ">=", ">", "<", "=", "in", "is not null", "is null"]
 
     auto_doc_class: type[AutoDocSchema] = AutoDocInteger

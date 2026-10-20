@@ -171,8 +171,8 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
     """ The list of columns to be loaded from the related models when we are converted to JSON. """
     readable_related_column_names = configs.ReadableModelColumns("related_model_class")
 
-    default = configs.StringList(default=None)
-    setable = configs.StringListOrCallable(default=None)
+    default = configs.StringList(default=None)  # ty: ignore[invalid-attribute-override]
+    setable = configs.StringListOrCallable(default=None)  # ty: ignore[invalid-attribute-override]
     is_searchable = configs.Boolean(default=False)
     _descriptor_config_map = None
 

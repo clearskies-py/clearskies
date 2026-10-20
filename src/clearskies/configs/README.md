@@ -32,10 +32,11 @@ class ConfigurableThing(configurable.Configurable):
     is_required = config.Boolean(default=False)
     some_option = config.Select(allowed_values=["option 1", "option 2", "option 3"])
 
-    def __init__(self,
+    def __init__(
+        self,
         my_name: str,
-        is_required: bool=False,
-        some_option: str=None,
+        is_required: bool = False,
+        some_option: str = None,
     ):
         self.my_name = my_name
         self.is_required = is_required
@@ -56,10 +57,11 @@ class ConfigurableThing(configurable.Configurable):
         self.some_dependency = some_dependency
         self.other_dependency = other_dependency
 
-    def configure(self,
+    def configure(
+        self,
         my_name: str,
-        is_required: bool=False,
-        some_option: str=None,
+        is_required: bool = False,
+        some_option: str = None,
     ):
         self.my_name = my_name
         self.is_required = is_required
@@ -67,11 +69,14 @@ class ConfigurableThing(configurable.Configurable):
 
         super().finalize_and_validate_configuration()
 
+
 context = clearskies.contexts.cli(
     SomeApplication,
     bindings={
-        "configurable_thing": clearskies.bindings.Binding(ConfigurableThing, my_name="hey", is_required=Flase, some_option="option 2"),
-    }
+        "configurable_thing": clearskies.bindings.Binding(
+            ConfigurableThing, my_name="hey", is_required=Flase, some_option="option 2"
+        ),
+    },
 )
 ```
 
@@ -79,24 +84,23 @@ Note that we've lost our strong typing when creating the binding, but that can b
 
 ```python
 class ConfigurableThing:
-    """ See above """
+    """See above"""
+
 
 class ConfigurableThingBinding(clearskies.bindings.Binding):
     def __init__(
         self,
         my_name: str,
-        is_required: bool=False,
-        some_option: str=None,
+        is_required: bool = False,
+        some_option: str = None,
     ):
         self.object_class = ConfigurableThing
         self.args = [my_name]
         self.kwargs = {"is_required": is_required, "some_option": some_option}
 
+
 context = clearskies.contexts.cli(
-    SomeApplication,
-    bindings={
-        "configurable_thing": ConfigurableThingBinding("hey", some_option="option 3")
-    }
+    SomeApplication, bindings={"configurable_thing": ConfigurableThingBinding("hey", some_option="option 3")}
 )
 ```
 
