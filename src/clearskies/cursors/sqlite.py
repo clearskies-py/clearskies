@@ -109,7 +109,7 @@ class Sqlite(Cursor):
             self.connection.isolation_level = None
         else:
             if self.sys.version_info > (3, 12):  # noqa: UP036
-                self.connection.autocommit = False  # type: ignore[attr-defined]
+                setattr(self.connection, "autocommit", False)
             else:
                 self.connection.isolation_level = "DEFERRED"
 
