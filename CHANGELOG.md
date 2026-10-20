@@ -5,12 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-10-20
+
+### Changed
+- Update dependencies and require certifi 2026.10.19
+
+### Fixed
+- Make ty pass on all supported Python versions
+- Silence new ty override errors
+
 ## [2.2.0] - 2026-10-13
 
 ### Added
 - Support SQL LIKE wildcards in [#118](https://github.com/clearskies-py/clearskies/pull/118)
 
 ### Changed
+- Bump version to v2.2.0 by @github-actions[bot]
 - Make input error status code configurable in [#117](https://github.com/clearskies-py/clearskies/pull/117)
 - Type BelongsToId input conversion as int | str
 - Type BelongsToId values as int | str
@@ -1578,6 +1588,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @ made their first contribution
 * @tnijboer made their first contribution
 * @conormancone-cimpress made their first contribution
+[2.2.1]: https://github.com/clearskies-py/clearskies/compare/v2.2.0..v2.2.1
 [2.2.0]: https://github.com/clearskies-py/clearskies/compare/v2.1.15..v2.2.0
 [2.1.15]: https://github.com/clearskies-py/clearskies/compare/v2.1.14..v2.1.15
 [2.1.14]: https://github.com/clearskies-py/clearskies/compare/v2.1.13..v2.1.14
