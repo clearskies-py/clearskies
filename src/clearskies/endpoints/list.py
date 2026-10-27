@@ -173,7 +173,9 @@ class List(Endpoint):
 
     readable_column_names = configs.ReadableModelColumns("model_class")
     sortable_column_names = configs.ReadableModelColumns("model_class", allow_relationship_references=True)
-    searchable_column_names = configs.SearchableModelColumns("model_class", allow_relationship_references=True)
+    searchable_column_names = configs.SearchableModelColumns(
+        "model_class", allow_relationship_references=True, default=[]
+    )
 
     @decorators.parameters_to_properties
     def __init__(

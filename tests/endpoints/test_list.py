@@ -95,3 +95,35 @@ class ListTest(TestBase):
             {"id": "1-2-3-4", "name": "Bob", "grade": 5},
             {"id": "1-2-3-5", "name": "Jane", "grade": 3},
         ]
+
+    def test_limit_without_searchable_columns(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                model_class=User,
+                readable_column_names=["id", "name"],
+                sortable_column_names=["name"],
+                default_sort_column_name="name",
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": User,
+                        "records": [
+                            {"id": "1", "name": "Ann"},
+                            {"id": "2", "name": "Bob"},
+                            {"id": "3", "name": "Cat"},
+                        ],
+                    },
+                ]
+            },
+        )
+        status_code, response_data, response_headers = context(query_parameters={"limit": "2"})
+
+        assert status_code == 200
+        assert ["Ann", "Bob"] == [record["name"] for record in response_data["data"]]
