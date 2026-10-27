@@ -1,3 +1,5 @@
+import hmac
+
 from clearskies import configs, decorators, di
 
 from .authentication import Authentication
@@ -589,14 +591,19 @@ class SecretBearer(Authentication, di.InjectableProperties):
             # )
             return False
         provided_secret = auth_header[self.header_prefix_length :]
-        if self.secret == provided_secret:
+        if self._secrets_match(self.secret, provided_secret):
             # self._logging.debug("Authentication success")
             return True
-        if self.alternate_secret and provided_secret == self._alternate_secret:
+        if self.alternate_secret and self._secrets_match(self._alternate_secret, provided_secret):
             # self._logging.debug("Authentication success with alternate secret")
             return True
         # self._logging.debug("Authentication failure due to secret mismatch")
         return False
+
+    def _secrets_match(self, expected, provided) -> bool:
+        if not expected or not provided:
+            return False
+        return hmac.compare_digest(str(expected).encode("utf-8"), str(provided).encode("utf-8"))
 
     def authorize(self, authorization):
         raise ValueError("SecretBearer does not support authorization")

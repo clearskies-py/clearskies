@@ -172,6 +172,22 @@ class MemoryCacheTTLTest(unittest.TestCase):
         self.assertIsNone(result)
         self.assertEqual(cache.size, 0)
 
+    def test_get_expired_entry_removed_concurrently_does_not_raise(self):
+        """Test that get() tolerates another thread removing the expired entry first."""
+
+        class VanishingDict(dict):
+            def get(self, key, default=None):
+                entry = super().get(key, default)
+                self.pop(key, None)  # simulate another thread deleting it right after our read
+                return entry
+
+        cache = self._create_cache()
+        cache.set("/path/to/secret", "secret-value", ttl=60)
+        cache._cache = VanishingDict(cache._cache)
+        self._advance_time(61)
+
+        self.assertIsNone(cache.get("/path/to/secret"))
+
 
 if __name__ == "__main__":
     unittest.main()

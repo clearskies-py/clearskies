@@ -11,6 +11,8 @@ import clearskies
 from clearskies.di.di import Di
 from clearskies.exceptions import ClientError
 
+_FAR_FUTURE_EXP = 4102444800  # 2100-01-01
+
 
 class FakeJWException(Exception):
     pass
@@ -39,6 +41,7 @@ class FakeJWT:
             "iss": "https://issuer.example.com",
             "aud": ["https://audience.example.com"],
             "scope": "read",
+            "exp": _FAR_FUTURE_EXP,
         }
 
     def deserialize(self, raw_jwt: str) -> None:
@@ -71,6 +74,7 @@ def _mock_jwcrypto_modules(claims_data: dict[str, Any] | None = None) -> dict[st
             "iss": "https://issuer.example.com",
             "aud": ["https://audience.example.com"],
             "scope": "read",
+            "exp": _FAR_FUTURE_EXP,
         }
     )
 
@@ -160,7 +164,11 @@ class TestJwks(unittest.TestCase):
         with patch.dict(
             "sys.modules",
             _mock_jwcrypto_modules(
-                claims_data={"iss": "https://wrong.example.com", "aud": ["https://audience.example.com"]}
+                claims_data={
+                    "exp": _FAR_FUTURE_EXP,
+                    "iss": "https://wrong.example.com",
+                    "aud": ["https://audience.example.com"],
+                }
             ),
         ):
             with self.assertRaisesRegex(ClientError, "Issuer does not match"):
@@ -177,7 +185,10 @@ class TestJwks(unittest.TestCase):
     def test_validate_jwt_rejects_when_aud_claim_missing(self):
         authentication = self._authentication()
         setattr(authentication, "_get_jwks", lambda: _DEFAULT_JWKS)
-        with patch.dict("sys.modules", _mock_jwcrypto_modules(claims_data={"iss": "https://issuer.example.com"})):
+        with patch.dict(
+            "sys.modules",
+            _mock_jwcrypto_modules(claims_data={"exp": _FAR_FUTURE_EXP, "iss": "https://issuer.example.com"}),
+        ):
             with self.assertRaisesRegex(ClientError, "Audience required, but missing in JWT"):
                 authentication.validate_jwt(_DEFAULT_RAW_JWT)
 
@@ -187,7 +198,11 @@ class TestJwks(unittest.TestCase):
         with patch.dict(
             "sys.modules",
             _mock_jwcrypto_modules(
-                claims_data={"iss": "https://issuer.example.com", "aud": ["https://other.example.com"]}
+                claims_data={
+                    "exp": _FAR_FUTURE_EXP,
+                    "iss": "https://issuer.example.com",
+                    "aud": ["https://other.example.com"],
+                }
             ),
         ):
             with self.assertRaisesRegex(ClientError, "Audience does not match"):
@@ -199,7 +214,11 @@ class TestJwks(unittest.TestCase):
         with patch.dict(
             "sys.modules",
             _mock_jwcrypto_modules(
-                claims_data={"iss": "https://issuer.example.com", "aud": "https://audience.example.com"}
+                claims_data={
+                    "exp": _FAR_FUTURE_EXP,
+                    "iss": "https://issuer.example.com",
+                    "aud": "https://audience.example.com",
+                }
             ),
         ):
             self.assertTrue(authentication.validate_jwt(_DEFAULT_RAW_JWT))
@@ -216,7 +235,8 @@ class TestJwks(unittest.TestCase):
         authentication = self._authentication()
         setattr(authentication, "_get_jwks", lambda: _DEFAULT_JWKS)
         with patch.dict("sys.modules", _mock_jwcrypto_modules()):
-            self.assertTrue(authentication.validate_jwt(_DEFAULT_RAW_JWT))
+            # callers rely on a bool here, not the claims
+            self.assertIs(authentication.validate_jwt(_DEFAULT_RAW_JWT), True)
 
     def test_validate_jwt_rejects_missing_required_claim_from_list(self):
         authentication = self._authentication(claims=["role"])
@@ -269,6 +289,31 @@ class TestJwks(unittest.TestCase):
             with self.assertRaisesRegex(ClientError, "Required claim missing: role"):
                 authentication.validate_jwt(_DEFAULT_RAW_JWT)
 
+    # --- exp enforcement ---
+
+    def test_validate_jwt_rejects_token_without_exp(self):
+        authentication = self._authentication()
+        setattr(authentication, "_get_jwks", lambda: _DEFAULT_JWKS)
+        with patch.dict(
+            "sys.modules",
+            _mock_jwcrypto_modules(
+                claims_data={"iss": "https://issuer.example.com", "aud": ["https://audience.example.com"]}
+            ),
+        ):
+            with self.assertRaisesRegex(ClientError, "missing the 'exp' claim"):
+                authentication.validate_jwt(_DEFAULT_RAW_JWT)
+
+    # --- claims are per request, not shared on the instance ---
+
+    def test_authenticate_does_not_share_claims_between_requests(self):
+        authentication = self._authentication()
+        setattr(authentication, "_get_jwks", lambda: _DEFAULT_JWKS)
+        io = SimpleNamespace(request_headers={"authorization": f"Bearer {_DEFAULT_RAW_JWT}"}, authorization_data=None)
+        with patch.dict("sys.modules", _mock_jwcrypto_modules()):
+            authentication.authenticate(cast(Any, io))
+        self.assertFalse(hasattr(authentication, "jwt_claims"))
+        self.assertEqual(io.authorization_data["exp"], _FAR_FUTURE_EXP)
+
     # --- _get_jwks caching ---
 
     def test_get_jwks_fetches_from_url(self):
@@ -280,7 +325,8 @@ class TestJwks(unittest.TestCase):
 
         result = authentication._get_jwks()
 
-        requests_mock.get.assert_called_once_with("https://example.com/.well-known/jwks.json")
+        requests_mock.get.assert_called_once_with("https://example.com/.well-known/jwks.json", timeout=10)
+        requests_mock.get.return_value.raise_for_status.assert_called_once()
         self.assertEqual(_DEFAULT_JWKS, result)
         self.assertEqual(_DEFAULT_JWKS, authentication._jwks)
 
@@ -311,6 +357,17 @@ class TestJwks(unittest.TestCase):
 
         requests_mock.get.assert_called_once()
         self.assertEqual(fresh_jwks, result)
+
+    def test_get_jwks_does_not_cache_invalid_response(self):
+        authentication = self._authentication()
+        requests_mock = MagicMock()
+        requests_mock.get.return_value.json.return_value = {"error": "temporarily unavailable"}
+        setattr(authentication, "requests", requests_mock)
+        setattr(authentication, "now", datetime.datetime(2024, 1, 1))
+
+        with self.assertRaisesRegex(ValueError, "missing 'keys'"):
+            authentication._get_jwks()
+        self.assertIsNone(authentication._jwks)
 
     # --- documentation helpers ---
 

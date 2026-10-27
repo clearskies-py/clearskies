@@ -274,7 +274,7 @@ class Akeyless(secrets.Secrets):
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
-            cached_value = self.cache.get(path)
+            cached_value = self.cache.get(self._cache_key(path, json_path))
             if cached_value is not None:
                 return cached_value
 
@@ -300,9 +300,9 @@ class Akeyless(secrets.Secrets):
         # Dispatch to the appropriate getter based on the determined kind
         match kind.lower():
             case "dynamic_secret":
-                return str(self.get_dynamic_secret(path, json_path=json_path, args=args, refresh=True))
+                return self._to_str(self.get_dynamic_secret(path, json_path=json_path, args=args, refresh=True))
             case "rotated_secret":
-                return str(self.get_rotated_secret(path, json_path=json_path, args=args, refresh=True))
+                return self._to_str(self.get_rotated_secret(path, json_path=json_path, args=args, refresh=True))
             case "static_secret":
                 return self.get_static_secret(
                     path, json_path=json_path, silent_if_not_found=silent_if_not_found, refresh=True
@@ -330,7 +330,7 @@ class Akeyless(secrets.Secrets):
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
-            cached_value = self.cache.get(path)
+            cached_value = self.cache.get(self._cache_key(path, json_path))
             if cached_value is not None:
                 return cached_value
 
@@ -355,7 +355,7 @@ class Akeyless(secrets.Secrets):
 
         # Store in cache if configured and we got a value
         if value and self.cache:
-            self.cache.set(path, value)
+            self.cache.set(self._cache_key(path, json_path), value)
 
         return value
 
@@ -379,7 +379,7 @@ class Akeyless(secrets.Secrets):
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
-            cached_value = self.cache.get(path)
+            cached_value = self.cache.get(self._cache_key(path, json_path))
             if cached_value is not None:
                 return cached_value
 
@@ -402,7 +402,7 @@ class Akeyless(secrets.Secrets):
         # Store in cache if configured and we got a value
         if value and self.cache:
             cache_value = value if isinstance(value, str) else json.dumps(value)
-            self.cache.set(path, cache_value)
+            self.cache.set(self._cache_key(path, json_path), cache_value)
 
         return value
 
@@ -427,7 +427,7 @@ class Akeyless(secrets.Secrets):
         """
         # Check cache first if not forcing refresh
         if not refresh and self.cache:
-            cached_value = self.cache.get(path)
+            cached_value = self.cache.get(self._cache_key(path, json_path))
             if cached_value is not None:
                 return cached_value
 
@@ -452,7 +452,7 @@ class Akeyless(secrets.Secrets):
         # Store in cache if configured and we got a value
         if value and self.cache:
             cache_value = value if isinstance(value, str) else json.dumps(value)
-            self.cache.set(path, cache_value)
+            self.cache.set(self._cache_key(path, json_path), cache_value)
 
         return value
 
@@ -576,6 +576,13 @@ class Akeyless(secrets.Secrets):
             self.cache.delete(path)
 
         return delete.item_name == path
+
+    def _cache_key(self, path: str, json_path: str | None) -> str:
+        # different json_paths of one secret are different values, so they need their own cache entry
+        return f"{path}#{json_path}" if json_path else path
+
+    def _to_str(self, value: Any) -> str:
+        return json.dumps(value) if isinstance(value, (dict, list)) else str(value)
 
     def _get_token(self) -> str:
         """

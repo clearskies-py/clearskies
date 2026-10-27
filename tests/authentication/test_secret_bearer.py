@@ -1,6 +1,8 @@
+import hmac
 import json
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import clearskies
 from clearskies.di.di import Di
@@ -314,3 +316,16 @@ class SecretBearerTest(unittest.TestCase):
         self.assertEqual(True, calls[0][1])  # refresh=True
         self.assertEqual("password", calls[0][2])  # json_path
         self.assertEqual("rotated_secret", calls[0][3])  # kind
+
+    def test_authenticate_compares_secrets_in_constant_time(self):
+        bearer = clearskies.authentication.SecretBearer(environment_key="MY_AUTH_SECRET")
+        bearer.injectable_properties(Di(bindings={"environment": SimpleNamespace(get=lambda key: "SUPERSECRET")}))
+
+        with patch("clearskies.authentication.secret_bearer.hmac.compare_digest", wraps=hmac.compare_digest) as spy:
+            self.assertTrue(
+                bearer.authenticate(SimpleNamespace(request_headers=SimpleNamespace(authorization="SUPERSECRET")))
+            )
+            self.assertFalse(
+                bearer.authenticate(SimpleNamespace(request_headers=SimpleNamespace(authorization="WRONG")))
+            )
+        self.assertEqual(2, spy.call_count)

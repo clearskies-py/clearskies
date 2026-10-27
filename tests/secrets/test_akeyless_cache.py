@@ -246,6 +246,28 @@ class AkeylessCacheStorageTest(unittest.TestCase):
         # Result should be the JSON string from cache
         self.assertEqual(result, json.dumps(cached_data))
 
+    def test_cache_is_keyed_by_json_path(self):
+        """Test that different json_paths of the same secret don't share a cache entry."""
+        cache = MockSecretCache()
+        akeyless = self._create_akeyless(cache_storage=cache)
+        self.mock_api.get_secret_value.return_value = {"/db": {"username": "example-user", "password": "REPLACE_ME"}}
+
+        self.assertEqual("REPLACE_ME", akeyless.get("/db", kind="static_secret", json_path="password"))
+        self.assertEqual("example-user", akeyless.get("/db", kind="static_secret", json_path="username"))
+        self.assertEqual("REPLACE_ME", akeyless.get("/db", kind="static_secret", json_path="password"))
+        self.assertEqual(2, self.mock_api.get_secret_value.call_count)
+
+    def test_get_dynamic_secret_returns_json_not_python_repr(self):
+        """Test that get() returns dict values of dynamic secrets as JSON."""
+        import json
+
+        akeyless = self._create_akeyless()
+        self.mock_api.get_dynamic_secret_value.return_value = {"user": "example-user"}
+
+        result = akeyless.get("/path/to/dynamic", kind="dynamic_secret")
+
+        self.assertEqual({"user": "example-user"}, json.loads(result))
+
 
 class SecretCacheConfigTest(unittest.TestCase):
     def test_cache_storage_accepts_secret_cache_instance(self):
