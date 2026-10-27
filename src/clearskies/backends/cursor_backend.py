@@ -410,12 +410,8 @@ class CursorBackend(Backend, InjectableProperties):
             query.conditions, query.model_class.destination_name()
         )
         # we also don't currently support parameters in the join clause - I'll probably need that though
-        if query.joins:
-            # We can ignore left joins because they don't change the count
-            join_sections = filter(lambda join: join.join_type != "LEFT", query.joins)
-            joins = " " + " ".join([join._raw_join for join in join_sections])
-        else:
-            joins = ""
+        join_sections = query.joins_for_count()
+        joins = " " + " ".join([join._raw_join for join in join_sections]) if join_sections else ""
         table_name = self._finalize_table_name(query.model_class.destination_name())
         if not query.group_by:
             query_string = f"SELECT COUNT(*) AS count FROM {table_name}{joins}{wheres}"
