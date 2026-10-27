@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import re
 from functools import cmp_to_key
 from typing import TYPE_CHECKING, Any, Callable, cast
@@ -644,9 +645,9 @@ class MemoryBackend(Backend, InjectableProperties):
             count = self.get_table(query.model_class).count(query)
             return CountQueryResult(count=count)
 
-        # we can ignore left joins when counting
-        query.joins = [join for join in query.joins if join.join_type != "LEFT"]
-        count = len(self.rows_with_joins(query))
+        count_query = copy.copy(query)
+        count_query.joins = query.joins_for_count()
+        count = len(self.rows_with_joins(count_query))
         return CountQueryResult(count=count)
 
     def records(self, query: Query) -> RecordsQueryResult:

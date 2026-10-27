@@ -179,6 +179,13 @@ class Query(loggable.Loggable):
         kwargs["select_all"] = select_all
         return self.__class__(**kwargs)
 
+    def joins_for_count(self) -> list[Join]:
+        """Return the joins a count query needs: LEFT joins only matter when a condition or group by uses them."""
+        used_tables = {condition.table_name for condition in self.conditions if condition.table_name}
+        if "." in self.group_by:
+            used_tables.add(self.group_by.replace("`", "").split(".")[0])
+        return [join for join in self.joins if join.join_type != "LEFT" or join.right_table_name in used_tables]
+
     def validate_column(self: Self, column_name: str, action: str, table: str | None = None) -> None:
         # for now, only validate columns that belong to *our* table.
         # in some cases we are explicitly told the column name
