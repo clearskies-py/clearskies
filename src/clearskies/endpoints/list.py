@@ -270,6 +270,9 @@ class List(Endpoint):
             )
         if self.group_by_column_name:
             model = model.group_by(self.group_by_column_name)
+        if model.supports_n_plus_one():
+            for column in self.readable_columns.values():
+                model = column.n_plus_one_add_joins(model)
 
         return self.success(
             input_output,
