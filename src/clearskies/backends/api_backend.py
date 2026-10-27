@@ -1373,7 +1373,7 @@ class ApiBackend(Backend, InjectableProperties):
         }
 
         if condition_route_id:
-            url = url.rstrip("/") + "/" + condition_route_id
+            url = url.rstrip("/") + "/" + urllib.parse.quote(str(condition_route_id), safe="")
         if url_parameters:
             url = url + "?" + self._urlencode(url_parameters)
 

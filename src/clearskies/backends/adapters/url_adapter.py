@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import urllib.parse
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
@@ -171,7 +172,7 @@ class UrlAdapter(Adapter["UrlAdapter"]):
                     f"I was filling in a routing parameter named {parameter_name} but the value I was given has a type "
                     f"of {parameter_type}.  Routing parameters can only be strings or integers."
                 )
-            parts[index] = str(value)
+            parts[index] = urllib.parse.quote(str(value), safe="")
             used_routing_parameters.append(parameter_name)
 
         return ("/".join(parts), used_routing_parameters)
@@ -223,7 +224,7 @@ class UrlAdapter(Adapter["UrlAdapter"]):
 
         base = model.destination_name().strip("/") + "/" if model.destination_name() else ""
         return self.finalize_url(
-            f"{base}{id}",
+            f"{base}{urllib.parse.quote(str(id), safe='')}",
             available_routing_data,
             "update",
         )
@@ -239,7 +240,7 @@ class UrlAdapter(Adapter["UrlAdapter"]):
 
         base = model.destination_name().strip("/") + "/" if model.destination_name() else ""
         return self.finalize_url(
-            f"{base}{id}",
+            f"{base}{urllib.parse.quote(str(id), safe='')}",
             available_routing_data,
             "delete",
         )

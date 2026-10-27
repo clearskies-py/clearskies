@@ -226,6 +226,38 @@ class ApiBackendAdapterIntegrationTest(unittest.TestCase):
         self.assertEqual(url, "https://api.example.com/users")
         self.assertEqual(used, [])
 
+    # ── ids and routing values are escaped in URLs ─────────────────────────
+
+    def test_url_adapter_escapes_ids_and_routing_values(self):
+        adapter = UrlAdapter(base_url="https://api.example.com/{tenant_id}")
+        model = MagicMock()
+        model.destination_name.return_value = "users"
+        model.get_raw_data.return_value = {"tenant_id": "a/b"}
+
+        url, _ = adapter.update_url("../admin?x=1", {}, model)
+        self.assertEqual(url, "https://api.example.com/a%2Fb/users/..%2Fadmin%3Fx%3D1")
+        url, _ = adapter.delete_url(5, model)
+        self.assertEqual(url, "https://api.example.com/a%2Fb/users/5")
+
+    def test_records_request_escapes_id(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.ApiBackend(base_url="https://api.example.com")
+            id = clearskies.columns.String()
+
+        def app(users: User):
+            backend = cast(ApiBackend, users.backend)
+            query = MagicMock(limit=None, pagination={}, sorts=[])
+            query.model_class = User
+            query.conditions = [MagicMock(column_name="id", operator="=", values=[5])]
+            int_url = backend.build_records_request(query)[0]
+            query.conditions = [MagicMock(column_name="id", operator="=", values=["../admin?x=1"])]
+            return {"int_url": int_url, "str_url": backend.build_records_request(query)[0]}
+
+        data = self._run(User, app, self._requests_returning([]))
+        self.assertEqual(data["int_url"], "https://api.example.com/users/5")
+        self.assertEqual(data["str_url"], "https://api.example.com/users/..%2Fadmin%3Fx%3D1")
+
 
 if __name__ == "__main__":
     unittest.main()
