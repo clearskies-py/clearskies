@@ -128,7 +128,9 @@ class Timestamp(Datetime):
                 )
             value = int(value)
         elif isinstance(value, datetime.datetime):
-            value = value.timestamp()
+            if not value.tzinfo:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            value = value.timestamp() * (1000 if self.include_microseconds else 1)
         else:
             raise ValueError(
                 f"Invalid data was sent to the backend for model {self.model_class.__name__} and column {self.name}: the value was neither an integer, a string, nor a datetime object"

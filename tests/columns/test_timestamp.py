@@ -39,3 +39,20 @@ class TimestampTest(TestBase):
 
         assert response_data["data"]["last_fed"] == utcnow.isoformat()
         assert response_data["data"]["raw_data"] == utcnow.timestamp()
+
+    def test_round_trip(self):
+        class Pet(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            last_fed = clearskies.columns.Timestamp()
+            last_fed_ms = clearskies.columns.Timestamp(include_microseconds=True)
+
+        aware = datetime.datetime(2026, 1, 1, 12, 30, tzinfo=datetime.timezone.utc)
+        naive = aware.replace(tzinfo=None)
+        columns = Pet.get_columns()
+        for name in ["last_fed", "last_fed_ms"]:
+            for value in [aware, naive]:
+                stored = columns[name].to_backend({name: value})[name]
+                assert columns[name].from_backend(stored) == aware
