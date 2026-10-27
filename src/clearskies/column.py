@@ -628,7 +628,7 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
 
     This is an internal cache.  Use column.is_unique instead.
     """
-    _is_unique = False
+    _is_unique: bool | None = None
 
     """
     Specify if this column has additional functionality to solve the n+1 problem.
@@ -648,7 +648,7 @@ class Column(configurable.Configurable, InjectableProperties, loggable.Loggable)
 
     This is an internal cache.  Use column.is_required instead.
     """
-    _is_required = False
+    _is_required: bool | None = None
 
     """
     The list of allowed search operators for this column.

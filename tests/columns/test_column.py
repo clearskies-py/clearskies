@@ -255,3 +255,17 @@ class ColumnTest(TestBase):
         context = clearskies.contexts.Context(create_order, classes=[Order])
         context()
         assert len(calls) == 1
+
+    def test_is_required_and_is_unique(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String(validators=[clearskies.validators.Required()])
+            email = clearskies.columns.String(validators=[clearskies.validators.Unique()])
+
+        assert User.name.is_required
+        assert not User.name.is_unique
+        assert User.email.is_unique
+        assert not User.email.is_required
