@@ -329,10 +329,8 @@ class EndpointGroup(
 
         self.add_response_headers(input_output)
 
-        # "register" ourself with the DI system
-        current_endpoint_groups = self.di.build_from_name("endpoint_groups", cache=True)
-        current_endpoint_groups.append(self)
-        self.di.add_binding("endpoint_groups", current_endpoint_groups)
+        # "register" ourself with the DI system (the list is per-request when running in a context)
+        self.di.build_from_name("endpoint_groups", cache=True).append(self)
 
         return endpoint(input_output)
 
