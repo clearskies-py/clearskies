@@ -99,3 +99,18 @@ class CursorBackendTest(unittest.TestCase):
         status_code, response, _ = context()
         assert status_code == 200
         assert response["data"] == "alice"
+
+    def test_limit_uses_portable_offset_syntax(self):
+        class UserPreference(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.CursorBackend()
+            id = clearskies.columns.Uuid()
+
+        def run(user_preferences):
+            query = user_preferences.limit(10).pagination(start=20).get_query()
+            return user_preferences.backend.as_sql(query)[0]
+
+        cursor = clearskies.cursors.Sqlite(database=":memory:")
+        status_code, response, _ = Context(run, classes=[UserPreference], bindings={"cursor": cursor})()
+        assert status_code == 200
+        assert response == "SELECT `user_preferences`.* FROM `user_preferences` LIMIT 10 OFFSET 20"
