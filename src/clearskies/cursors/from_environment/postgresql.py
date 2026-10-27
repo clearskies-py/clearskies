@@ -24,7 +24,7 @@ class Postgresql(PostgresqlBase):
     - `DATABASE_PASSWORD`: Password for authentication.
     - `DATABASE_NAME`: Name of the database.
     - `DATABASE_PORT`: Port number (optional).
-    - `DATABASE_CERT_PATH`: Path to SSL certificate (optional).
+    - `DATABASE_CERT_PATH`: Path to the CA certificate used to verify the server (optional, enables `sslmode=verify-ca`).
     - `DATABASE_AUTOCOMMIT`: Autocommit setting (optional).
     - `DATABASE_CONNECT_TIMEOUT`: Connection timeout (optional).
 
@@ -113,14 +113,16 @@ class Postgresql(PostgresqlBase):
             "user": self.environment.get(self.username_environment_key),
             "password": self.environment.get(self.password_environment_key),
             "host": self.environment.get(self.hostname_environment_key),
-            "database": self.environment.get(self.database_environment_key),
+            "dbname": self.environment.get(self.database_environment_key),
             "port": self.environment.get(self.port_environment_key, silent=True),
-            "sslcert": self.environment.get(self.cert_path_environment_key, silent=True),
+            "sslrootcert": self.environment.get(self.cert_path_environment_key, silent=True),
             "connect_timeout": self.environment.get(self.connect_timeout_environment_key, silent=True),
         }
 
-        for kwarg in ["autocommit", "connect_timeout", "port", "sslcert"]:
+        for kwarg in ["connect_timeout", "port", "sslrootcert"]:
             if not connection_kwargs[kwarg]:
                 del connection_kwargs[kwarg]
+        if "sslrootcert" in connection_kwargs:
+            connection_kwargs["sslmode"] = "verify-ca"
 
         return {**super().build_connection_kwargs(), **connection_kwargs}

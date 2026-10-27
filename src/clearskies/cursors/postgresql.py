@@ -22,7 +22,7 @@ class Postgresql(Cursor):
     - `password`: Password for authentication (`""`)
     - `database`: Name of the database (`example`)
     - `port`: Port number (defaults to 5432 if not specified)
-    - `cert_path`: Path to SSL certificate (optional)
+    - `cert_path`: Path to the CA certificate used to verify the server (optional, enables `sslmode=verify-ca`)
     - `autocommit`: Whether to autocommit transactions (`True`)
     - `connect_timeout`: Connection timeout in seconds (`2`)
     - `port_forwarding`: Optional port forwarding configuration (see below)
@@ -84,6 +84,9 @@ class Postgresql(Cursor):
     """
     cert_path = clearskies.configs.String(default=None)
 
+    table_escape_character = '"'
+    column_escape_character = '"'
+
     @decorators.parameters_to_properties
     def __init__(
         self,
@@ -123,14 +126,19 @@ class Postgresql(Cursor):
             "password": self.password,
             "host": self.hostname,
             "port": self.port,
-            "ssl_ca": self.cert_path,
-            "sslcert": self.cert_path,
+            "sslrootcert": self.cert_path,
             "row_factory": self.factory.rows.dict_row,
         }
-        if not connection_kwargs["sslcert"]:
-            del connection_kwargs["sslcert"]
+        if connection_kwargs["sslrootcert"]:
+            # libpq only checks the server certificate against sslrootcert in verify-ca/verify-full mode
+            connection_kwargs["sslmode"] = "verify-ca"
+        else:
+            del connection_kwargs["sslrootcert"]
 
         if not connection_kwargs["port"]:
             connection_kwargs["port"] = self.default_port
 
-        return {**super().build_connection_kwargs(), **connection_kwargs}
+        # libpq calls the database "dbname"; psycopg rejects "database"
+        base_kwargs = super().build_connection_kwargs()
+        base_kwargs["dbname"] = base_kwargs.pop("database")
+        return {**base_kwargs, **connection_kwargs}
