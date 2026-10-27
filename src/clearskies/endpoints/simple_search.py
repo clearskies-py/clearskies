@@ -260,7 +260,9 @@ class SimpleSearch(List):
                 model = self.add_join(column_name, model)
                 [relationship_column_name, column_name] = self.unpack_column_name_with_relationship(column_name)
                 if relationship_column_name:
-                    self.columns[relationship_column_name].add_search(model, value, relationship_reference=column_name)
+                    model = self.columns[relationship_column_name].add_search(
+                        model, value, relationship_reference=column_name
+                    )
                 else:
                     model = self.columns[column_name].add_search(model, value, operator="=")
 
