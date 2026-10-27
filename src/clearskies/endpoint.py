@@ -1020,13 +1020,17 @@ class Endpoint(
     @property
     def searchable_columns(self) -> dict[str, Column]:
         if self._searchable_columns is None:
-            self._searchable_columns = {name: self.columns[name] for name in self.searchable_column_names}
+            # relationship references like "category.name" belong to the "category" column
+            names = [name.split(".")[0] for name in self.searchable_column_names]
+            self._searchable_columns = {name: self.columns[name] for name in names}
         return self._searchable_columns
 
     @property
     def sortable_columns(self) -> dict[str, Column]:
         if self._sortable_columns is None:
-            self._sortable_columns = {name: self.columns[name] for name in self.sortable_column_names}
+            # relationship references like "category.name" belong to the "category" column
+            names = [name.split(".")[0] for name in self.sortable_column_names]
+            self._sortable_columns = {name: self.columns[name] for name in names}
         return self._sortable_columns
 
     def get_request_data(self, input_output: InputOutput, required=True) -> dict[str, Any]:
