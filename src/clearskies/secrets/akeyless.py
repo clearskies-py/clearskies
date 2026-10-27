@@ -741,34 +741,46 @@ class Akeyless(secrets.Secrets):
 class AkeylessSaml(Akeyless):
     """Convenience class for SAML authentication with Akeyless."""
 
-    def __init__(self, access_id: str, api_host: str = "", profile: str = ""):
+    @parameters_to_properties
+    def __init__(self, access_id: str, api_host: str | None = None, profile: str | None = None):
         """
         Initialize with SAML authentication.
 
-        Sets access_type to "saml" and passes the remaining parameters to the parent class.
+        Sets access_type to "saml"; unset parameters keep the parent's config defaults.
         """
-        return super().__init__(access_id, "saml", api_host=api_host, profile=profile)
+        self.access_type = "saml"
+        self.finalize_and_validate_configuration()
 
 
 class AkeylessJwt(Akeyless):
     """Convenience class for JWT authentication with Akeyless."""
 
-    def __init__(self, access_id: str, jwt_env_key: str = "", api_host: str = "", profile: str = ""):
+    @parameters_to_properties
+    def __init__(
+        self,
+        access_id: str,
+        jwt_env_key: str | None = None,
+        api_host: str | None = None,
+        profile: str | None = None,
+    ):
         """
         Initialize with JWT authentication.
 
-        Sets access_type to "jwt" and passes the remaining parameters to the parent class.
+        Sets access_type to "jwt"; unset parameters keep the parent's config defaults.
         """
-        return super().__init__(access_id, "jwt", jwt_env_key=jwt_env_key, api_host=api_host, profile=profile)
+        self.access_type = "jwt"
+        self.finalize_and_validate_configuration()
 
 
 class AkeylessAwsIam(Akeyless):
     """Convenience class for AWS IAM authentication with Akeyless."""
 
-    def __init__(self, access_id: str, api_host: str = ""):
+    @parameters_to_properties
+    def __init__(self, access_id: str, api_host: str | None = None):
         """
         Initialize with AWS IAM authentication.
 
-        Sets access_type to "aws_iam" and passes the remaining parameters to the parent class.
+        Sets access_type to "aws_iam"; unset parameters keep the parent's config defaults.
         """
-        return super().__init__(access_id, "aws_iam", api_host=api_host)
+        self.access_type = "aws_iam"
+        self.finalize_and_validate_configuration()
