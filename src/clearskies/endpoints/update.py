@@ -126,7 +126,7 @@ class Update(Get):
             else:
                 self.validate_routing_data(input_output.routing_data, self.model_class)
 
-        request_data = self.get_request_data(input_output)
+        request_data = self.map_request_data_external_to_internal(self.get_request_data(input_output))
         model = self.fetch_model(input_output)
         if self.transform_input_types:
             request_data = self.force_input_data(request_data, self.model_class)
