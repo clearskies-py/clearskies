@@ -6,7 +6,7 @@ license = "MIT"
 readme = "./README.md"
 authors = [{name = "Conor Mancone", email = "cmancone@gmail.com"}]
 requires-python = '>=3.11,<4.0'
-dependencies = ["certifi>=2026.10.19", 'dateparser (>=1.1.8,<2.0.0)', 'requests (>=2.31.0,<3.0.0)', 'wrapt (>=1.16.0,<2.0.0)']
+dependencies = ["certifi>=2026.10.19", 'dateparser (>=1.1.8,<2.0.0)', 'requests (>=2.31.0,<3.0.0)']
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
