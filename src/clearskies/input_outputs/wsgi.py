@@ -70,7 +70,7 @@ class Wsgi(InputOutput):
         script_name = self.get_script_name()
         if not path_info or path_info[0] != "/":
             path_info = f"/{path_info}"
-        return f"{path_info}{script_name}".replace("//", "/")
+        return f"{script_name}{path_info}".replace("//", "/")
 
     def get_protocol(self):
         return self._from_environment("wsgi.url_scheme").lower()
