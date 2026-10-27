@@ -110,6 +110,9 @@ class Mysql(MysqlBase):
         self.finalize_and_validate_configuration()
 
     def build_connection_kwargs(self) -> dict:
+        autocommit = self.environment.get(self.autocommit_environment_key, silent=True)
+        if isinstance(autocommit, str):
+            autocommit = autocommit.strip().lower() not in ("false", "0", "no", "")
         connection_kwargs = {
             "user": self.environment.get(self.username_environment_key),
             "password": self.environment.get(self.password_environment_key),
@@ -117,7 +120,7 @@ class Mysql(MysqlBase):
             "database": self.environment.get(self.database_environment_key),
             "port": self.environment.get(self.port_environment_key, silent=True),
             "ssl_ca": self.environment.get(self.cert_path_environment_key, silent=True),
-            "autocommit": bool(self.environment.get(self.autocommit_environment_key, silent=True)),
+            "autocommit": None if autocommit is None else bool(autocommit),
             "connect_timeout": self.environment.get(self.connect_timeout_environment_key, silent=True),
         }
 
