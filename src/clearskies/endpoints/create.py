@@ -133,7 +133,7 @@ class Create(Endpoint):
         super().__init__()
 
     def handle(self, input_output: InputOutput) -> Any:
-        request_data = self.get_request_data(input_output)
+        request_data = self.map_request_data_external_to_internal(self.get_request_data(input_output))
         if self.transform_input_types:
             request_data = self.force_input_data(request_data, self.model_class)
             input_output._body_as_json = request_data

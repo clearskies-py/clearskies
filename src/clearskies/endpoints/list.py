@@ -173,7 +173,9 @@ class List(Endpoint):
 
     readable_column_names = configs.ReadableModelColumns("model_class")
     sortable_column_names = configs.ReadableModelColumns("model_class", allow_relationship_references=True)
-    searchable_column_names = configs.SearchableModelColumns("model_class", allow_relationship_references=True)
+    searchable_column_names = configs.SearchableModelColumns(
+        "model_class", allow_relationship_references=True, default=[]
+    )
 
     @decorators.parameters_to_properties
     def __init__(
@@ -208,18 +210,6 @@ class List(Endpoint):
         # just stores them in parameters, which we have already done.  However, the parent does do some extra initialization stuff that we need,
         # which is why we have to call the parent.
         super().__init__()
-
-    @property
-    def searchable_columns(self) -> dict[str, Column]:
-        if self._searchable_columns is None:
-            self._searchable_columns = {name: self.columns[name] for name in self.searchable_column_names}
-        return self._searchable_columns
-
-    @property
-    def sortable_columns(self) -> dict[str, Column]:
-        if self._sortable_columns is None:
-            self._sortable_columns = {name: self.columns[name] for name in self.sortable_column_names}
-        return self._sortable_columns
 
     @property
     def allowed_request_keys(self) -> list[str]:
@@ -294,7 +284,7 @@ class List(Endpoint):
         direction = self.from_either(request_data, query_parameters, "direction")
         if sort and direction:
             model = self.add_join(sort, model)
-            [sort_column, sort_table] = self.resolve_references_for_query(sort)
+            [sort_table, sort_column] = self.resolve_references_for_query(sort)
             model = model.sort_by(sort_column or "", direction, sort_table or "")
 
         return model

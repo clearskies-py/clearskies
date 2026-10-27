@@ -281,12 +281,7 @@ class Callable(Endpoint):
         if self.input_schema:
             for column in self.input_schema.get_columns().values():
                 self.di.inject_properties(column.__class__)
-        if input_output.routing_data and schema:
-            if self.transform_input_types:
-                forced_routing = self.force_routing_data(input_output.routing_data, schema)
-                self.validate_routing_data(forced_routing, schema)
-            else:
-                self.validate_routing_data(input_output.routing_data, schema)
+        self.validate_routing_data_from_request(input_output, schema)
         if self.transform_input_types and schema:
             if input_output.query_parameters:
                 input_output.query_parameters = self.force_query_parameters(input_output.query_parameters, schema)
