@@ -132,3 +132,31 @@ class AdvancedSearchTest(TestBase):
         )
         assert status_code == 200
         assert ["alice", "malcolm"] == [record["username"] for record in response_data["data"]]
+
+    def test_bad_input_is_client_error(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Uuid()
+            username = clearskies.columns.String()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.AdvancedSearch(
+                model_class=User,
+                readable_column_names=["id", "username"],
+                sortable_column_names=["username"],
+                searchable_column_names=["username"],
+                default_sort_column_name="username",
+            ),
+        )
+
+        for body in [
+            {"sort": "id"},
+            {"where": [{"column": "username", "value": "alice"}]},
+            {"where": [{"column": "username", "operator": "in", "value": []}]},
+            {"where": [{"column": "username", "operator": "in", "value": ["alice", 5]}]},
+        ]:
+            status_code, response_data, response_headers = context(request_method="POST", body=body)
+            assert status_code == 400, body
+            assert response_data["status"] == "client_error"

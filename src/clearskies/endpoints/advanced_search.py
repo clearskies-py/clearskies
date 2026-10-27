@@ -358,7 +358,7 @@ class AdvancedSearch(SimpleSearch):
         if not isinstance(sort, list):
             raise exceptions.ClientError(
                 f"'{sort_key_name}' property in request body should be a list, but I found a value of type "
-                + sort.__class__.__name
+                + sort.__class__.__name__
             )
         if sort:
             column_key_name = self.auto_case_internal_column_name("column")
@@ -366,7 +366,7 @@ class AdvancedSearch(SimpleSearch):
             for index, _sort_entry in enumerate(sort):
                 if not isinstance(_sort_entry, dict):
                     raise exceptions.ClientError(
-                        f"'{sort_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_sort_entry.__class__.__name}', not a dict"
+                        f"'{sort_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_sort_entry.__class__.__name__}', not a dict"
                     )
                 sort_entry = cast(dict[str, str], _sort_entry)
                 for key_name in [column_key_name, direction_key_name]:
@@ -398,7 +398,7 @@ class AdvancedSearch(SimpleSearch):
         if not isinstance(where, list):
             raise exceptions.ClientError(
                 f"'{where_key_name}' property in request body should be a list, but I found a value of type "
-                + where.__class__.__name
+                + where.__class__.__name__
             )
         if where:
             column_key_name = self.auto_case_internal_column_name("column")
@@ -407,7 +407,7 @@ class AdvancedSearch(SimpleSearch):
             for index, _where_entry in enumerate(where):
                 if not isinstance(_where_entry, dict):
                     raise exceptions.ClientError(
-                        f"'{where_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_where_entry.__class__.__name}', not a dict"
+                        f"'{where_key_name}' should be a list of dictionaries, but entry #{index + 1} is a value of type '{_where_entry.__class__.__name__}', not a dict"
                     )
                 where_entry = cast(dict[str, Any], _where_entry)
                 for key_name in [column_key_name, operator_key_name, value_key_name]:
@@ -418,49 +418,40 @@ class AdvancedSearch(SimpleSearch):
                     if key_name != value_key_name and not isinstance(where_entry[key_name], str):
                         raise exceptions.ClientError(
                             f"{key_name}' must be a string, but for entry #{index + 1} it is a value of type "
-                            + sort_entry[key_name].__class__.__name__
+                            + where_entry[key_name].__class__.__name__
                         )
-                    if where_entry[column_key_name] not in self.searchable_column_names:
-                        raise exceptions.ClientError(
-                            f"Invalid where column for entry #{index + 1}.  Allowed values are: "
-                            + ", ".join(
-                                [
-                                    self.auto_case_column_name(column_name, True)
-                                    for column_name in self.searchable_column_names
-                                ]
-                            )
+                if where_entry[column_key_name] not in self.searchable_column_names:
+                    raise exceptions.ClientError(
+                        f"Invalid where column for entry #{index + 1}.  Allowed values are: "
+                        + ", ".join(
+                            [
+                                self.auto_case_column_name(column_name, True)
+                                for column_name in self.searchable_column_names
+                            ]
                         )
-                    [relationship_column_name, column_name] = self.unpack_column_name_with_relationship(
-                        self.auto_case_column_name(where_entry[column_key_name], False),
                     )
-                    operator = where_entry[operator_key_name].lower()
-                    value = where_entry[value_key_name]
-                    error_allowed_operators = None
-                    if relationship_column_name:
-                        column = self.columns[relationship_column_name]
-                        if not column.is_allowed_search_operator(operator, relationship_reference=column_name):
-                            error_allowed_operators = column.allowed_search_operators(
-                                relationship_reference=column_name
-                            )
-                        else:
-                            error = column.check_search_value(
-                                value if operator != "in" else value[0],
-                                where_entry[operator_key_name],
-                                relationship_reference=column_name,
-                            )
-                    else:
-                        column = self.columns[column_name]
-                        if not column.is_allowed_search_operator(operator):
-                            error_allowed_operators = column.allowed_search_operators()
-                        else:
-                            error = column.check_search_value(
-                                value if operator != "in" else value[0], where_entry[operator_key_name]
-                            )
-                    if error_allowed_operators:
-                        raise exceptions.ClientError(
-                            f"Invalid operator for entry #{index + 1}.  Allowed operators are: "
-                            + ", ".join(column.allowed_search_operators(relationship_reference=column_name))
-                        )
+                [relationship_column_name, column_name] = self.unpack_column_name_with_relationship(
+                    self.auto_case_column_name(where_entry[column_key_name], False),
+                )
+                operator = where_entry[operator_key_name].lower()
+                value = where_entry[value_key_name]
+                if operator == "in" and (not isinstance(value, list) or not value):
+                    raise exceptions.ClientError(
+                        f"Invalid search value for entry #{index + 1}: the 'in' operator requires a non-empty list"
+                    )
+                if relationship_column_name:
+                    column = self.columns[relationship_column_name]
+                    search_kwargs = {"relationship_reference": column_name}
+                else:
+                    column = self.columns[column_name]
+                    search_kwargs = {}
+                if not column.is_allowed_search_operator(operator, **search_kwargs):
+                    raise exceptions.ClientError(
+                        f"Invalid operator for entry #{index + 1}.  Allowed operators are: "
+                        + ", ".join(column.allowed_search_operators(**search_kwargs))
+                    )
+                for item in value if operator == "in" else [value]:
+                    error = column.check_search_value(item, where_entry[operator_key_name], **search_kwargs)
                     if error:
                         raise exceptions.ClientError(f"Invalid search value for entry #{index + 1}: {error}")
 
