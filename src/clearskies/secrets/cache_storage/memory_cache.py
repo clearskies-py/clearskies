@@ -117,7 +117,7 @@ class MemoryCache(SecretCache):
             return None
 
         if entry.is_expired(self.now):
-            del self._cache[path]
+            self._cache.pop(path, None)
             return None
 
         return entry.value
@@ -141,8 +141,7 @@ class MemoryCache(SecretCache):
         Removes the secret at the given path from the cache. Does nothing if the path
         doesn't exist.
         """
-        if path in self._cache:
-            del self._cache[path]
+        self._cache.pop(path, None)
 
     def clear(self) -> None:
         """Remove all secrets from the cache."""
@@ -157,9 +156,9 @@ class MemoryCache(SecretCache):
         of expired entries that were removed.
         """
         now = self.now
-        expired_keys = [key for key, entry in self._cache.items() if entry.is_expired(now)]
+        expired_keys = [key for key, entry in list(self._cache.items()) if entry.is_expired(now)]
         for key in expired_keys:
-            del self._cache[key]
+            self._cache.pop(key, None)
         return len(expired_keys)
 
     @property
