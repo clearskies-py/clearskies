@@ -873,14 +873,15 @@ class Model(Schema, InjectableProperties, loggable.Loggable):
         while iterate:
             iterate = False
             for column in columns.values():
+                previous_data = {**data}
                 data = column.pre_save(data, self)
                 if data is None:
                     raise ValueError(
                         f"Column {column.name} of type {column.__class__.__name__} did not return any data for pre_save"
                     )
 
-                # if we have newly chnaged data then we want to loop through the pre-saves again
-                if data and column.name not in changed:
+                # if this column changed the data then loop through the pre-saves again (at most once per column)
+                if data != previous_data and column.name not in changed:
                     changed[column.name] = True
                     iterate = True
         return data

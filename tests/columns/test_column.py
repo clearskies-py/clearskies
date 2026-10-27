@@ -238,3 +238,20 @@ class ColumnTest(TestBase):
         )
         assert response_data["data"]["name"] == "Bob"
         assert response_data["data"]["account_id"] == "1-2-3-4"
+
+    def test_pre_save_runs_once_when_nothing_changes(self):
+        calls = []
+
+        class Order(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            status = clearskies.columns.String(on_change_pre_save=[lambda data: calls.append(1) or {}])
+
+        def create_order(orders: Order):
+            orders.create({"status": "Open"})
+
+        context = clearskies.contexts.Context(create_order, classes=[Order])
+        context()
+        assert len(calls) == 1
