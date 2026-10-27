@@ -212,18 +212,6 @@ class List(Endpoint):
         super().__init__()
 
     @property
-    def searchable_columns(self) -> dict[str, Column]:
-        if self._searchable_columns is None:
-            self._searchable_columns = {name: self.columns[name] for name in self.searchable_column_names}
-        return self._searchable_columns
-
-    @property
-    def sortable_columns(self) -> dict[str, Column]:
-        if self._sortable_columns is None:
-            self._sortable_columns = {name: self.columns[name] for name in self.sortable_column_names}
-        return self._sortable_columns
-
-    @property
     def allowed_request_keys(self) -> list[str]:
         return [*["sort", "direction", "limit"], *self.searchable_column_names]
 

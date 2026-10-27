@@ -119,12 +119,7 @@ class Update(Get):
         super().__init__(model_class, url, readable_column_names)
 
     def handle(self, input_output: InputOutput) -> Any:
-        if input_output.routing_data:
-            if self.transform_input_types:
-                forced_routing = self.force_routing_data(input_output.routing_data, self.model_class)
-                self.validate_routing_data(forced_routing, self.model_class)
-            else:
-                self.validate_routing_data(input_output.routing_data, self.model_class)
+        self.validate_routing_data_from_request(input_output, self.model_class)
 
         request_data = self.map_request_data_external_to_internal(self.get_request_data(input_output))
         model = self.fetch_model(input_output)

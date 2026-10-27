@@ -1238,6 +1238,15 @@ class Endpoint(
         if errors:
             raise exceptions.InputErrors(errors)
 
+    def validate_routing_data_from_request(self, input_output: InputOutput, schema: Schema | type[Schema]) -> None:
+        """Validate the routing data of the request, forcing types first when transform_input_types is enabled."""
+        if not input_output.routing_data or not schema:
+            return
+        routing_data = input_output.routing_data
+        if self.transform_input_types:
+            routing_data = self.force_routing_data(routing_data, schema)
+        self.validate_routing_data(routing_data, schema)
+
     def map_request_data_external_to_internal(self, request_data, required=True):
         # we have to map from internal names to external names, because case mapping
         # isn't always one-to-one, so we want to do it exactly the same way that the documentation
