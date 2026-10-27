@@ -500,7 +500,6 @@ class MemoryBackend(Backend, InjectableProperties):
         if can_query is not None:
             parent_kwargs["can_query"] = can_query
         super().__init__(**parent_kwargs)
-        self.__class__._tables = {}
         self._silent_on_missing_tables = silent_on_missing_tables
 
     @classmethod

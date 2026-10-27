@@ -184,3 +184,19 @@ class MemoryBackendTest(unittest.TestCase):
 
         status_code, response, _ = clearskies.contexts.Context(run, classes=[Person])()
         assert response == ["Alice"]
+
+    def test_new_backend_keeps_existing_tables(self):
+        class Person(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Uuid()
+            name = columns.String()
+
+        def run(persons):
+            persons.create({"name": "Alice"})
+            clearskies.backends.MemoryBackend()
+            return [person.name for person in persons]
+
+        status_code, response, _ = clearskies.contexts.Context(run, classes=[Person])()
+        assert response == ["Alice"]
