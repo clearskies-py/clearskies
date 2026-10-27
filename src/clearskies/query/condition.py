@@ -183,7 +183,7 @@ class Condition:
         value = condition[matching_index + self.operator_lengths[self.operator] :].strip()
         if value and (value[0] == "'" and value[-1] == "'"):
             value = value.strip("'")
-        self.values = self._parse_condition_list(value) if self.operator == "in" else [value]
+        self.values = self._parse_condition_list(value) if self.operator in ("in", "not in") else [value]
         self.table_name = ""
         if "." in self.column_name:
             [self.table_name, self.column_name] = self.column_name.split(".")
@@ -198,7 +198,7 @@ class Condition:
         )
 
     def _parse_condition_list(self, value):
-        if value[0] != "(" and value[-1] != ")":
+        if not value or value[0] != "(" or value[-1] != ")":
             raise ValueError(f"Invalid search value {value} for condition.  For IN operator use `IN (value1,value2)`")
 
         # note: this is not very smart and will mess things up if there are single quotes/commas in the data

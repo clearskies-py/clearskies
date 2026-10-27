@@ -174,6 +174,8 @@ class MemoryTable:
         "like": like,
         "not like": lambda column, values, null: like(column, values, null, negate=True),
         "in": lambda column, values, null: lambda row: row.get(column, null) in values,
+        # NULL never matches NOT IN in SQL
+        "not in": lambda column, values, null: lambda row: row.get(column) is not None and row[column] not in values,
     }
 
     def __init__(self, model_class: type[Model]) -> None:
@@ -498,7 +500,6 @@ class MemoryBackend(Backend, InjectableProperties):
         if can_query is not None:
             parent_kwargs["can_query"] = can_query
         super().__init__(**parent_kwargs)
-        self.__class__._tables = {}
         self._silent_on_missing_tables = silent_on_missing_tables
 
     @classmethod

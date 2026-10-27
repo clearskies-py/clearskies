@@ -395,7 +395,8 @@ class CursorBackend(Backend, InjectableProperties):
             limit_size = int(query.limit)
             if "start" in query.pagination:
                 start = int(query.pagination["start"])
-            limit = f" LIMIT {start}, {limit_size}"
+            # LIMIT ... OFFSET works for MySQL, PostgreSQL and SQLite; "LIMIT start, size" is MySQL/SQLite only
+            limit = f" LIMIT {limit_size} OFFSET {start}"
 
         table_name = self._finalize_table_name(table_name)
         return (
