@@ -423,19 +423,42 @@ class BelongsToId(String, Generic[ParentModel]):
         return ""
 
     def n_plus_one_add_joins(self, model: Model, column_names: list[str] = []) -> Model:
-        """Add any additional joins to solve the N+1 problem."""
-        if not column_names:
-            column_names = self.readable_parent_columns
-        if not column_names:
+        """Join the parent table and select the readable parent columns so the parent needs no extra query."""
+        from clearskies.columns import (
+            BelongsToModel,
+            CategoryTreeChildren,
+            HasMany,
+            ManyToManyIds,
+            ManyToManyModels,
+            ManyToManyPivots,
+        )
+
+        column_names = column_names or self.readable_parent_columns
+        parent_columns = self.parent_columns
+        not_in_table = (
+            BelongsToModel,
+            CategoryTreeChildren,
+            HasMany,
+            ManyToManyIds,
+            ManyToManyModels,
+            ManyToManyPivots,
+        )
+        # computed/relationship columns can't be selected from the join, so keep loading the parent per record.
+        # shortcut: custom computed columns not marked is_temporary are not detected, add a "stored" column flag if needed
+        if not column_names or any(
+            parent_columns[name].is_temporary or isinstance(parent_columns[name], not_in_table) for name in column_names
+        ):
             return model
 
-        model = self.add_join(model)
         alias = self.join_table_alias()
         parent_id_column_name = self.parent_model.id_column_name
-        select_parts = [f"{alias}.{column_name} AS {alias}_{column_name}" for column_name in column_names]
         if parent_id_column_name not in column_names:
-            select_parts.append(f"{alias}.{parent_id_column_name} AS {alias}_{parent_id_column_name}")
-        return model.select(", ".join(select_parts))
+            column_names = [parent_id_column_name, *column_names]
+        select = ", ".join(f"{alias}.{name} AS {alias}_{name}" for name in column_names)
+        # both the id column and its BelongsToModel column can be readable: only add the select once
+        if select in model.get_query().selects:
+            return model
+        return self.add_join(model).select(select)
 
     def add_join(self, model: Model) -> Model:
         parent_table = self.parent_model.destination_name()

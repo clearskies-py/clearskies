@@ -90,7 +90,7 @@ class BelongsToModel(Column, Generic[ParentModel]):
 
         # sometimes the model is loaded via the N+1 functionality, in which case the data will already exist
         # in model.data but hiding under a different name.
-        if raw_data.get(f"{join_alias}.{parent_id_column_name}"):
+        if raw_data.get(f"{join_alias}_{parent_id_column_name}"):
             parent_data = {parent_id_column_name: raw_data[f"{join_alias}_{parent_id_column_name}"]}
             for column_name in belongs_to_column.readable_parent_columns:
                 select_alias = f"{join_alias}_{column_name}"
@@ -122,6 +122,9 @@ class BelongsToModel(Column, Generic[ParentModel]):
 
     def add_join(self, model: Model) -> Model:
         return getattr(model.__class__, self.belongs_to_column_name).add_join(model)
+
+    def n_plus_one_add_joins(self, model: Model, column_names: list[str] = []) -> Model:
+        return getattr(model.__class__, self.belongs_to_column_name).n_plus_one_add_joins(model, column_names)
 
     def join_table_alias(self) -> str:
         return getattr(self.model_class, self.belongs_to_column_name).join_table_alias()
