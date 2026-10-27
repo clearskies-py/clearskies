@@ -95,3 +95,15 @@ class ConditionTest(unittest.TestCase):
         assert condition.operator == "IN"
         assert condition.values == ["ACTIVE", "PENDING"]
         assert condition.parsed == "orders.status_id IN (%s, %s)"
+
+    def test_parse_not_in(self):
+        condition = Condition("status_id NOT IN (1, 2)")
+        assert "status_id" == condition.column_name
+        assert "NOT IN" == condition.operator
+        assert "`status_id` NOT IN (%s, %s)" == condition.parsed
+        assert ["1", "2"] == condition.values
+
+    def test_parse_in_requires_both_parentheses(self):
+        for bad in ["status_id IN (1, 2", "status_id IN 1, 2)", "status_id NOT IN 1"]:
+            with self.assertRaises(ValueError):
+                Condition(bad)

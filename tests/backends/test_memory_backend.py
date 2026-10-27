@@ -162,6 +162,13 @@ class MemoryBackendTest(unittest.TestCase):
         # NULL matches neither LIKE nor NOT LIKE, as in SQL
         assert self._like_names("name not like 'a%'") == [["50% off", "Bob"]]
 
+    def test_in_and_not_in(self):
+        # NULL matches neither IN nor NOT IN, as in SQL
+        assert self._like_names("name in ('Bob', 'abc')", "name not in ('Bob', 'abc', 'a.c')") == [
+            ["Bob", "abc"],
+            ["50% off", "Alice", "alfred"],
+        ]
+
     def test_like_column_condition(self):
         class Person(clearskies.Model):
             id_column_name = "id"

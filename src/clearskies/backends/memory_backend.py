@@ -174,6 +174,8 @@ class MemoryTable:
         "like": like,
         "not like": lambda column, values, null: like(column, values, null, negate=True),
         "in": lambda column, values, null: lambda row: row.get(column, null) in values,
+        # NULL never matches NOT IN in SQL
+        "not in": lambda column, values, null: lambda row: row.get(column) is not None and row[column] not in values,
     }
 
     def __init__(self, model_class: type[Model]) -> None:
