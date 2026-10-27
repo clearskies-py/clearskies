@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Callable
 
 from clearskies.autodoc.schema import Schema as AutoDocSchema
 from clearskies.backends.backend import Backend
-from clearskies.di import inject
+from clearskies.di import InjectableProperties, inject
 from clearskies.query import Condition, Query
-from clearskies.query.result import RecordQueryResult, RecordsQueryResult, SuccessQueryResult
+from clearskies.query.result import CountQueryResult, RecordQueryResult, RecordsQueryResult, SuccessQueryResult
 
 if TYPE_CHECKING:
     from clearskies import Model
 
 
-class SecretsBackend(Backend):
+class SecretsBackend(Backend, InjectableProperties):
     """
     Fetch and store data from a secret provider.
 
@@ -72,7 +74,7 @@ class SecretsBackend(Backend):
         for key, value in data.items():
             if key == model.id_column_name:
                 continue
-            self.secrets.update(f"{folder_path}{key}", value)
+            self.secrets.upsert(f"{folder_path}{key}", value)
 
         # and now query again to fetch the updated record.
         records_response = self.records(Query(model.__class__, conditions=[Condition(f"{model.id_column_name}={id}")]))
@@ -103,18 +105,23 @@ class SecretsBackend(Backend):
         """
         Delete the record with the given id.
 
-        Note: This operation is not yet implemented and always returns success without
-        actually deleting any secrets. Full implementation would require deleting all
-        secrets under the record's folder path.
+        Deletes every secret under the record's folder path.
 
         The result indicates success via the `success` property:
 
         ```python
         result = backend.delete("user-123", user_model)
-        assert result.success  # True (but no actual deletion occurs)
+        assert result.success
         ```
         """
+        folder_path = self._make_folder_path(model, id)
+        for path in self.secrets.list_secrets(folder_path):
+            self.secrets.delete(path)
         return SuccessQueryResult()
+
+    def count(self, query: Query) -> CountQueryResult:
+        """Return the number of records matching the query: 0 or 1, since the query must be by id."""
+        return CountQueryResult(count=len(self.records(query).records))
 
     def records(self, query: Query) -> RecordsQueryResult:
         """
@@ -133,6 +140,8 @@ class SecretsBackend(Backend):
         ```
         """
         self.check_query(query)
+        id = None
+        filters = {}
         for condition in query.conditions:
             if condition.operator != "=":
                 raise ValueError(
@@ -140,18 +149,29 @@ class SecretsBackend(Backend):
                 )
             if condition.column_name == query.model_class.id_column_name:
                 id = condition.values[0]
-                break
+            else:
+                filters[condition.column_name] = condition.values[0]
         if id is None:
             raise ValueError(f"You must search by '{query.model_class.id_column_name}' when using the secrets backend")
 
         folder_path = self._make_folder_path(query.model_class, id)
+        paths = self.secrets.list_secrets(folder_path)
+        if not paths:
+            return RecordsQueryResult(records=[])
         data = {query.model_class.id_column_name: id}
-        for path in self.secrets.list_secrets(folder_path):
-            data[path[len(folder_path) :]] = self.secrets.get(path)
+        for path in paths:
+            data[path.rsplit("/", 1)[-1]] = self.secrets.get(path)
+        # secrets are stored as strings, so compare the other conditions as strings too
+        if any(str(data.get(column_name)) != str(value) for (column_name, value) in filters.items()):
+            return RecordsQueryResult(records=[])
         return RecordsQueryResult(records=[data])
 
     def _make_folder_path(self, model, id):
-        return model.table_name().rstrip("/") + "/" + id.strip("/") + "/"
+        id = str(id)
+        # the id is one segment of the secret path, so it must not be able to point anywhere else
+        if not id.strip() or "/" in id or id in (".", ".."):
+            raise ValueError(f"Invalid id '{id}' for the secrets backend: it cannot be empty or contain '/'")
+        return model.destination_name().rstrip("/") + "/" + id + "/"
 
     def validate_pagination_data(self, data: dict[str, Any], case_mapping: Callable[[str], str]) -> str:
         return ""
