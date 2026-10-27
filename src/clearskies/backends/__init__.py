@@ -51,10 +51,10 @@ from clearskies.backends.cursor_backend import CursorBackend
 from clearskies.backends.graphql_backend import GraphqlBackend
 from clearskies.backends.graphql_offset_backend import GraphqlOffsetBackend
 from clearskies.backends.memory_backend import MemoryBackend
+from clearskies.backends.secrets_backend import SecretsBackend
 
 # from .memory_backend import MemoryBackend
 # from .restful_api_advanced_search_backend import RestfulApiAdvancedSearchBackend
-# from .secrets_backend import SecretsBackend
 
 
 __all__ = [
@@ -67,5 +67,5 @@ __all__ = [
     "GraphqlOffsetBackend",
     "MemoryBackend",
     # "RestfulApiAdvancedSearchBackend",
-    # "SecretsBackend",
+    "SecretsBackend",
 ]
