@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextvars
 import datetime
 import importlib
 import inspect
@@ -34,6 +35,12 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
+
+# Values that belong to the request being handled (input_output, endpoint_groups).  A context shares one Di across
+# all requests, so these can't live on the Di or concurrent requests (e.g. threaded WSGI servers) would see each other's.
+request_bindings: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "clearskies_request_bindings", default=None
+)
 
 
 class Di:
@@ -641,6 +648,10 @@ class Di:
           3. An AdditionalConfig class with a corresponding `provide_[name]` function
           4. The Di class itself if it has a matching `provide_[name]` function (aka the builtins)
         """
+        request_values = request_bindings.get()
+        if request_values is not None and name in request_values:
+            return request_values[name]
+
         if name in self._prepared and (cache or name in self._from_bindings):
             self.inject_properties(self._prepared[name].__class__)
             return self._prepared[name]
@@ -808,6 +819,11 @@ class Di:
             return None
         if not callable(class_to_build):
             return None
+
+        request_values = request_bindings.get()
+        request_name = self._predefined_classes_name_map.get(class_to_build)
+        if request_values is not None and request_name in request_values:
+            return request_values[request_name]
 
         # check our class overrides
         if class_to_build in self._class_overrides_by_class:
