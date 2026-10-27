@@ -296,7 +296,7 @@ class List(Endpoint):
         direction = self.from_either(request_data, query_parameters, "direction")
         if sort and direction:
             model = self.add_join(sort, model)
-            [sort_column, sort_table] = self.resolve_references_for_query(sort)
+            [sort_table, sort_column] = self.resolve_references_for_query(sort)
             model = model.sort_by(sort_column or "", direction, sort_table or "")
 
         return model

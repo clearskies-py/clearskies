@@ -127,3 +127,36 @@ class ListTest(TestBase):
 
         assert status_code == 200
         assert ["Ann", "Bob"] == [record["name"] for record in response_data["data"]]
+
+    def test_sort_from_request(self):
+        class Student(clearskies.Model):
+            backend = clearskies.backends.MemoryBackend()
+            id_column_name = "id"
+
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+            grade = clearskies.columns.Integer()
+
+        context = clearskies.contexts.Context(
+            clearskies.endpoints.List(
+                Student,
+                readable_column_names=["id", "name", "grade"],
+                sortable_column_names=["name", "grade"],
+                default_sort_column_name="name",
+            ),
+            bindings={
+                "memory_backend_default_data": [
+                    {
+                        "model_class": Student,
+                        "records": [
+                            {"id": "1", "name": "Ann", "grade": 3},
+                            {"id": "2", "name": "Bob", "grade": 12},
+                            {"id": "3", "name": "Cat", "grade": 7},
+                        ],
+                    },
+                ],
+            },
+        )
+        status_code, response_data, response_headers = context(query_parameters={"sort": "grade", "direction": "desc"})
+
+        assert [12, 7, 3] == [record["grade"] for record in response_data["data"]]
