@@ -256,11 +256,23 @@ class Jwks(Authentication, di.InjectableProperties):
             raise ClientError("Missing 'Authorization' header in request")
         if auth_header[:7].lower() != "bearer ":
             raise ClientError("Missing 'Bearer ' prefix in authorization header")
-        self.validate_jwt(auth_header[7:])
-        input_output.authorization_data = self.jwt_claims
+        input_output.authorization_data = self._decode_jwt(auth_header[7:])
         return True
 
     def validate_jwt(self, raw_jwt: str) -> bool:
+        """
+        Validate the JWT and return True if it is valid.
+
+        Checks the signature against the JWKS, the 'exp' claim (which is required), the issuer and audience
+        (when configured) and the configured claims.  Raises a ClientError when any check fails.  Use the
+        claims from `input_output.authorization_data` after `authenticate()`: they are not stored on this
+        object, because it is shared by all requests.
+        """
+        self._decode_jwt(raw_jwt)
+        return True
+
+    def _decode_jwt(self, raw_jwt: str) -> dict[str, Any]:
+        """Validate the JWT and return its claims, kept local because this object is shared by all requests."""
         try:
             from jwcrypto import jwk, jwt
             from jwcrypto.common import JWException
@@ -283,15 +295,20 @@ class Jwks(Authentication, di.InjectableProperties):
 
         try:
             client_jwt.validate(keys)
-            self.jwt_claims = json.loads(client_jwt.claims)
+            jwt_claims = json.loads(client_jwt.claims)
         except JWException as e:
             raise ClientError(str(e))
 
-        if self.issuer and self.jwt_claims.get("iss") != self.issuer:
+        # jwcrypto checks 'exp' only when present, so a token without it would never expire.
+        # (Passing check_claims to jwcrypto would instead disable its default 'nbf' check.)
+        if "exp" not in jwt_claims:
+            raise ClientError("JWT is missing the 'exp' claim")
+
+        if self.issuer and jwt_claims.get("iss") != self.issuer:
             raise ClientError("Issuer does not match")
 
         if self.audience:
-            jwt_audience = self.jwt_claims.get("aud")
+            jwt_audience = jwt_claims.get("aud")
             if not jwt_audience:
                 raise ClientError("Audience required, but missing in JWT")
             if isinstance(jwt_audience, str):
@@ -303,11 +320,12 @@ class Jwks(Authentication, di.InjectableProperties):
             if self.audience not in jwt_audiences:
                 raise ClientError("Audience does not match")
 
-        self.validate_claims()
+        self.validate_claims(jwt_claims)
 
-        return True
+        return jwt_claims
 
-    def validate_claims(self) -> None:
+    def validate_claims(self, jwt_claims: dict[str, Any] | None = None) -> None:
+        jwt_claims = jwt_claims or {}
         claims = self.claims
         if not claims:
             return
@@ -315,7 +333,7 @@ class Jwks(Authentication, di.InjectableProperties):
         if callable(claims):
             result = self.di.call_function(
                 claims,
-                jwt_claims=self.jwt_claims,
+                jwt_claims=jwt_claims,
             )
             if result is None or result is True:
                 return
@@ -329,13 +347,19 @@ class Jwks(Authentication, di.InjectableProperties):
             return
 
         for claim in claims:
-            if claim not in self.jwt_claims:
+            if claim not in jwt_claims:
                 raise ClientError(f"Required claim missing: {claim}")
 
     def _get_jwks(self):
         if self._jwks is None or ((self.now - self._jwks_fetched).total_seconds() > self.jwks_cache_time):
-            self._jwks = self.requests.get(self.jwks_url).json()
+            response = self.requests.get(self.jwks_url, timeout=10)
+            response.raise_for_status()
+            jwks = response.json()
+            if not isinstance(jwks, dict) or "keys" not in jwks:
+                raise ValueError(f"Invalid JWKS response from {self.jwks_url}: missing 'keys'")
+            # set the fetch time first so a concurrent reader never sees new keys with a stale/missing timestamp
             self._jwks_fetched = self.now
+            self._jwks = jwks
 
         return self._jwks
 
