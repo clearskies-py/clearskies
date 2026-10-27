@@ -161,6 +161,9 @@ class Datetime(Date):
             raise TypeError(
                 f"I was expecting a stringified-date or a datetime object to send to the backend, but instead I found a value of {value.__class__.__name__}"
             )
+        # from_backend labels naive values with self.timezone, so store them in that timezone
+        if value.tzinfo:
+            value = value.astimezone(self.timezone)
 
         return {
             **data,

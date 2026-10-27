@@ -1,3 +1,5 @@
+import datetime
+
 import clearskies
 from tests.test_base import TestBase
 
@@ -36,3 +38,17 @@ class DateTest(TestBase):
         )
         assert "my_datetime" not in response_data["data"]
         assert "my_datetime" in response_data["input_errors"]
+
+    def test_round_trip_converts_timezone(self):
+        class MyModel(clearskies.Model):
+            backend = clearskies.backends.MemoryBackend()
+            id_column_name = "id"
+
+            id = clearskies.columns.Uuid()
+            my_datetime = clearskies.columns.Datetime()
+
+        column = MyModel.get_columns()["my_datetime"]
+        value = datetime.datetime(2026, 1, 1, 10, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=2)))
+        stored = column.to_backend({"my_datetime": value})["my_datetime"]
+        assert stored == "2026-01-01 08:00:00"
+        assert column.from_backend(stored) == value
