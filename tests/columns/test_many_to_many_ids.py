@@ -117,6 +117,36 @@ class ManyToManyIdsTest(TestBase):
         assert isinstance(docs[0], clearskies.autodoc.schema.Array)
         assert isinstance(docs[0].item_definition, clearskies.autodoc.schema.Integer)
 
+    def test_documentation_without_di(self):
+        """Documentation must work on class-level columns that never went through DI (e.g. the Schema endpoint)."""
+
+        class ThingyToWidget(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            thingy_id = clearskies.columns.Integer()
+            widget_id = clearskies.columns.Integer()
+
+        class Thingy(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+
+        class Widget(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = clearskies.columns.Integer()
+            thingy_ids = clearskies.columns.ManyToManyIds(
+                related_model_class=Thingy,
+                pivot_model_class=ThingyToWidget,
+            )
+
+        docs = Widget.get_columns()["thingy_ids"].documentation()
+        assert isinstance(docs[0].item_definition, clearskies.autodoc.schema.Integer)
+
     def test_integer_ids_post_save_normalises_string_ids(self):
         """ManyToManyIds.post_save doesn't duplicate entries when ids arrive as strings."""
 
