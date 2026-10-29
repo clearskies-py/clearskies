@@ -234,11 +234,11 @@ class ManyToManyIds(Column, Generic[RelatedModel, PivotModel]):
 
     @property
     def related_columns(self) -> dict[str, Column]:
-        return self.related_model.get_columns()
+        return self.related_model_class.get_columns()
 
     @property
     def pivot_columns(self) -> dict[str, Column]:
-        return self.pivot_model.get_columns()
+        return self.pivot_model_class.get_columns()
 
     @overload
     def __get__(self, instance: None, cls: type[Model]) -> Self:
