@@ -109,6 +109,16 @@ class List(Endpoint):
     support alternate pagination schemes.  Clearskies automatically handles the difference, so it's important to use `.pagination.next_page` to fetch
     the next page of results.
 
+    For GET requests the next page is also advertised in an RFC 8288 `Link` header, which keeps the query parameters of
+    the current request and is relative to the requested URL:
+
+    ```
+    Link: <?limit=2&start=2>; rel="next"
+    ```
+
+    The header is left out on the last page.  `clearskies.backends.ApiBackend` follows it by default, so one clearskies
+    application can page through another without configuring a pagination adapter.
+
     Use `where`, `joins`, and `group_by` to automatically adjust the query used by the list endpoint.  In particular, where is a list of either
     conditions (as a string) or a callable that can modify the query directly via the model class.  For example:
 
