@@ -1,3 +1,5 @@
+import json
+
 import clearskies
 from tests.test_base import TestBase
 
@@ -135,6 +137,7 @@ class ListTest(TestBase):
 
         assert response_data["pagination"]["next_page"] == {"start": 2}
         assert response_headers["link"] == '<?limit=2&sort=name&direction=desc&start=2>; rel="next"'
+        assert (response_headers["x-total-count"], response_headers["x-total-pages"]) == ("3", "2")
 
         status_code, response_data, response_headers = context(
             url="users", query_parameters={"limit": "2", "start": "2"}
@@ -146,6 +149,47 @@ class ListTest(TestBase):
         context = self._users_context()
         status_code, response_data, response_headers = context(url="users", request_method="POST", body={"limit": 2})
         assert "link" not in response_headers
+
+    def test_head_returns_headers_without_body(self):
+        context = self._users_context()
+        status_code, response_data, response_headers = context(
+            url="users", request_method="HEAD", query_parameters={"limit": "2"}
+        )
+        assert (status_code, response_data) == (200, "")
+        assert response_headers["x-total-count"] == "3"
+        assert response_headers["link"] == '<?limit=2&start=2>; rel="next"'
+
+    def test_api_backend_counts_list_with_head_request(self):
+        from unittest.mock import MagicMock
+
+        server = self._users_context()
+        # Render the server response up front: running the server context inside the mocked request would swap the
+        # client's DI.
+        status_code, body, headers = server(url="users", request_method="HEAD")
+        head_response = MagicMock(ok=True, status_code=status_code, headers={k.lower(): v for k, v in headers.items()})
+        requests = MagicMock()
+        requests.request.return_value = head_response
+
+        class RemoteUser(clearskies.Model):
+            id_column_name = "id"
+            # No count adapter configured: ApiBackend defaults to a HEAD request and the X-Total-Count header.
+            backend = clearskies.backends.ApiBackend(base_url="https://api.example.com", can_count=True)
+            id = clearskies.columns.String()
+            name = clearskies.columns.String()
+
+            @classmethod
+            def destination_name(cls):
+                return "users"
+
+        found = {}
+
+        def application(remote_users: RemoteUser):
+            found["count"] = len(remote_users)
+
+        clearskies.contexts.Context(application, classes=[RemoteUser], bindings={"requests": requests})()
+
+        assert found["count"] == 3
+        assert requests.request.call_args.args[0] == "HEAD"
 
     def test_api_backend_pages_through_list_with_link_header(self):
         from unittest.mock import MagicMock
@@ -189,3 +233,29 @@ class ListTest(TestBase):
 
         assert found["names"] == ["Bob", "Greg", "Jane"]
         assert requests.request.call_count == 2
+
+    def test_schema_documents_pagination_headers(self):
+        class User(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+            id = clearskies.columns.Uuid()
+            name = clearskies.columns.String()
+
+        context = clearskies.contexts.Context(
+            clearskies.EndpointGroup(
+                [
+                    clearskies.endpoints.Schema(url="schema"),
+                    clearskies.endpoints.List(
+                        model_class=User,
+                        url="users",
+                        readable_column_names=["id", "name"],
+                        sortable_column_names=["name"],
+                        default_sort_column_name="name",
+                    ),
+                ]
+            ),
+        )
+        status_code, schema, response_headers = context(url="schema")
+
+        headers = json.loads(schema)["paths"]["/users"]["get"]["responses"]["200"]["headers"]
+        assert sorted(headers) == ["Link", "X-Total-Count", "X-Total-Pages"]

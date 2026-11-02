@@ -152,6 +152,8 @@ class End(
 
     def respond(self, input_output: InputOutput, response: typing.response, status_code: int) -> Any:
         self.add_response_headers(input_output)
+        if input_output.request_method == "HEAD":
+            response = ""
         return input_output.respond(response, status_code)
 
     def respond_json(self, input_output: InputOutput, response_data: dict[str, Any], status_code: int) -> Any:

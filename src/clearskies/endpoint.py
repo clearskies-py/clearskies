@@ -1063,6 +1063,10 @@ class Endpoint(
         )
         return self.authorization.filter_model(model, input_output.authorization_data, input_output)
 
+    def routed_request_method(self, request_method: str) -> str:
+        """Route HEAD like GET (RFC 9110): it runs the GET handler and the response body is dropped."""
+        return "GET" if request_method == "HEAD" else request_method
+
     def matches_request(self, input_output: InputOutput, allow_partial=False) -> bool:
         """Whether or not we can handle an incoming request based on URL and request method."""
         # soo..... this excessively duplicates the logic in populate_routing_data, but I'm being lazy right now
@@ -1074,7 +1078,7 @@ class Endpoint(
             # endpoint in a group to handle ALL preflight requests regardless of path — breaking
             # CORS when different endpoints have different authentication (and therefore different
             # access-control-allow-headers).
-            if request_method != "OPTIONS" and request_method not in self.request_methods:
+            if request_method != "OPTIONS" and self.routed_request_method(request_method) not in self.request_methods:
                 return False
         if input_output.supports_url:
             expected_url = self.url.strip("/")
@@ -1094,7 +1098,7 @@ class Endpoint(
             request_method = input_output.request_method.upper()
             if request_method == "OPTIONS":
                 return self.cors(input_output)
-            if request_method not in self.request_methods:
+            if self.routed_request_method(request_method) not in self.request_methods:
                 return self.error(input_output, "Not Found", 404)
         if input_output.supports_url:
             expected_url = self.url.strip("/")
@@ -1143,8 +1147,12 @@ class Endpoint(
                 "next_page": next_page,
             }
 
-        if next_page and isinstance(next_page, dict) and input_output.request_method == "GET":
+        if next_page and isinstance(next_page, dict) and input_output.request_method in ("GET", "HEAD"):
             input_output.response_headers.add("link", self.next_page_link(input_output, next_page))
+        if number_results is not None:
+            input_output.response_headers.add("x-total-count", str(number_results))
+            if limit:
+                input_output.response_headers.add("x-total-pages", str(-(-number_results // limit)))
 
         return self.respond_json(input_output, response_data, status_code)
 
@@ -1394,7 +1402,25 @@ class Endpoint(
                 ],
             ),
             description=description,
+            headers=self.documentation_pagination_headers() if include_pagination else None,
         )
+
+    def documentation_pagination_headers(self) -> dict[str, Any]:
+        """OpenAPI response headers for the pagination and count headers that `success()` sends."""
+        return {
+            "Link": {
+                "description": 'RFC 8288 link to the next page (`rel="next"`), left out on the last page',
+                "schema": {"type": "string"},
+            },
+            "X-Total-Count": {
+                "description": "Total number of matching records, when the backend can count",
+                "schema": {"type": "integer"},
+            },
+            "X-Total-Pages": {
+                "description": "Total number of pages for the requested limit, when the backend can count",
+                "schema": {"type": "integer"},
+            },
+        }
 
     def documentation_generic_error_response(self, description="Invalid Call", status=400) -> Response:
         return Response(

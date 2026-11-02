@@ -116,8 +116,10 @@ class List(Endpoint):
     Link: <?limit=2&start=2>; rel="next"
     ```
 
-    The header is left out on the last page.  `clearskies.backends.ApiBackend` follows it by default, so one clearskies
-    application can page through another without configuring a pagination adapter.
+    The header is left out on the last page.  When the backend can count, the total is also sent as `X-Total-Count`
+    (and `X-Total-Pages`), and `HEAD` requests return just these headers.  `clearskies.backends.ApiBackend` uses the
+    `Link` and `X-Total-Count` headers by default, so one clearskies application can page through and count another
+    without configuring pagination or count adapters.
 
     Use `where`, `joins`, and `group_by` to automatically adjust the query used by the list endpoint.  In particular, where is a list of either
     conditions (as a string) or a callable that can modify the query directly via the model class.  For example:

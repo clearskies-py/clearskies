@@ -20,7 +20,7 @@ class InputOutput(ABC, configurable.Configurable, loggable.Loggable):
     query_parameters = configs.AnyDict(default={})
     routing_data = configs.StringDict(default={})
     authorization_data = configs.AnyDict(default={})
-    request_method = configs.Select(["GET", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
+    request_method = configs.Select(["GET", "HEAD", "POST", "PATCH", "OPTIONS", "DELETE", "SEARCH"], default="GET")
     supports_request_method = configs.Boolean(default=True)
     supports_url = configs.Boolean(default=True)
     route_from_request_data = configs.Boolean(default=False)
