@@ -1143,7 +1143,21 @@ class Endpoint(
                 "next_page": next_page,
             }
 
+        if next_page and isinstance(next_page, dict) and input_output.request_method == "GET":
+            input_output.response_headers.add("link", self.next_page_link(input_output, next_page))
+
         return self.respond_json(input_output, response_data, status_code)
+
+    def next_page_link(self, input_output: InputOutput, next_page: dict[str, Any]) -> str:
+        """
+        Build the RFC 8288 ``Link`` header that points to the next page.
+
+        The link keeps the query parameters of the current request (filters, sorting, limit) and overrides them with
+        ``next_page``.  It is a query-only reference (``<?start=50>``), which clients resolve against the URL they
+        requested, so it stays correct behind proxies that rewrite the host or strip a path prefix.
+        """
+        query = urllib.parse.urlencode({**input_output.query_parameters, **next_page}, doseq=True)
+        return f'<?{query}>; rel="next"'
 
     def model_as_json(self, model: Model, input_output: InputOutput) -> dict[str, Any]:
         if self.output_map:
