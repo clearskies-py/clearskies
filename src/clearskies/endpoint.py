@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import inspect
 import urllib.parse
 from collections import OrderedDict
@@ -1307,7 +1308,8 @@ class Endpoint(
     def cors(self, input_output: InputOutput):
         from clearskies.security_headers import Cors
 
-        cors_header = self.cors_header if self.cors_header else Cors()
+        # copy so concurrent preflights don't share (and mix) the configured header's state
+        cors_header = copy.deepcopy(self.cors_header) if self.cors_header else Cors()
         cors_header.set_methods([])  # reset accumulated state from previous calls
         cors_header.set_headers([])  # reset accumulated state from previous calls
         for method in self.request_methods:

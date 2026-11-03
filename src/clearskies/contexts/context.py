@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from clearskies import exceptions
 from clearskies.di import Di, InjectableProperties
 from clearskies.di.additional_config import AdditionalConfig
+from clearskies.di.di import request_bindings
 from clearskies.input_outputs import InputOutput, Programmatic
 
 if TYPE_CHECKING:
@@ -80,6 +81,13 @@ class Context:
         self.di.add_binding("input_output", input_output)
         self.di.add_class_override(InputOutput, input_output)
 
+        token = request_bindings.set({"input_output": input_output, "endpoint_groups": []})
+        try:
+            return self._execute_application(input_output)
+        finally:
+            request_bindings.reset(token)
+
+    def _execute_application(self, input_output: InputOutput):
         if isinstance(self.application, InjectableProperties):
             self.application.injectable_properties(self.di)
             return self.application(input_output)
