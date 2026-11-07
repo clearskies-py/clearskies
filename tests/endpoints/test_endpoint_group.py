@@ -227,3 +227,53 @@ class EndpointGroupTest(TestBase):
             assert status == 401
         finally:
             del os.environ["MY_SECRET"]
+
+    def test_nested_route_after_parent_restful_api(self):
+        """A parent RestfulApi listed first must not swallow the nested routes of a later endpoint."""
+
+        class Company(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Integer()
+            name = columns.String()
+
+        class Department(clearskies.Model):
+            id_column_name = "id"
+            backend = clearskies.backends.MemoryBackend()
+
+            id = columns.Integer()
+            company_id = columns.Integer()
+            name = columns.String()
+
+        def restful_api(model_class, url):
+            return clearskies.endpoints.RestfulApi(
+                model_class=model_class,
+                url=url,
+                readable_column_names=["id", "name"],
+                writeable_column_names=[],
+                sortable_column_names=["id"],
+                searchable_column_names=["id"],
+                default_sort_column_name="id",
+                read_only=True,
+            )
+
+        context = Context(
+            clearskies.EndpointGroup(
+                [
+                    restful_api(Company, "companies"),
+                    restful_api(Department, "companies/:company_id/departments"),
+                ]
+            ),
+            classes=[Company, Department],
+        )
+
+        status, response, _ = context(url="/companies/1/departments")
+        assert status == 200
+        assert response["data"] == []
+
+        status, _, _ = context(url="/companies")
+        assert status == 200
+
+        status, _, _ = context(url="/companies/1/unknown")
+        assert status == 404

@@ -286,10 +286,13 @@ class EndpointGroup(
         """Whether or not we can handle an incoming request based on URL and request method."""
         expected_url = self.url.strip("/")
         incoming_url = input_output.get_full_path().strip("/")
-        if not expected_url and not incoming_url:
-            return True
-        matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
-        return matches
+        if expected_url or incoming_url:
+            matches, routing_data = routing.match_route(expected_url, incoming_url, allow_partial=allow_partial)
+            if not matches:
+                return False
+        # Matching our url prefix isn't enough: a sibling endpoint may own a nested route under it (e.g.
+        # `/users/:user_id/posts` next to `/users`), so we only claim the request if one of our endpoints does.
+        return any(endpoint.matches_request(input_output) for endpoint in self.endpoints)
 
     def populate_routing_data(self, input_output: InputOutput) -> Any:
         # Handle CORS preflight here, before End.__call__ runs authentication.
